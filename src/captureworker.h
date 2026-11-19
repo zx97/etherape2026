@@ -58,6 +58,8 @@ private:
     void closeHelper();
     void closeClient();
     void closeServer();
+    void openPrivilegedOneShot(const QString &device, const QString &filter,
+                               int mode);
     void flush();
     static void onPacket(u_char *user, const struct pcap_pkthdr *header,
                          const u_char *bytes);

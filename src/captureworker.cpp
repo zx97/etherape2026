@@ -520,6 +520,112 @@ void CaptureWorker::closeHelper()
 #endif
 }
 
+// Reliable path (default): one pkexec per capture, interface and filter in
+// argv, pcap stream on stdout. Costs one password per capture, nothing more.
+void CaptureWorker::openPrivilegedOneShot(const QString &device,
+                                          const QString &filter, int mode)
+{
+#ifndef Q_OS_WIN
+    m_stop.store(false, std::memory_order_relaxed);
+    m_decoder.setMode(static_cast<Mode>(mode));
+
+    int data[2] = {-1, -1};
+    if (::pipe(data) != 0) {
+        emit errorOccurred(QString::fromLocal8Bit(std::strerror(errno)));
+        emit captureStopped();
+        return;
+    }
+
+    m_helperLogPath = QStringLiteral("/dev/shm/etherape2026-helper-%1.log")
+                          .arg(QCoreApplication::applicationPid());
+    const int logFd = ::open(m_helperLogPath.toLocal8Bit().constData(),
+                             O_CREAT | O_WRONLY | O_TRUNC, 0600);
+
+    const QByteArray exe =
+        QCoreApplication::applicationFilePath().toLocal8Bit();
+    const QByteArray dev = device.toLocal8Bit();
+    const QByteArray flt = filter.toLocal8Bit();
+    const bool debug = qEnvironmentVariableIsSet("ETHERAPE_DEBUG");
+    const bool direct = qEnvironmentVariableIsSet("ETHERAPE_HELPER_DIRECT");
+
+    const pid_t pid = ::fork();
+    if (pid == 0) {
+        ::setpgid(0, 0);
+        ::dup2(data[1], STDOUT_FILENO);
+        if (logFd >= 0)
+            ::dup2(logFd, STDERR_FILENO);
+        ::close(data[0]);
+        ::close(data[1]);
+        if (logFd >= 0)
+            ::close(logFd);
+        if (direct) {
+            if (debug)
+                ::execl(exe.constData(), exe.constData(), "--capture-helper",
+                        "-i", dev.constData(), "-f", flt.constData(),
+                        "--debug", static_cast<char *>(nullptr));
+            else
+                ::execl(exe.constData(), exe.constData(), "--capture-helper",
+                        "-i", dev.constData(), "-f", flt.constData(),
+                        static_cast<char *>(nullptr));
+        } else {
+            if (debug)
+                ::execlp("pkexec", "pkexec", exe.constData(),
+                         "--capture-helper", "-i", dev.constData(), "-f",
+                         flt.constData(), "--debug",
+                         static_cast<char *>(nullptr));
+            else
+                ::execlp("pkexec", "pkexec", exe.constData(),
+                         "--capture-helper", "-i", dev.constData(), "-f",
+                         flt.constData(), static_cast<char *>(nullptr));
+        }
+        _exit(127);
+    }
+
+    ::close(data[1]);
+    if (logFd >= 0)
+        ::close(logFd);
+    if (pid < 0) {
+        ::close(data[0]);
+        emit errorOccurred(QString::fromLocal8Bit(std::strerror(errno)));
+        emit captureStopped();
+        return;
+    }
+
+    m_childPid.store(pid, std::memory_order_relaxed);
+    m_ctlFd = -1;
+    m_dataFd = data[0];
+    m_packets = 0;
+    m_bytes = 0;
+    emit captureStarted(device);
+    readPcapStream(m_dataFd, -1);
+    ::close(m_dataFd);
+    m_dataFd = -1;
+
+    int status = 0;
+    ::waitpid(pid, &status, 0);
+    m_childPid.store(-1, std::memory_order_relaxed);
+
+    if (m_packets == 0 && !m_stop.load(std::memory_order_relaxed)) {
+        QString extra;
+        QFile log(m_helperLogPath);
+        if (log.open(QIODevice::ReadOnly))
+            extra = QString::fromLocal8Bit(log.readAll()).trimmed();
+        if (qEnvironmentVariableIsSet("ETHERAPE_DEBUG"))
+            std::fprintf(stderr, "[etherape] one-shot failure: %s\n",
+                         extra.toLocal8Bit().constData());
+        emit errorOccurred(
+            extra.isEmpty()
+                ? tr("The privileged helper could not start the capture.")
+                : tr("The privileged helper could not start the capture: %1")
+                      .arg(extra));
+    }
+
+    flush();
+    emit counters(m_packets, m_bytes);
+    emit captureStopped();
+#endif
+}
+
 void CaptureWorker::openPrivileged(const QString &device,
                                    const QString &filter, int mode)
 {
@@ -527,6 +633,13 @@ void CaptureWorker::openPrivileged(const QString &device,
     // Windows has no pkexec; the GUI relaunches itself elevated through UAC.
     openLive(device, filter, mode);
 #else
+    // The persistent helper is opt-in: the one-shot path is the one that has
+    // proven reliable with pkexec.
+    if (!qEnvironmentVariableIsSet("ETHERAPE_PERSISTENT_HELPER")) {
+        openPrivilegedOneShot(device, filter, mode);
+        return;
+    }
+
     m_stop.store(false, std::memory_order_relaxed);
     m_decoder.setMode(static_cast<Mode>(mode));
 
