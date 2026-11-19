@@ -2,14 +2,13 @@
 
 #include "graphview.h"
 
+#include "formatting.h"
 #include "graphmodel.h"
 
 #include <QDateTime>
 #include <QFontMetrics>
 #include <QMouseEvent>
 #include <QPainter>
-#include <QPainterPath>
-#include <QToolTip>
 #include <QWheelEvent>
 
 #include <algorithm>
@@ -22,20 +21,7 @@ namespace {
 
 constexpr double kMinRadius = 5.0;
 constexpr double kMaxRadius = 22.0;
-
-QString humanBytes(quint64 bytes)
-{
-    static const char *units[] = {"B", "KB", "MB", "GB", "TB"};
-    double value = static_cast<double>(bytes);
-    int unit = 0;
-    while (value >= 1024.0 && unit < 4) {
-        value /= 1024.0;
-        ++unit;
-    }
-    return QStringLiteral("%1 %2")
-        .arg(value, 0, 'f', unit == 0 ? 0 : 1)
-        .arg(QLatin1String(units[unit]));
-}
+constexpr int kLegendMaxRows = 12;
 
 } // namespace
 
@@ -51,8 +37,7 @@ GraphView::GraphView(QWidget *parent) : QWidget(parent)
         if (!m_model)
             return;
         const auto now = std::chrono::steady_clock::now();
-        const double dt =
-            std::chrono::duration<double>(now - m_lastTick).count();
+        const double dt = std::chrono::duration<double>(now - m_lastTick).count();
         m_lastTick = now;
         m_model->tick(std::min(dt, 0.2), QDateTime::currentMSecsSinceEpoch());
         update();
@@ -81,6 +66,18 @@ void GraphView::setNodeLimitHint(int limit)
         m_model->setNodeLimit(limit);
 }
 
+void GraphView::setLegendVisible(bool visible)
+{
+    m_showLegend = visible;
+    update();
+}
+
+void GraphView::selectNode(const QString &id)
+{
+    m_selected = id;
+    update();
+}
+
 void GraphView::resetView()
 {
     m_zoom = 1.0;
@@ -95,21 +92,14 @@ QPointF GraphView::toScreen(double nx, double ny) const
         + QPointF((nx - 0.5) * width(), (ny - 0.5) * height()) * m_zoom;
 }
 
-QColor GraphView::protocolColor(const QString &protocol)
+QPointF GraphView::toNormalized(const QPointF &pos) const
 {
-    if (protocol == QLatin1String("TCP"))
-        return QColor(0x5a, 0xa9, 0xff);
-    if (protocol == QLatin1String("UDP"))
-        return QColor(0x5f, 0xd1, 0x8a);
-    if (protocol == QLatin1String("ICMP") || protocol == QLatin1String("ICMPv6"))
-        return QColor(0xff, 0xb4, 0x54);
-    if (protocol == QLatin1String("ARP"))
-        return QColor(0xff, 0x7a, 0x5c);
-    if (protocol.startsWith(QLatin1String("IPv6")))
-        return QColor(0xb1, 0x8c, 0xff);
-    if (protocol.startsWith(QLatin1String("IP/")))
-        return QColor(0xc0, 0xc8, 0xd4);
-    return QColor(0x9a, 0xa5, 0xb1);
+    const QPointF center(width() / 2.0, height() / 2.0);
+    const QPointF relative = (pos - center - m_pan) / (m_zoom * width());
+    return QPointF(relative.x() + 0.5,
+                   ((pos.y() - center.y() - m_pan.y())
+                    / (m_zoom * height()))
+                       + 0.5);
 }
 
 void GraphView::rebuildScreenPositions()
@@ -124,8 +114,8 @@ void GraphView::rebuildScreenPositions()
     for (int i = 0; i < m_model->nodes().size(); ++i) {
         const auto &node = m_model->nodes()[i];
         m_screenPos[i] = toScreen(node.x, node.y);
-        const double ratio =
-            std::sqrt(static_cast<double>(node.bytes) / static_cast<double>(maxBytes));
+        const double ratio = std::sqrt(static_cast<double>(node.bytes)
+                                       / static_cast<double>(maxBytes));
         m_radii[i] = (kMinRadius + (kMaxRadius - kMinRadius) * ratio) * m_zoom;
     }
 }
@@ -145,6 +135,65 @@ int GraphView::nodeAt(const QPointF &pos) const
     return best;
 }
 
+void GraphView::drawLegend(QPainter &painter, const QFont &baseFont)
+{
+    if (!m_model)
+        return;
+
+    const auto protocols = m_model->protocols();
+    if (protocols.isEmpty())
+        return;
+
+    QList<QPair<QString, GraphModel::ProtoStat>> entries;
+    entries.reserve(protocols.size());
+    for (auto it = protocols.constBegin(); it != protocols.constEnd(); ++it)
+        entries.append({it.key(), it.value()});
+    std::sort(entries.begin(), entries.end(),
+              [](const auto &lhs, const auto &rhs) {
+                  return lhs.second.bytes > rhs.second.bytes;
+              });
+    if (entries.size() > kLegendMaxRows)
+        entries.resize(kLegendMaxRows);
+
+    QFont font = baseFont;
+    font.setPointSizeF(std::max(6.0, baseFont.pointSizeF() * 0.9));
+    painter.setFont(font);
+    const QFontMetrics metrics(font);
+
+    int textWidth = 0;
+    for (const auto &entry : entries) {
+        const QString text = QStringLiteral("%1   %2")
+                                 .arg(entry.first,
+                                      humanBytes(entry.second.bytes));
+        textWidth = std::max(textWidth, metrics.horizontalAdvance(text));
+    }
+
+    const int rowHeight = metrics.height() + 3;
+    const int boxWidth = textWidth + 38;
+    const int boxHeight = rowHeight * entries.size() + 14;
+    QRectF box(10, height() - boxHeight - 10, boxWidth, boxHeight);
+
+    const QPalette pal = palette();
+    QColor background = pal.color(QPalette::Base);
+    background.setAlpha(215);
+    painter.setBrush(background);
+    painter.setPen(QPen(pal.color(QPalette::Mid), 1.0));
+    painter.drawRoundedRect(box, 6, 6);
+
+    int y = static_cast<int>(box.top()) + 7;
+    for (const auto &entry : entries) {
+        painter.setPen(Qt::NoPen);
+        painter.setBrush(protocolColor(entry.first));
+        painter.drawEllipse(QPointF(box.left() + 13, y + metrics.height() / 2.0),
+                            4.5, 4.5);
+        painter.setPen(pal.color(QPalette::Text));
+        painter.drawText(QPointF(box.left() + 25, y + metrics.ascent()),
+                         QStringLiteral("%1   %2")
+                             .arg(entry.first, humanBytes(entry.second.bytes)));
+        y += rowHeight;
+    }
+}
+
 void GraphView::paintEvent(QPaintEvent *)
 {
     QPainter painter(this);
@@ -159,8 +208,7 @@ void GraphView::paintEvent(QPaintEvent *)
 
     if (!m_model) {
         painter.setPen(pal.color(QPalette::Text));
-        painter.drawText(rect(), Qt::AlignCenter,
-                         tr("No capture in progress."));
+        painter.drawText(rect(), Qt::AlignCenter, tr("No capture in progress."));
         return;
     }
 
@@ -179,9 +227,8 @@ void GraphView::paintEvent(QPaintEvent *)
         QColor color = protocolColor(link.protocol);
         color.setAlphaF(0.18 + 0.72 * intensity);
 
-        const bool incident =
-            m_selected.isEmpty() || nodes[link.a].id == m_selected
-            || nodes[link.b].id == m_selected;
+        const bool incident = m_selected.isEmpty()
+            || nodes[link.a].id == m_selected || nodes[link.b].id == m_selected;
 
         QPen pen(color);
         pen.setWidthF(0.6 + 7.0 * intensity * (incident ? 1.0 : 0.25));
@@ -190,7 +237,6 @@ void GraphView::paintEvent(QPaintEvent *)
         painter.drawLine(m_screenPos[link.a], m_screenPos[link.b]);
     }
 
-    // Nodes.
     QFont font = painter.font();
     font.setPointSizeF(std::max(6.0, font.pointSizeF() * m_fontScale));
     painter.setFont(font);
@@ -226,10 +272,18 @@ void GraphView::paintEvent(QPaintEvent *)
                             isSelected || isHover ? 2.5 : 1.2));
         painter.drawEllipse(center, radius, radius);
 
+        if (node.pinned) {
+            // Small anchor marker: this node ignores the force layout.
+            painter.setBrush(Qt::NoBrush);
+            painter.setPen(QPen(QColor(0xff, 0xd1, 0x66, 200), 1.0,
+                                Qt::DotLine));
+            painter.drawEllipse(center, radius + 3, radius + 3);
+        }
+
         if (isHover) {
             painter.setBrush(Qt::NoBrush);
             painter.setPen(QPen(QColor(255, 255, 255, 90), 1.0));
-            painter.drawEllipse(center, radius + 4, radius + 4);
+            painter.drawEllipse(center, radius + 5, radius + 5);
         }
 
         const QString label = metrics.elidedText(
@@ -240,37 +294,38 @@ void GraphView::paintEvent(QPaintEvent *)
         painter.drawText(textRect, Qt::AlignHCenter | Qt::AlignTop, label);
     }
 
-    // Legend.
-    painter.setPen(pal.color(QPalette::Text));
+    // Top-left counters, with a light background so they stay readable over
+    // links crossing that corner.
     QFont small = font;
     small.setPointSizeF(std::max(6.0, font.pointSizeF() * 0.85));
+    const QString counters = tr("%1 nodes · %2 links · zoom %3%")
+                                 .arg(nodes.size())
+                                 .arg(links.size())
+                                 .arg(static_cast<int>(m_zoom * 100));
+    const QFontMetrics smallMetrics(small);
+    const QRectF counterRect(10, 10, smallMetrics.horizontalAdvance(counters) + 16,
+                             smallMetrics.height() + 8);
+    QColor counterBackground = pal.color(QPalette::Base);
+    counterBackground.setAlpha(190);
     painter.setFont(small);
-    int y = height() - 8;
-    const QStringList legend = {QStringLiteral("TCP"), QStringLiteral("UDP"),
-                                QStringLiteral("ICMP"), QStringLiteral("ARP"),
-                                QStringLiteral("IPv6")};
-    for (const QString &name : legend) {
-        y -= 15;
-        painter.setBrush(protocolColor(name));
-        painter.setPen(Qt::NoPen);
-        painter.drawEllipse(QPointF(14, y + 4), 4, 4);
-        painter.setPen(pal.color(QPalette::Text));
-        painter.drawText(QPointF(24, y + 8), name);
-    }
-    y -= 20;
-    painter.drawText(QPointF(10, y + 8),
-                     tr("%1 nodes · %2 links · zoom %3%")
-                         .arg(nodes.size())
-                         .arg(links.size())
-                         .arg(static_cast<int>(m_zoom * 100)));
+    painter.setBrush(counterBackground);
+    painter.setPen(QPen(pal.color(QPalette::Mid), 1.0));
+    painter.drawRoundedRect(counterRect, 5, 5);
+    painter.setPen(pal.color(QPalette::Text));
+    painter.drawText(counterRect, Qt::AlignCenter, counters);
+
+    if (m_showLegend)
+        drawLegend(painter, font);
 }
 
 void GraphView::mousePressEvent(QMouseEvent *event)
 {
+    const int index = nodeAt(event->position());
+
     if (event->button() == Qt::LeftButton) {
-        const int index = nodeAt(event->position());
         if (index >= 0 && m_model) {
             m_selected = m_model->nodes()[index].id;
+            m_dragNode = index;
             emit nodeClicked(m_selected);
             update();
         } else {
@@ -279,6 +334,10 @@ void GraphView::mousePressEvent(QMouseEvent *event)
             m_dragStart = event->position();
             m_panStart = m_pan;
         }
+    } else if (event->button() == Qt::RightButton && index >= 0 && m_model) {
+        // Right click releases a manually placed node.
+        m_model->pinNode(m_model->nodes()[index].id, false);
+        update();
     } else if (event->button() == Qt::MiddleButton
                || event->button() == Qt::RightButton) {
         m_dragging = true;
@@ -289,6 +348,19 @@ void GraphView::mousePressEvent(QMouseEvent *event)
 
 void GraphView::mouseMoveEvent(QMouseEvent *event)
 {
+    if (m_dragNode >= 0 && m_model) {
+        const auto nodes = m_model->nodes();
+        if (m_dragNode < nodes.size()) {
+            const QPointF normalized = toNormalized(event->position());
+            m_model->setNodePosition(nodes[m_dragNode].id,
+                                     std::clamp(normalized.x(), 0.02, 0.98),
+                                     std::clamp(normalized.y(), 0.02, 0.98));
+            emit layoutChanged();
+            update();
+        }
+        return;
+    }
+
     if (m_dragging) {
         m_pan = m_panStart + (event->position() - m_dragStart);
         update();
@@ -300,10 +372,13 @@ void GraphView::mouseMoveEvent(QMouseEvent *event)
         m_hover = index;
         if (index >= 0 && m_model) {
             const auto &node = m_model->nodes()[index];
-            setToolTip(tr("%1\n%2 packets · %3")
-                           .arg(node.label.isEmpty() ? node.id : node.label)
-                           .arg(node.packets)
-                           .arg(humanBytes(node.bytes)));
+            setToolTip(
+                tr("%1\n%2 packets · %3\n%4")
+                    .arg(node.label.isEmpty() ? node.id : node.label)
+                    .arg(node.packets)
+                    .arg(humanBytes(node.bytes))
+                    .arg(node.pinned ? tr("position locked (right-click to release)")
+                                     : tr("drag to pin")));
             emit nodeHovered(node.id);
         } else {
             setToolTip(QString());
@@ -315,6 +390,7 @@ void GraphView::mouseMoveEvent(QMouseEvent *event)
 void GraphView::mouseReleaseEvent(QMouseEvent *event)
 {
     Q_UNUSED(event);
+    m_dragNode = -1;
     m_dragging = false;
 }
 

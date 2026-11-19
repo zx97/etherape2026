@@ -3,16 +3,20 @@
 #include "mainwindow.h"
 
 #include "captureworker.h"
+#include "conversationsdialog.h"
 #include "graphmodel.h"
 #include "graphview.h"
 #include "statspanel.h"
+#include "xmlexport.h"
 
 #include <QAction>
 #include <QActionGroup>
 #include <QApplication>
 #include <QCloseEvent>
 #include <QComboBox>
+#include <QCoreApplication>
 #include <QDateTime>
+#include <QDir>
 #include <QFileDialog>
 #include <QFileInfo>
 #include <QHostInfo>
@@ -27,10 +31,16 @@
 #include <QSplitter>
 #include <QStatusBar>
 #include <QStyle>
+#include <cstdio>
 #include <QThread>
 #include <QTimer>
 #include <QToolBar>
 #include <QVBoxLayout>
+
+#ifdef Q_OS_WIN
+#include <windows.h>
+#include <shellapi.h>
+#endif
 
 #ifndef APP_VERSION
 #define APP_VERSION "1.0.0"
@@ -189,6 +199,18 @@ void MainWindow::buildMenus()
     openAction->setShortcut(QKeySequence::Open);
     connect(openAction, &QAction::triggered, this,
             &MainWindow::openCaptureFile);
+    auto *exportAction = fileMenu->addAction(tr("&Export Graph as XML…"));
+    exportAction->setShortcut(QKeySequence(QStringLiteral("Ctrl+E")));
+    connect(exportAction, &QAction::triggered, this, &MainWindow::exportXml);
+
+    fileMenu->addSeparator();
+    auto *saveLayoutAction = fileMenu->addAction(tr("Save &Layout…"));
+    connect(saveLayoutAction, &QAction::triggered, this,
+            &MainWindow::saveLayoutAs);
+    auto *openLayoutAction = fileMenu->addAction(tr("Load Layout…"));
+    connect(openLayoutAction, &QAction::triggered, this,
+            &MainWindow::openLayout);
+
     fileMenu->addSeparator();
     auto *quitAction = fileMenu->addAction(tr("&Quit"));
     quitAction->setShortcut(QKeySequence::Quit);
@@ -229,6 +251,20 @@ void MainWindow::buildMenus()
         setNumeric(checked);
     });
 
+    m_legendAction = viewMenu->addAction(tr("Protocol &Legend"));
+    m_legendAction->setCheckable(true);
+    m_legendAction->setChecked(true);
+    connect(m_legendAction, &QAction::toggled, this, [this](bool checked) {
+        m_graph->setLegendVisible(checked);
+        QSettings().setValue(QStringLiteral("view/legend"), checked);
+    });
+
+    auto *conversationsAction = viewMenu->addAction(tr("&Conversations…"));
+    conversationsAction->setShortcut(QKeySequence(QStringLiteral("Ctrl+T")));
+    connect(conversationsAction, &QAction::triggered, this,
+            &MainWindow::showConversations);
+
+    viewMenu->addSeparator();
     auto *resetZoom = viewMenu->addAction(tr("Reset &Zoom"));
     resetZoom->setShortcut(QKeySequence(QStringLiteral("Ctrl+0")));
     connect(resetZoom, &QAction::triggered, m_graph, &GraphView::resetView);
@@ -262,6 +298,11 @@ void MainWindow::loadSettings()
     m_usePolkit =
         settings.value(QStringLiteral("capture/usePolkit"), false).toBool();
     m_numeric = settings.value(QStringLiteral("names/numeric"), false).toBool();
+    const bool legend =
+        settings.value(QStringLiteral("view/legend"), true).toBool();
+    m_graph->setLegendVisible(legend);
+    if (m_legendAction)
+        m_legendAction->setChecked(legend);
 
     m_mode = static_cast<Mode>(
         settings.value(QStringLiteral("capture/mode"), 1).toInt());
@@ -413,6 +454,33 @@ void MainWindow::startCapture()
 void MainWindow::onPermissionDenied(const QString &device,
                                     const QString &message)
 {
+#ifdef Q_OS_WIN
+    // Windows has no pkexec: relaunch the whole application elevated (UAC),
+    // Npcap then opens the capture without further prompts.
+    const auto relaunch = QMessageBox::question(
+        this, tr("Administrator rights required"),
+        tr("Capturing on \"%1\" requires administrator rights:\n%2\n\n"
+           "Restart EtherApe 2026 elevated?")
+            .arg(device, message),
+        QMessageBox::Yes | QMessageBox::No, QMessageBox::Yes);
+    if (relaunch != QMessageBox::Yes) {
+        updateStatus();
+        return;
+    }
+    const std::wstring exe = QDir::toNativeSeparators(
+                                 QCoreApplication::applicationFilePath())
+                                 .toStdWString();
+    SHELLEXECUTEINFOW info = {};
+    info.cbSize = sizeof(info);
+    info.fMask = SEE_MASK_NOCLOSEPROCESS;
+    info.lpVerb = L"runas";
+    info.lpFile = exe.c_str();
+    info.nShow = SW_SHOWNORMAL;
+    if (ShellExecuteExW(&info))
+        QCoreApplication::quit();
+    else
+        statusBar()->showMessage(tr("Elevation was cancelled."), 6000);
+#else
     const auto answer = QMessageBox::question(
         this, tr("Root privileges required"),
         tr("Capturing on \"%1\" was denied:\n%2\n\n"
@@ -434,6 +502,7 @@ void MainWindow::onPermissionDenied(const QString &device,
         m_worker, "openPrivileged", Qt::QueuedConnection, Q_ARG(QString, device),
         Q_ARG(QString, m_filterEdit->text()),
         Q_ARG(int, static_cast<int>(m_mode)));
+#endif
 }
 
 void MainWindow::stopCapture()
@@ -473,6 +542,11 @@ void MainWindow::onBatch(const QList<etherape::PacketInfo> &batch)
     m_model->addBatch(batch, QDateTime::currentMSecsSinceEpoch());
 
     for (const auto &packet : batch) {
+        // Passive NetBIOS name service: names Windows hosts announce anyway.
+        if (!packet.nbName.isEmpty() && !packet.nbIp.isEmpty()) {
+            m_nameCache.insert(packet.nbIp, packet.nbName);
+            m_model->setLabel(packet.nbIp, packet.nbName);
+        }
         if (!packet.src.id.isEmpty())
             maybeResolve(packet.src.id, packet.src.kind);
         if (!packet.dst.id.isEmpty())
@@ -525,8 +599,22 @@ void MainWindow::onCaptureStarted(const QString &source)
 
 void MainWindow::onCaptureStopped()
 {
+    const bool replayEnded = !m_replayFile.isEmpty();
     m_running = false;
     setRunning(false);
+
+    // --final-export: dump the graph at the end of a replay, then exit.
+    if (replayEnded && !m_finalExportPath.isEmpty()) {
+        QString error;
+        if (!exportGraphXml(*m_model, m_finalExportPath, m_sourceText, &error))
+            statusBar()->showMessage(tr("Final export failed: %1").arg(error));
+        else
+            statusBar()->showMessage(
+                tr("Exported to %1").arg(m_finalExportPath), 5000);
+        m_finalExportPath.clear();
+        QTimer::singleShot(0, this, &QWidget::close);
+        return;
+    }
 
     if (m_restartPending) {
         m_restartPending = false;
@@ -583,6 +671,77 @@ void MainWindow::updateStatus()
                               .arg(m_model->links().size()));
 }
 
+void MainWindow::setFinalExport(const QString &path)
+{
+    m_finalExportPath = path;
+}
+
+void MainWindow::loadLayoutFile(const QString &path)
+{
+    QString error;
+    if (!m_model->loadLayout(path, &error))
+        statusBar()->showMessage(tr("Cannot load layout: %1").arg(error), 6000);
+}
+
+void MainWindow::exportXml()
+{
+    QString path = QFileDialog::getSaveFileName(
+        this, tr("Export graph as XML"), QStringLiteral("etherape.xml"),
+        tr("XML files (*.xml);;All files (*)"));
+    if (path.isEmpty())
+        return;
+
+    QString error;
+    if (exportGraphXml(*m_model, path, m_sourceText, &error))
+        statusBar()->showMessage(tr("Exported to %1").arg(path), 5000);
+    else
+        QMessageBox::warning(this, tr("Export failed"), error);
+}
+
+void MainWindow::saveLayoutAs()
+{
+    const QString path = QFileDialog::getSaveFileName(
+        this, tr("Save node layout"), QStringLiteral("etherape-layout.json"),
+        tr("JSON files (*.json);;All files (*)"));
+    if (path.isEmpty())
+        return;
+
+    QString error;
+    if (m_model->saveLayout(path, &error))
+        statusBar()->showMessage(tr("Layout saved to %1").arg(path), 5000);
+    else
+        QMessageBox::warning(this, tr("Save failed"), error);
+}
+
+void MainWindow::openLayout()
+{
+    const QString path = QFileDialog::getOpenFileName(
+        this, tr("Load node layout"), QString(),
+        tr("JSON files (*.json);;All files (*)"));
+    if (path.isEmpty())
+        return;
+    loadLayoutFile(path);
+}
+
+void MainWindow::showConversations()
+{
+    if (!m_conversations) {
+        m_conversations = new ConversationsDialog(m_model, this);
+        m_conversations->setAttribute(Qt::WA_DeleteOnClose);
+        connect(m_conversations, &ConversationsDialog::nodeActivated, this,
+                [this](const QString &id) {
+                    m_graph->selectNode(id);
+                    raise();
+                    activateWindow();
+                });
+        connect(m_conversations, &QObject::destroyed, this,
+                [this] { m_conversations = nullptr; });
+    }
+    m_conversations->show();
+    m_conversations->raise();
+    m_conversations->activateWindow();
+}
+
 void MainWindow::showAbout()
 {
     QMessageBox::about(
@@ -599,6 +758,11 @@ void MainWindow::showAbout()
 void MainWindow::closeEvent(QCloseEvent *event)
 {
     saveSettings();
+    if (!m_finalExportPath.isEmpty()) {
+        QString error;
+        if (!exportGraphXml(*m_model, m_finalExportPath, m_sourceText, &error))
+            statusBar()->showMessage(tr("Final export failed: %1").arg(error));
+    }
     if (m_worker)
         m_worker->requestStop();
     if (m_captureThread) {

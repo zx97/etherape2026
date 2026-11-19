@@ -72,13 +72,35 @@ int main(int argc, char *argv[])
     QCommandLineOption nodeLimitOption(
         QStringLiteral("node-limit"),
         QObject::tr("Keep at most <count> nodes."), QObject::tr("count"));
+    QCommandLineOption finalExportOption(
+        QStringLiteral("final-export"),
+        QObject::tr("Export the graph as XML to <file> on exit."),
+        QObject::tr("file"));
+    QCommandLineOption positionOption(
+        QStringLiteral("position"),
+        QObject::tr("Load the node layout from <file>."),
+        QObject::tr("file"));
+    QCommandLineOption exitAfterOption(
+        QStringLiteral("exit-after"),
+        QObject::tr("Close the window after <ms> (testing aid)."),
+        QObject::tr("ms"));
+    QCommandLineOption screenshotOption(
+        QStringLiteral("screenshot"),
+        QObject::tr("Save a window snapshot to <file> and exit (testing aid)."),
+        QObject::tr("file"));
+    QCommandLineOption screenshotDelayOption(
+        QStringLiteral("screenshot-delay"),
+        QObject::tr("Wait <ms> before taking the snapshot."),
+        QObject::tr("ms"), QStringLiteral("2000"));
     QCommandLineOption speedOption(
         QStringLiteral("speed"),
         QObject::tr("Replay speed in percent (0 = as fast as possible)."),
         QObject::tr("percent"), QStringLiteral("100"));
 
     parser.addOptions({interfaceOption, replayOption, filterOption, modeOption,
-                       numericOption, nodeLimitOption, speedOption});
+                       numericOption, nodeLimitOption, speedOption,
+                       finalExportOption, positionOption, screenshotOption,
+                       screenshotDelayOption, exitAfterOption});
     parser.process(app);
 
     etherape::MainWindow window;
@@ -100,7 +122,27 @@ int main(int argc, char *argv[])
             window.setMode(mode);
     }
 
+    if (parser.isSet(finalExportOption))
+        window.setFinalExport(parser.value(finalExportOption));
+
     window.show();
+
+    if (parser.isSet(positionOption))
+        window.loadLayoutFile(parser.value(positionOption));
+
+    if (parser.isSet(exitAfterOption)) {
+        const int delay = parser.value(exitAfterOption).toInt();
+        QTimer::singleShot(delay, &window, &QWidget::close);
+    }
+
+    if (parser.isSet(screenshotOption)) {
+        const QString path = parser.value(screenshotOption);
+        const int delay = parser.value(screenshotDelayOption).toInt();
+        QTimer::singleShot(delay, &window, [&window, path] {
+            window.grab().save(path);
+            window.close();
+        });
+    }
 
     if (parser.isSet(replayOption)) {
         const QString file = parser.value(replayOption);

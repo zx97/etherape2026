@@ -34,6 +34,9 @@ struct PacketInfo
     Endpoint dst;
     quint16 sport = 0;
     quint16 dport = 0;
+    // Passive NetBIOS name service hint (UDP/137 responses only).
+    QString nbName;
+    QString nbIp;
 };
 
 // Decodes link-layer frames into PacketInfo records. The link type follows the

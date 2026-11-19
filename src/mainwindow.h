@@ -20,6 +20,7 @@ class QTimer;
 namespace etherape {
 
 class CaptureWorker;
+class ConversationsDialog;
 class GraphModel;
 class GraphView;
 class StatsPanel;
@@ -38,6 +39,8 @@ public:
     void setFilter(const QString &filter);
     void startLiveCapture(const QString &device);
     void startReplay(const QString &file, int speedPercent);
+    void setFinalExport(const QString &path);
+    void loadLayoutFile(const QString &path);
 
 protected:
     void closeEvent(QCloseEvent *event) override;
@@ -55,6 +58,10 @@ private slots:
     void onCounters(quint64 packets, quint64 bytes);
     void refreshView();
     void showAbout();
+    void exportXml();
+    void saveLayoutAs();
+    void openLayout();
+    void showConversations();
 
 private:
     void buildUi();
@@ -76,6 +83,7 @@ private:
     QAction *m_startAction = nullptr;
     QAction *m_stopAction = nullptr;
     QAction *m_numericAction = nullptr;
+    QAction *m_legendAction = nullptr;
     QLabel *m_sourceLabel = nullptr;
     QLabel *m_countersLabel = nullptr;
     QLabel *m_graphLabel = nullptr;
@@ -97,6 +105,9 @@ private:
     quint64 m_packets = 0;
     quint64 m_bytes = 0;
     QString m_sourceText;
+
+    ConversationsDialog *m_conversations = nullptr;
+    QString m_finalExportPath;
 
     QHash<QString, QString> m_nameCache;
     QSet<QString> m_pendingNames;

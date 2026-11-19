@@ -20,8 +20,12 @@ bibliothèques vivantes et largement packagées sont utilisées.
 | Graphe animé, layout force-directed, zoom/pan, sélection | ✅ |
 | Panneau statistiques (nœuds / liens / protocoles) | ✅ |
 | Résolution DNS inverse asynchrone (optionnelle) | ✅ |
+| NetBIOS passif (réponses NBNS UDP/137) | ✅ |
+| Légende dynamique des protocoles | ✅ |
+| Export XML (menu, `--final-export`) | ✅ |
+| Conversations détaillées par lien | ✅ |
+| Positionnement manuel (drag/pin, JSON, `--position`) | ✅ |
 | Préférences persistantes (QSettings) | ✅ |
-| Export XML, NetBIOS, conversations détaillées | ⬜ (non porté) |
 
 ## Compilation
 
@@ -58,6 +62,8 @@ etherape2026                        # interface par défaut, mode IP
 etherape2026 -i any -f "tcp port 443"
 etherape2026 -r capture.pcap --speed 200
 etherape2026 -i eth0 -m tcp -n --node-limit 500
+etherape2026 -r capture.pcap --final-export session.xml
+etherape2026 -i eth0 --position layout.json
 ```
 
 | Option | Description |
@@ -69,6 +75,8 @@ etherape2026 -i eth0 -m tcp -n --node-limit 500
 | `-n, --numeric` | pas de résolution DNS |
 | `--node-limit <n>` | nombre max de nœuds affichés |
 | `--speed <pct>` | vitesse de replay (0 = maximum) |
+| `--final-export <file>` | exporte le graphe en XML à la fin du replay |
+| `--position <file>` | charge une disposition de nœuds (JSON) |
 
 ## Architecture
 
@@ -93,6 +101,40 @@ flowchart LR
   donc pas de coût par item et un rendu trivialement maîtrisé.
 
 Voir [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) pour le détail.
+
+## Windows
+
+La capture passe par **Npcap** (successeur de WinPcap). Prérequis :
+
+1. [Npcap](https://npcap.com/) installé sur la machine (avec l'option
+   « WinPcap API-compatible Mode » si tu veux aussi d'anciens outils).
+2. **Npcap SDK** décompressé, par exemple `C:\dev\npcap`.
+3. MSYS2 **UCRT64** avec GCC, Qt 6, CMake et Ninja :
+
+```bash
+pacman -S --needed mingw-w64-ucrt-x86_64-gcc \
+    mingw-w64-ucrt-x86_64-qt6-base mingw-w64-ucrt-x86_64-cmake \
+    mingw-w64-ucrt-x86_64-ninja mingw-w64-ucrt-x86_64-pkgconf
+```
+
+Build :
+
+```bash
+export MSYSTEM=UCRT64
+export PATH=/ucrt64/bin:$PATH
+cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release \
+      -DNPCAP_SDK_DIR=C:/dev/npcap
+cmake --build build -j8
+cmake --build build --target deploy   # windeployqt : DLLs Qt à côté de l'exe
+```
+
+Sous Windows, la capture exige les droits administrateur : l'application
+propose de se relancer via l'invite **UAC** (`ShellExecuteEx` + `runas`).
+Il n'y a pas d'équivalent `pkexec` ni de helper séparé ; le binaire reste
+mono-processus.
+
+`-DETH_WINDOWS_GUI=ON` produit un exécutable fenêtré (sans console) ; par
+défaut la console reste visible pour diagnostiquer les erreurs de démarrage.
 
 ## Licence
 

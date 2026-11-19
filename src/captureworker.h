@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 //
 // libpcap capture worker. Runs in its own thread; supports live capture
-// (direct or through the pkexec helper), offline replay and the pcap stream
-// produced by the privileged helper.
+// (direct, or through the pkexec helper on POSIX), offline replay and the pcap
+// stream produced by the privileged helper.
 
 #pragma once
 
@@ -16,7 +16,6 @@
 #include <atomic>
 
 #include <pcap.h>
-#include <sys/types.h>
 
 namespace etherape {
 
@@ -56,7 +55,7 @@ private:
                          const u_char *bytes);
 
     std::atomic<pcap_t *> m_handle{nullptr};
-    std::atomic<pid_t> m_childPid{-1};
+    std::atomic<qint64> m_childPid{-1};
     Decoder m_decoder;
     QList<PacketInfo> m_batch;
     quint64 m_packets = 0;

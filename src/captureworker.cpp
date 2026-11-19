@@ -6,16 +6,16 @@
 #include <QElapsedTimer>
 #include <QThread>
 
-#include <arpa/inet.h>
-#include <errno.h>
+#include <algorithm>
+#include <cerrno>
+#include <cstring>
+
+#ifndef Q_OS_WIN
 #include <poll.h>
 #include <signal.h>
-#include <sys/time.h>
 #include <sys/wait.h>
 #include <unistd.h>
-
-#include <algorithm>
-#include <cstring>
+#endif
 
 namespace etherape {
 
@@ -29,7 +29,10 @@ inline quint32 readU32(const uchar *p, bool swapped)
     const quint32 value = static_cast<quint32>(p[0])
         | (static_cast<quint32>(p[1]) << 8) | (static_cast<quint32>(p[2]) << 16)
         | (static_cast<quint32>(p[3]) << 24);
-    return swapped ? __builtin_bswap32(value) : value;
+    if (!swapped)
+        return value;
+    return (value >> 24) | ((value >> 8) & 0x0000ff00u)
+        | ((value << 8) & 0x00ff0000u) | (value << 24);
 }
 } // namespace
 
@@ -66,12 +69,14 @@ void CaptureWorker::requestStop()
     if (pcap_t *handle = m_handle.load(std::memory_order_relaxed))
         pcap_breakloop(handle);  // documented as safe from another thread
 
-    const pid_t pid = m_childPid.load(std::memory_order_relaxed);
+#ifndef Q_OS_WIN
+    const qint64 pid = m_childPid.load(std::memory_order_relaxed);
     if (pid > 0) {
         // The child created its own process group (see openPrivileged), so a
         // negative pid terminates pkexec and the helper together.
-        ::kill(-pid, SIGTERM);
+        ::kill(-static_cast<pid_t>(pid), SIGTERM);
     }
+#endif
 }
 
 pcap_t *CaptureWorker::openWithFilter(const QString &source,
@@ -168,6 +173,8 @@ void CaptureWorker::openLive(const QString &device, const QString &filter,
         if (activateRc == PCAP_ERROR_PERM_DENIED
             || error.contains(QLatin1String("permission"), Qt::CaseInsensitive)
             || error.contains(QLatin1String("not permitted"),
+                              Qt::CaseInsensitive)
+            || error.contains(QLatin1String("Access is denied"),
                               Qt::CaseInsensitive)) {
             emit permissionDenied(device, error);
         } else {
@@ -207,6 +214,11 @@ void CaptureWorker::openOffline(const QString &file, const QString &filter,
 void CaptureWorker::openPrivileged(const QString &device,
                                    const QString &filter, int mode)
 {
+#ifdef Q_OS_WIN
+    // Windows has no pkexec; the GUI relaunches itself elevated through UAC
+    // (see MainWindow::onPermissionDenied). Just capture directly here.
+    openLive(device, filter, mode);
+#else
     m_stop.store(false, std::memory_order_relaxed);
     m_decoder.setMode(static_cast<Mode>(mode));
 
@@ -235,7 +247,6 @@ void CaptureWorker::openPrivileged(const QString &device,
     }
 
     if (pid == 0) {
-        // Child: own process group so the GUI can kill pkexec + helper at once.
         ::setpgid(0, 0);
         ::dup2(outPipe[1], STDOUT_FILENO);
         ::dup2(errPipe[1], STDERR_FILENO);
@@ -274,10 +285,15 @@ void CaptureWorker::openPrivileged(const QString &device,
     flush();
     emit counters(m_packets, m_bytes);
     emit captureStopped();
+#endif
 }
 
 void CaptureWorker::readPcapStream(int outFd, int errFd)
 {
+#ifdef Q_OS_WIN
+    Q_UNUSED(outFd);
+    Q_UNUSED(errFd);
+#else
     QByteArray buffer;
     QByteArray errors;
     bool headerDone = false;
@@ -357,8 +373,8 @@ void CaptureWorker::readPcapStream(int outFd, int errFd)
 
             const qint64 tsUsecTotal =
                 static_cast<qint64>(tsSec) * 1000000 + tsUsec;
-            m_batch.append(m_decoder.decode(
-                record + 16, caplen, origlen, tsUsecTotal));
+            m_batch.append(m_decoder.decode(record + 16, caplen, origlen,
+                                            tsUsecTotal));
             m_packets += 1;
             m_bytes += origlen;
             buffer.remove(0, static_cast<int>(16 + caplen));
@@ -368,45 +384,49 @@ void CaptureWorker::readPcapStream(int outFd, int errFd)
         }
     }
 
-    if (!headerDone && !errors.isEmpty() && !m_stop.load()) {
+    if (!headerDone && !errors.isEmpty() && !m_stop.load())
         emit errorOccurred(QString::fromLocal8Bit(errors).trimmed());
-    }
+#endif
 }
 
 void CaptureWorker::run(pcap_t *handle, bool offline, int speedPercent)
 {
     m_handle.store(handle, std::memory_order_relaxed);
-
-    char errbuf[PCAP_ERRBUF_SIZE] = {0};
-    pcap_setnonblock(handle, 1, errbuf);
-
     m_firstTsUsec = -1;
     m_lastTsUsec = -1;
 
-    const int fd = pcap_get_selectable_fd(handle);
     QElapsedTimer wall;
     wall.start();
     int batches = 0;
+    bool first = true;
 
     while (!m_stop.load(std::memory_order_relaxed)) {
-        if (fd >= 0 && !offline) {
-            struct pollfd pfd = {fd, POLLIN, 0};
-            ::poll(&pfd, 1, 100);
+        struct pcap_pkthdr *header = nullptr;
+        const u_char *data = nullptr;
+        const int rc = pcap_next_ex(handle, &header, &data);
+
+        if (rc == 0) {
+            // Live capture read timeout: nothing to do.
+            continue;
         }
-
-        const int rc = pcap_dispatch(handle, 64, &CaptureWorker::onPacket,
-                                     reinterpret_cast<u_char *>(this));
-        flush();
-
-        if (rc == -2)  // EOF on a savefile
-            break;
+        if (rc == -2) {
+            // EOF on a savefile, or breakloop on a live handle.
+            if (offline)
+                break;
+            continue;
+        }
         if (rc == -1) {
             emit errorOccurred(QString::fromLocal8Bit(pcap_geterr(handle)));
             break;
         }
 
-        if (rc == 0 && !offline)
-            continue;
+        if (first) {
+            first = false;
+            m_firstTsUsec = static_cast<qint64>(header->ts.tv_sec) * 1000000
+                + header->ts.tv_usec;
+        }
+        onPacket(reinterpret_cast<u_char *>(this), header, data);
+        flush();
 
         ++batches;
         if (batches % 16 == 0)
@@ -421,8 +441,8 @@ void CaptureWorker::run(pcap_t *handle, bool offline, int speedPercent)
                     mediaUsec - wall.nsecsElapsed() / 1000, 0, kMaxSleepUsec);
                 if (sleepUsec > 0)
                     QThread::usleep(static_cast<unsigned long>(sleepUsec));
-            } else if (speedPercent <= 0 && batches % 32 == 0) {
-                QThread::usleep(1000);  // unbounded speed: yield to the GUI
+            } else if (speedPercent <= 0 && batches % 64 == 0) {
+                QThread::usleep(500);  // unbounded speed: yield to the GUI
             }
         }
     }

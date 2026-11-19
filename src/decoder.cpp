@@ -2,8 +2,11 @@
 
 #include "decoder.h"
 
-#include <arpa/inet.h>
-#include <netinet/in.h>
+#include "netbios.h"
+
+#include <QHostAddress>
+
+#include <algorithm>
 
 namespace etherape {
 
@@ -29,16 +32,18 @@ inline quint16 rd16(const uchar *p)
 
 QString ipv4ToString(const uchar *p)
 {
-    char buf[INET_ADDRSTRLEN] = {0};
-    inet_ntop(AF_INET, p, buf, sizeof(buf));
-    return QString::fromLatin1(buf);
+    QHostAddress address;
+    address.setAddress(static_cast<quint32>(p[0]) << 24
+                       | static_cast<quint32>(p[1]) << 16
+                       | static_cast<quint32>(p[2]) << 8
+                       | static_cast<quint32>(p[3]));
+    return address.toString();
 }
 
 QString ipv6ToString(const uchar *p)
 {
-    char buf[INET6_ADDRSTRLEN] = {0};
-    inet_ntop(AF_INET6, p, buf, sizeof(buf));
-    return QString::fromLatin1(buf);
+    QHostAddress address(p);
+    return address.toString();
 }
 
 QString portLabel(const QString &addr, quint16 port)
@@ -199,6 +204,19 @@ PacketInfo Decoder::decode(const uchar *data, quint32 caplen, quint32 origlen,
                 pkt.dst = {portLabel(dst, pkt.dport), portLabel(dst, pkt.dport),
                            NodeKind::Port};
             }
+            if (proto == 17 && (pkt.sport == 137 || pkt.dport == 137)
+                && caplen >= l4 + 8) {
+                const quint32 udpLength = rd16(data + l4 + 4);
+                const quint32 available = caplen - (l4 + 8);
+                const quint32 payloadLength =
+                    (udpLength >= 8) ? std::min(udpLength - 8, available)
+                                     : available;
+                if (auto nb =
+                        parseNetbiosResponse(data + l4 + 8, payloadLength)) {
+                    pkt.nbName = nb->name;
+                    pkt.nbIp = nb->ip;
+                }
+            }
         }
         return pkt;
     }
@@ -246,6 +264,19 @@ PacketInfo Decoder::decode(const uchar *data, quint32 caplen, quint32 origlen,
                            NodeKind::Port};
                 pkt.dst = {portLabel(dst, pkt.dport), portLabel(dst, pkt.dport),
                            NodeKind::Port};
+            }
+            if (next == 17 && (pkt.sport == 137 || pkt.dport == 137)
+                && caplen >= l4 + 8) {
+                const quint32 udpLength = rd16(data + l4 + 4);
+                const quint32 available = caplen - (l4 + 8);
+                const quint32 payloadLength =
+                    (udpLength >= 8) ? std::min(udpLength - 8, available)
+                                     : available;
+                if (auto nb =
+                        parseNetbiosResponse(data + l4 + 8, payloadLength)) {
+                    pkt.nbName = nb->name;
+                    pkt.nbIp = nb->ip;
+                }
             }
         }
         return pkt;

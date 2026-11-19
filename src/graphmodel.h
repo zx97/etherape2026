@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 //
-// Traffic graph: nodes, directed-merged links, protocol counters and a small
-// force-directed layout living in the [0,1] x [0,1] normalized space.
+// Traffic graph: nodes, merged links with per-direction counters, protocol
+// statistics and a small force-directed layout in the [0,1] x [0,1] space.
+// Nodes can be pinned by hand and the layout saved/restored as JSON.
 
 #pragma once
 
@@ -30,17 +31,24 @@ public:
         double vy = 0.0;
         quint64 bytes = 0;
         quint64 packets = 0;
+        qint64 firstSeenMs = 0;
         qint64 lastSeenMs = 0;
+        bool pinned = false;      ///< manually placed, ignored by the layout
     };
 
     struct Link
     {
-        int a = -1;
+        int a = -1;               ///< index of the first node (arbitrary side)
         int b = -1;
         QString protocol;
-        quint64 bytes = 0;
         quint64 packets = 0;
-        double intensity = 0.0;       ///< 0..1, decays over time
+        quint64 bytes = 0;
+        quint64 packetsAB = 0;    ///< packets from a to b
+        quint64 bytesAB = 0;
+        quint64 packetsBA = 0;    ///< packets from b to a
+        quint64 bytesBA = 0;
+        double intensity = 0.0;   ///< 0..1, decays over time
+        qint64 firstSeenMs = 0;
         qint64 lastSeenMs = 0;
     };
 
@@ -67,8 +75,14 @@ public:
 
     quint64 totalPackets() const { return m_totalPackets; }
     quint64 totalBytes() const { return m_totalBytes; }
+    qint64 startedAtMs() const { return m_startedAtMs; }
 
     void setLabel(const QString &id, const QString &label);
+    void setNodePosition(const QString &id, double x, double y);
+    void pinNode(const QString &id, bool pinned = true);
+
+    bool saveLayout(const QString &path, QString *error = nullptr) const;
+    bool loadLayout(const QString &path, QString *error = nullptr);
 
 signals:
     void structureChanged();
@@ -88,6 +102,7 @@ private:
 
     quint64 m_totalPackets = 0;
     quint64 m_totalBytes = 0;
+    qint64 m_startedAtMs = 0;
     int m_nodeLimit = 300;
     double m_decaySeconds = 4.0;
 };

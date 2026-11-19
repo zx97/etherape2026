@@ -2,9 +2,13 @@
 
 #include "statspanel.h"
 
+#include "formatting.h"
 #include "graphmodel.h"
 
 #include <QHeaderView>
+#include <QIcon>
+#include <QPainter>
+#include <QPixmap>
 #include <QStandardItemModel>
 #include <QTabWidget>
 #include <QTreeView>
@@ -16,18 +20,17 @@ namespace etherape {
 
 namespace {
 
-QString humanBytes(quint64 bytes)
+QIcon colorDot(const QColor &color)
 {
-    static const char *units[] = {"B", "KB", "MB", "GB", "TB"};
-    double value = static_cast<double>(bytes);
-    int unit = 0;
-    while (value >= 1024.0 && unit < 4) {
-        value /= 1024.0;
-        ++unit;
-    }
-    return QStringLiteral("%1 %2")
-        .arg(value, 0, 'f', unit == 0 ? 0 : 1)
-        .arg(QLatin1String(units[unit]));
+    QPixmap pixmap(12, 12);
+    pixmap.fill(Qt::transparent);
+    QPainter painter(&pixmap);
+    painter.setRenderHint(QPainter::Antialiasing, true);
+    painter.setPen(Qt::NoPen);
+    painter.setBrush(color);
+    painter.drawEllipse(1, 1, 10, 10);
+    painter.end();
+    return QIcon(pixmap);
 }
 
 QStandardItem *numberItem(quint64 value)
@@ -128,8 +131,9 @@ void StatsPanel::refresh(const GraphModel &model)
     });
     for (const QString &name : std::as_const(names)) {
         const auto &stat = protocols.value(name);
-        m_protocolsModel->appendRow({new QStandardItem(name),
-                                     numberItem(stat.packets),
+        auto *protocolItem = new QStandardItem(colorDot(protocolColor(name)),
+                                               name);
+        m_protocolsModel->appendRow({protocolItem, numberItem(stat.packets),
                                      new QStandardItem(humanBytes(stat.bytes))});
     }
 }

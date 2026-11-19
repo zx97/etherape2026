@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 //
 // Custom-painted traffic graph. QPainter gives us full control over the
-// EtherApe look (animated link thickness/colour, node labels, zoom/pan) with
-// far less code than a scene graph and no per-item overhead.
+// EtherApe look (animated link thickness/colour, node labels, zoom/pan, node
+// dragging) with far less code than a scene graph and no per-item overhead.
 
 #pragma once
 
@@ -28,11 +28,17 @@ public:
     void setFontScale(double scale);
     double fontScale() const { return m_fontScale; }
     void setNodeLimitHint(int limit);
+
+    void setLegendVisible(bool visible);
+    bool legendVisible() const { return m_showLegend; }
+
+    void selectNode(const QString &id);
     void resetView();
 
 signals:
     void nodeClicked(const QString &id);
     void nodeHovered(const QString &id);
+    void layoutChanged();
 
 protected:
     void paintEvent(QPaintEvent *event) override;
@@ -44,9 +50,10 @@ protected:
 
 private:
     QPointF toScreen(double nx, double ny) const;
+    QPointF toNormalized(const QPointF &pos) const;
     int nodeAt(const QPointF &pos) const;
-    static QColor protocolColor(const QString &protocol);
     void rebuildScreenPositions();
+    void drawLegend(QPainter &painter, const QFont &baseFont);
 
     GraphModel *m_model = nullptr;
     QTimer m_timer;
@@ -58,8 +65,10 @@ private:
     double m_zoom = 1.0;
     QPointF m_pan;
     double m_fontScale = 1.0;
+    bool m_showLegend = true;
     int m_hover = -1;
     QString m_selected;
+    int m_dragNode = -1;
     bool m_dragging = false;
     QPointF m_dragStart;
     QPointF m_panStart;

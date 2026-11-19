@@ -8,21 +8,51 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 
 find_package(Qt6 6.5 REQUIRED COMPONENTS Core Gui Widgets Network)
-
-# Build-only dependency prefix: when the system ships libpcap without its
-# development headers, a private prefix extracted from the distribution RPMs
-# keeps the build reproducible (see README, "Compilation").
-if(NOT DEFINED ENV{PKG_CONFIG_PATH}
-   AND EXISTS "$ENV{HOME}/.local/etherape-deps/usr/lib64/pkgconfig/libpcap.pc")
-    set(ENV{PKG_CONFIG_PATH}
-        "$ENV{HOME}/.local/etherape-deps/usr/lib64/pkgconfig")
-endif()
-
-find_package(PkgConfig REQUIRED)
-pkg_check_modules(PCAP REQUIRED IMPORTED_TARGET libpcap)
 find_package(Threads REQUIRED)
 
 qt_standard_project_setup()
+
+# ---------------------------------------------------------------------------
+# libpcap: pkg-config on POSIX, Npcap SDK on Windows.
+# ---------------------------------------------------------------------------
+if(WIN32)
+    set(NPCAP_SDK_DIR "$ENV{NPCAP_SDK_DIR}" CACHE PATH "Npcap SDK root")
+    if(NOT NPCAP_SDK_DIR)
+        set(NPCAP_SDK_DIR "C:/npcap-sdk")
+    endif()
+
+    find_path(PCAP_INCLUDE_DIR pcap.h HINTS "${NPCAP_SDK_DIR}/Include")
+    find_library(PCAP_LIBRARY NAMES wpcap HINTS "${NPCAP_SDK_DIR}/Lib/x64")
+    find_library(PACKET_LIBRARY NAMES Packet HINTS "${NPCAP_SDK_DIR}/Lib/x64")
+
+    if(NOT PCAP_INCLUDE_DIR OR NOT PCAP_LIBRARY)
+        message(FATAL_ERROR
+            "Npcap SDK not found. Download it from https://npcap.com/dist/ "
+            "and point NPCAP_SDK_DIR at the extracted folder, e.g.\n"
+            "  cmake -S . -B build -DNPCAP_SDK_DIR=C:/npcap-sdk")
+    endif()
+
+    add_library(pcap INTERFACE)
+    target_include_directories(pcap INTERFACE "${PCAP_INCLUDE_DIR}")
+    target_link_libraries(pcap INTERFACE "${PCAP_LIBRARY}")
+    if(PACKET_LIBRARY)
+        target_link_libraries(pcap INTERFACE "${PACKET_LIBRARY}")
+    endif()
+    target_link_libraries(pcap INTERFACE ws2_32)
+    set(PCAP_TARGET pcap)
+else()
+    find_package(PkgConfig REQUIRED)
+    # Build-only dependency prefix: when the system ships libpcap without its
+    # development headers, a private prefix extracted from the distribution
+    # RPMs keeps the build reproducible (see README, "Compilation").
+    if(NOT DEFINED ENV{PKG_CONFIG_PATH}
+       AND EXISTS "$ENV{HOME}/.local/etherape-deps/usr/lib64/pkgconfig/libpcap.pc")
+        set(ENV{PKG_CONFIG_PATH}
+            "$ENV{HOME}/.local/etherape-deps/usr/lib64/pkgconfig")
+    endif()
+    pkg_check_modules(PCAP REQUIRED IMPORTED_TARGET libpcap)
+    set(PCAP_TARGET PkgConfig::PCAP)
+endif()
 
 add_executable(etherape2026
     src/main.cpp
@@ -34,6 +64,12 @@ add_executable(etherape2026
     src/capturehelper.h
     src/decoder.cpp
     src/decoder.h
+    src/netbios.cpp
+    src/netbios.h
+    src/xmlexport.cpp
+    src/xmlexport.h
+    src/conversationsdialog.cpp
+    src/conversationsdialog.h
     src/graphmodel.cpp
     src/graphmodel.h
     src/graphview.cpp
@@ -47,13 +83,37 @@ add_executable(etherape2026
 target_link_libraries(etherape2026 PRIVATE
     Qt6::Widgets
     Qt6::Network
-    PkgConfig::PCAP
+    ${PCAP_TARGET}
     Threads::Threads
 )
 
-target_compile_options(etherape2026 PRIVATE -Wall -Wextra)
+if(MSVC)
+    target_compile_options(etherape2026 PRIVATE /W3 /utf-8)
+else()
+    target_compile_options(etherape2026 PRIVATE -Wall -Wextra)
+endif()
+
 target_compile_definitions(etherape2026 PRIVATE APP_VERSION="${PROJECT_VERSION}")
+
+# Console subsystem on Windows keeps startup errors visible; set
+# -DETH_WINDOWS_GUI=ON for a windowed build.
+option(ETH_WINDOWS_GUI "Build a windowed (no console) executable on Windows" OFF)
+if(WIN32 AND ETH_WINDOWS_GUI)
+    set_target_properties(etherape2026 PROPERTIES WIN32_EXECUTABLE TRUE)
+endif()
 
 install(TARGETS etherape2026 RUNTIME DESTINATION bin)
 install(FILES data/etherape2026.desktop DESTINATION share/applications)
 install(FILES data/etherape.png DESTINATION share/pixmaps RENAME etherape2026.png)
+
+# Windows deployment helper: windeployqt copies the Qt runtime next to the exe.
+if(WIN32)
+    find_program(WINDEPLOYQT_EXE windeployqt HINTS "${QT6_INSTALL_PREFIX}/bin")
+    if(WINDEPLOYQT_EXE)
+        add_custom_target(deploy
+            COMMAND "${WINDEPLOYQT_EXE}" --no-translations
+                    "$<TARGET_FILE:etherape2026>"
+            DEPENDS etherape2026
+            COMMENT "Deploying Qt runtime with windeployqt")
+    endif()
+endif()
