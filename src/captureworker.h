@@ -56,16 +56,20 @@ private:
     bool sendCommand(unsigned type, const QByteArray &payload);
     bool waitForOpenStatus(QString *detail);
     void closeHelper();
+    void closeClient();
+    void closeServer();
     void flush();
     static void onPacket(u_char *user, const struct pcap_pkthdr *header,
                          const u_char *bytes);
 
     std::atomic<pcap_t *> m_handle{nullptr};
     std::atomic<qint64> m_childPid{-1};
+    int m_serverFd = -1;
     int m_ctlFd = -1;
     int m_dataFd = -1;
     QMutex m_ctlMutex;
     QString m_helperLogPath;
+    QString m_socketPath;
     int m_streamPrefix = -1;
     Decoder m_decoder;
     QList<PacketInfo> m_batch;

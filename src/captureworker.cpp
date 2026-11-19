@@ -217,159 +217,155 @@ void CaptureWorker::openOffline(const QString &file, const QString &filter,
     run(handle, true, speedPercent);
 }
 
+void CaptureWorker::closeClient()
+{
+#ifndef Q_OS_WIN
+    QMutexLocker lock(&m_ctlMutex);
+    if (m_dataFd >= 0)
+        ::close(m_dataFd);
+    if (m_ctlFd >= 0 && m_ctlFd != m_dataFd)
+        ::close(m_ctlFd);
+    m_ctlFd = -1;
+    m_dataFd = -1;
+#endif
+}
+
+void CaptureWorker::closeServer()
+{
+#ifndef Q_OS_WIN
+    if (m_serverFd >= 0) {
+        ::close(m_serverFd);
+        m_serverFd = -1;
+    }
+    if (!m_socketPath.isEmpty()) {
+        ::unlink(m_socketPath.toLocal8Bit().constData());
+        m_socketPath.clear();
+    }
+#endif
+}
+
 bool CaptureWorker::ensureHelper()
 {
 #ifdef Q_OS_WIN
     return false;
 #else
+    const bool debug = qEnvironmentVariableIsSet("ETHERAPE_DEBUG");
+    const bool direct = qEnvironmentVariableIsSet("ETHERAPE_HELPER_DIRECT");
+
+    // A helper that died must not be reused: tear the session down.
     const qint64 existing = m_childPid.load(std::memory_order_relaxed);
     if (existing > 0) {
         int status = 0;
-        const pid_t reaped = ::waitpid(static_cast<pid_t>(existing), &status, WNOHANG);
-        if (qEnvironmentVariableIsSet("ETHERAPE_DEBUG"))
-            std::fprintf(stderr, "[etherape] ensureHelper existing=%lld reap=%d errno=%d\n",
-                         static_cast<long long>(existing), int(reaped), errno);
-        if (reaped == 0)
-            return true;  // helper still alive: reuse the authenticated session
-        // Helper died (killed, session ended): forget it and start over.
-        m_childPid.store(-1, std::memory_order_relaxed);
-        if (qEnvironmentVariableIsSet("ETHERAPE_DEBUG"))
-            std::fprintf(stderr, "[etherape] helper died, respawning\n");
-        QMutexLocker lock(&m_ctlMutex);
-        if (m_dataFd >= 0)
-            ::close(m_dataFd);
-        if (m_ctlFd >= 0 && m_ctlFd != m_dataFd)
-            ::close(m_ctlFd);
-        m_ctlFd = -1;
-        m_dataFd = -1;
-    }
-
-    // fd 0 and 1 are the only descriptors a setuid program (pkexec) is
-    // guaranteed to preserve, so commands go to stdin and data comes back on
-    // stdout.
-    m_helperLogPath = QStringLiteral("/dev/shm/etherape2026-helper-%1.log")
-                          .arg(QCoreApplication::applicationPid());
-    const int logFd = ::open(m_helperLogPath.toLocal8Bit().constData(),
-                             O_CREAT | O_WRONLY | O_TRUNC, 0600);
-
-    ::signal(SIGPIPE, SIG_IGN);
-
-    // A named UNIX socket, because a setuid pkexec may close every inherited
-    // descriptor and even redirect stdin. The path is passed as an argument.
-    QString runtimeDir =
-        QStandardPaths::writableLocation(QStandardPaths::RuntimeLocation);
-    if (runtimeDir.isEmpty())
-        runtimeDir = QStringLiteral("/dev/shm");
-    const QString socketPath =
-        QStringLiteral("%1/etherape2026-%2.sock")
-            .arg(runtimeDir)
-            .arg(QCoreApplication::applicationPid());
-    const QByteArray socketPathBytes = socketPath.toLocal8Bit();
-    ::unlink(socketPathBytes.constData());
-
-    const int server = ::socket(AF_UNIX, SOCK_STREAM, 0);
-    if (server < 0) {
-        if (logFd >= 0)
-            ::close(logFd);
-        return false;
-    }
-    struct sockaddr_un address = {};
-    address.sun_family = AF_UNIX;
-    std::snprintf(address.sun_path, sizeof(address.sun_path), "%s",
-                  socketPathBytes.constData());
-    if (::bind(server,
-               reinterpret_cast<struct sockaddr *>(&address),
-               sizeof(address)) != 0
-        || ::chmod(socketPathBytes.constData(), 0600) != 0
-        || ::listen(server, 1) != 0) {
-        ::close(server);
-        if (logFd >= 0)
-            ::close(logFd);
-        return false;
-    }
-
-    const QByteArray exe =
-        QCoreApplication::applicationFilePath().toLocal8Bit();
-    const bool debug = qEnvironmentVariableIsSet("ETHERAPE_DEBUG");
-    const bool direct = qEnvironmentVariableIsSet("ETHERAPE_HELPER_DIRECT");
-    const pid_t pid = ::fork();
-    if (pid == 0) {
-        ::setpgid(0, 0);
-        if (logFd >= 0)
-            ::dup2(logFd, STDERR_FILENO);
-        if (debug)  // read before fork(): getenv is not async-signal-safe
-            ::write(STDERR_FILENO, "[etherape] child: exec now\n", 28);
-        if (direct) {
+        if (::waitpid(static_cast<pid_t>(existing), &status, WNOHANG) != 0) {
             if (debug)
-                ::execl(exe.constData(), exe.constData(), "--capture-helper",
-                        "--socket", socketPathBytes.constData(), "--debug",
-                        static_cast<char *>(nullptr));
-            else
-                ::execl(exe.constData(), exe.constData(), "--capture-helper",
-                        "--socket", socketPathBytes.constData(),
-                        static_cast<char *>(nullptr));
-        } else {
-            if (debug)
-                ::execlp("pkexec", "pkexec", exe.constData(),
-                         "--capture-helper", "--socket",
-                         socketPathBytes.constData(), "--debug",
-                         static_cast<char *>(nullptr));
-            else
-                ::execlp("pkexec", "pkexec", exe.constData(),
-                         "--capture-helper", "--socket",
-                         socketPathBytes.constData(),
-                         static_cast<char *>(nullptr));
+                std::fprintf(stderr, "[etherape] helper died, respawning\n");
+            closeClient();
+            closeServer();
+            m_childPid.store(-1, std::memory_order_relaxed);
         }
-        const char failure[] = "[etherape] child: exec failed\n";
-        ::write(STDERR_FILENO, failure, sizeof(failure) - 1);
-        _exit(127);
     }
 
-    if (logFd >= 0)
-        ::close(logFd);
-    if (pid < 0) {
-        ::close(server);
-        ::unlink(socketPathBytes.constData());
-        return false;
+    if (m_serverFd < 0) {
+        QString runtimeDir = QStandardPaths::writableLocation(
+            QStandardPaths::RuntimeLocation);
+        if (runtimeDir.isEmpty())
+            runtimeDir = QStringLiteral("/dev/shm");
+        m_socketPath = QStringLiteral("%1/etherape2026-%2.sock")
+                           .arg(runtimeDir)
+                           .arg(QCoreApplication::applicationPid());
+        const QByteArray pathBytes = m_socketPath.toLocal8Bit();
+        ::unlink(pathBytes.constData());
+
+        const int server = ::socket(AF_UNIX, SOCK_STREAM, 0);
+        if (server < 0)
+            return false;
+        struct sockaddr_un address = {};
+        address.sun_family = AF_UNIX;
+        std::snprintf(address.sun_path, sizeof(address.sun_path), "%s",
+                      pathBytes.constData());
+        if (::bind(server, reinterpret_cast<struct sockaddr *>(&address),
+                   sizeof(address)) != 0
+            || ::chmod(pathBytes.constData(), 0600) != 0
+            || ::listen(server, 1) != 0) {
+            ::close(server);
+            return false;
+        }
+        m_serverFd = server;
+
+        m_helperLogPath = QStringLiteral("/dev/shm/etherape2026-helper-%1.log")
+                              .arg(QCoreApplication::applicationPid());
+        const int logFd = ::open(m_helperLogPath.toLocal8Bit().constData(),
+                                 O_CREAT | O_WRONLY | O_TRUNC, 0600);
+
+        const QByteArray exe =
+            QCoreApplication::applicationFilePath().toLocal8Bit();
+        const pid_t pid = ::fork();
+        if (pid == 0) {
+            ::setpgid(0, 0);
+            if (logFd >= 0)
+                ::dup2(logFd, STDERR_FILENO);
+            if (debug)
+                ::write(STDERR_FILENO, "[etherape] child: exec now\n", 28);
+            if (direct) {
+                if (debug)
+                    ::execl(exe.constData(), exe.constData(),
+                            "--capture-helper", "--socket",
+                            pathBytes.constData(), "--debug",
+                            static_cast<char *>(nullptr));
+                else
+                    ::execl(exe.constData(), exe.constData(),
+                            "--capture-helper", "--socket",
+                            pathBytes.constData(),
+                            static_cast<char *>(nullptr));
+            } else {
+                if (debug)
+                    ::execlp("pkexec", "pkexec", exe.constData(),
+                             "--capture-helper", "--socket",
+                             pathBytes.constData(), "--debug",
+                             static_cast<char *>(nullptr));
+                else
+                    ::execlp("pkexec", "pkexec", exe.constData(),
+                             "--capture-helper", "--socket",
+                             pathBytes.constData(),
+                             static_cast<char *>(nullptr));
+            }
+            const char failure[] = "[etherape] child: exec failed\n";
+            ::write(STDERR_FILENO, failure, sizeof(failure) - 1);
+            _exit(127);
+        }
+        if (logFd >= 0)
+            ::close(logFd);
+        if (pid < 0) {
+            closeServer();
+            return false;
+        }
+        m_childPid.store(pid, std::memory_order_relaxed);
     }
 
-    // Wait for the helper to connect; this is where pkexec asks the password,
-    // so poll in a loop and stay interruptible.
-    int client = -1;
+    if (m_ctlFd >= 0)
+        return true;  // an accepted connection is already available
+
+    // Wait for the helper to connect. This is where pkexec asks the password,
+    // so poll in a loop and stay responsive to Stop.
     for (;;) {
         if (m_stop.load(std::memory_order_relaxed))
-            break;
-        struct pollfd pfd = {server, POLLIN, 0};
+            return false;
+        struct pollfd pfd = {m_serverFd, POLLIN, 0};
         const int polled = ::poll(&pfd, 1, 200);
         if (polled < 0 && errno != EINTR)
-            break;
+            return false;
         if (polled > 0 && (pfd.revents & POLLIN)) {
-            client = ::accept(server, nullptr, nullptr);
-            break;
+            const int client = ::accept(m_serverFd, nullptr, nullptr);
+            if (client < 0)
+                return false;
+            m_ctlFd = client;
+            m_dataFd = client;
+            if (debug)
+                std::fprintf(stderr, "[etherape] helper connected fd=%d%s\n",
+                             client, direct ? " (direct)" : " (pkexec)");
+            return true;
         }
     }
-    ::close(server);
-    ::unlink(socketPathBytes.constData());
-
-    if (client < 0) {
-        // Authentication refused or cancelled: reap the child so it does not
-        // linger as a zombie.
-        ::kill(pid, SIGTERM);
-        int status = 0;
-        ::waitpid(pid, &status, WNOHANG);
-        if (debug)
-            std::fprintf(stderr, "[etherape] helper never connected\n");
-        return false;
-    }
-
-    // Remember the helper: this is what makes the next Start skip pkexec.
-    m_childPid.store(pid, std::memory_order_relaxed);
-    m_ctlFd = client;    // full-duplex: commands out, status + pcap in
-    m_dataFd = client;
-    if (debug)
-        std::fprintf(stderr, "[etherape] helper connected fd=%d%s\n",
-                     client, direct ? " (direct)" : " (pkexec)");
-    return true;
 #endif
 }
 
@@ -449,8 +445,28 @@ bool CaptureWorker::waitForOpenStatus(QString *detail)
             if (debug)
                 std::fprintf(stderr, "[etherape] OPEN status=%u\n",
                              unsigned(status));
-            if (status == 0)
-                return true;
+            if (status == 0) {
+                // Expect the "ETHP" session marker; skip stray bytes if a
+                // previous session left something behind.
+                QByteArray marker;
+                for (int attempt = 0; attempt < 64; ++attempt) {
+                    unsigned char byte = 0;
+                    if (::read(m_dataFd, &byte, 1) != 1)
+                        return false;
+                    marker.append(static_cast<char>(byte));
+                    if (marker.endsWith(QByteArrayLiteral("ETHP"))) {
+                        if (debug && marker.size() > 4)
+                            std::fprintf(stderr,
+                                         "[etherape] resynced after %d bytes\n",
+                                         marker.size() - 4);
+                        return true;
+                    }
+                }
+                emit errorOccurred(
+                    tr("The capture stream is out of sync (no session "
+                       "marker)."));
+                return false;
+            }
             if (status != 1) {
                 // The stream started before the status byte (older helper):
                 // keep the byte and let the pcap parser see it first.
@@ -496,16 +512,11 @@ void CaptureWorker::closeHelper()
 #ifndef Q_OS_WIN
     if (m_childPid.load(std::memory_order_relaxed) <= 0)
         return;
-    sendCommand(kHelperCmdQuit, QByteArray());
-    QMutexLocker lock(&m_ctlMutex);
-    // Commands and data share the same socket: close it exactly once, or the
-    // second close() hits a descriptor Qt may have reused in between.
-    if (m_dataFd >= 0)
-        ::close(m_dataFd);
-    if (m_ctlFd >= 0 && m_ctlFd != m_dataFd)
-        ::close(m_ctlFd);
-    m_ctlFd = -1;
-    m_dataFd = -1;
+    if (m_ctlFd >= 0)
+        sendCommand(kHelperCmdQuit, QByteArray());
+    closeClient();
+    closeServer();
+    m_childPid.store(-1, std::memory_order_relaxed);
 #endif
 }
 
@@ -579,6 +590,9 @@ void CaptureWorker::openPrivileged(const QString &device,
     m_bytes = 0;
     emit captureStarted(device);
     readPcapStream(m_dataFd, -1);
+    // One connection per session: close it so the next OPEN cannot read
+    // leftover pcap bytes as a status. The helper reconnects by itself.
+    closeClient();
     flush();
     emit counters(m_packets, m_bytes);
     emit captureStopped();
@@ -647,10 +661,23 @@ void CaptureWorker::readPcapStream(int outFd, int errFd)
             case 0x4d3cb2a1:
                 swapped = (magic == 0x4d3cb2a1);
                 break;
-            default:
+            default: {
+                QString hex;
+                for (int i = 0; i < qMin(12, buffer.size()); ++i) {
+                    hex += QStringLiteral("%1 ")
+                               .arg(static_cast<quint8>(buffer.at(i)), 2, 16,
+                                    QLatin1Char('0'));
+                }
+                if (qEnvironmentVariableIsSet("ETHERAPE_DEBUG"))
+                    std::fprintf(stderr,
+                                 "[etherape] bad pcap magic: %s\n",
+                                 hex.toLocal8Bit().constData());
                 emit errorOccurred(
-                    tr("Privileged helper sent an invalid pcap stream."));
+                    tr("Privileged helper sent an invalid pcap stream "
+                       "(first bytes: %1).")
+                        .arg(hex.trimmed()));
                 return;
+            }
             }
             const quint32 linkType = readU32(header + 20, swapped);
             m_decoder.setLinkType(static_cast<int>(linkType));

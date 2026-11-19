@@ -1,4 +1,14 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
+//
+// Privileged capture helper.
+//
+// Started once per GUI session through pkexec, then kept alive: the GUI
+// creates a UNIX socket, passes its path on the command line, and the helper
+// reconnects for every capture session (one connection per session, so no
+// pcap bytes can leak from one session into the next).
+//
+// The password is asked only once, because the helper outlives Stop. No
+// password is ever stored.
 
 #include "capturehelper.h"
 
@@ -20,10 +30,12 @@
 namespace {
 
 using etherape::HelperCommand;
+using etherape::kHelperCmdOpen;
 using etherape::kHelperCmdQuit;
 using etherape::kHelperCmdStop;
 
 constexpr int kSnapLen = 262144;
+const char kSessionMagic[4] = {'E', 'T', 'H', 'P'};
 
 void dumpRecord(u_char *user, const struct pcap_pkthdr *header,
                 const u_char *bytes)
@@ -67,9 +79,10 @@ bool writeExact(int fd, const void *buffer, size_t length)
     return true;
 }
 
-// Runs one capture session until STOP, the GUI closing the pipe, or an error.
-// Command channel is stdin, data channel is stdout; fd 0/1 are the only ones
-// guaranteed to survive pkexec (a setuid program may close everything else).
+// Opens a live capture, applies the filter and streams a pcap file on fd.
+// The first byte sent is the status: 0 = streaming, 1 = failure followed by a
+// length-prefixed error message. The status MUST leave before
+// pcap_dump_fopen(), which writes the 24-byte pcap global header immediately.
 void captureSession(int fd, const char *device, const char *filter)
 {
     unsigned char status = 1;
@@ -85,7 +98,6 @@ void captureSession(int fd, const char *device, const char *filter)
     char errbuf[PCAP_ERRBUF_SIZE] = {0};
     pcap_t *handle = pcap_create(device, errbuf);
     if (!handle) {
-        std::fprintf(stderr, "etherape2026: %s\n", errbuf);
         reportFailure(errbuf);
         return;
     }
@@ -96,29 +108,32 @@ void captureSession(int fd, const char *device, const char *filter)
         char message[512] = {0};
         std::snprintf(message, sizeof(message), "%s", pcap_geterr(handle));
         std::fprintf(stderr, "etherape2026: %s\n", message);
-        pcap_close(handle);
         reportFailure(message);
+        pcap_close(handle);
         return;
     }
     if (filter && *filter) {
         struct bpf_program program;
-        if (pcap_compile(handle, &program, filter, 1, PCAP_NETMASK_UNKNOWN) < 0
+        if (pcap_compile(handle, &program, filter, 1, PCAP_NETMASK_UNKNOWN)
+                < 0
             || pcap_setfilter(handle, &program) < 0) {
             char message[512] = {0};
             std::snprintf(message, sizeof(message), "%s", pcap_geterr(handle));
             std::fprintf(stderr, "etherape2026: %s\n", message);
-            pcap_close(handle);
             reportFailure(message);
+            pcap_close(handle);
             return;
         }
         pcap_freecode(&program);
     }
 
-    // The status byte must leave BEFORE pcap_dump_fopen(), which writes the
-    // 24-byte pcap global header immediately. Otherwise the GUI reads 0xd4
-    // (the first magic byte) instead of the status.
+    if (!writeExact(fd, &status, 1)) {  // 0 = streaming
+        pcap_close(handle);
+        return;
+    }
     status = 0;
-    if (!writeExact(fd, &status, 1)) {
+    // Session marker: lets the GUI resynchronise if anything was misread.
+    if (!writeExact(fd, kSessionMagic, sizeof(kSessionMagic))) {
         pcap_close(handle);
         return;
     }
@@ -162,7 +177,58 @@ void captureSession(int fd, const char *device, const char *filter)
     pcap_close(handle);
 }
 
-#endif  // !_WIN32
+// Serves one connection: OPEN starts a capture, STOP ends it, QUIT exits.
+// Returns true when the helper should terminate.
+bool serveChannel(int fd, bool debug)
+{
+    for (;;) {
+        HelperCommand command{};
+        if (!readExact(fd, &command, sizeof(command))) {
+            if (debug)
+                std::fprintf(stderr, "[helper] peer closed\n");
+            return false;
+        }
+        if (debug)
+            std::fprintf(stderr, "[helper] command type=%u len=%u\n",
+                         command.type, command.length);
+
+        if (command.type == kHelperCmdQuit)
+            return true;
+        if (command.type != kHelperCmdOpen) {
+            if (command.length > 0 && command.length < 65536) {
+                char drain[4096];
+                size_t left = command.length;
+                while (left > 0) {
+                    const size_t chunk =
+                        left < sizeof(drain) ? left : sizeof(drain);
+                    if (!readExact(fd, drain, chunk))
+                        return false;
+                    left -= chunk;
+                }
+            }
+            continue;
+        }
+
+        char payload[65536] = {0};
+        const size_t length =
+            command.length < sizeof(payload) ? command.length
+                                             : sizeof(payload) - 1;
+        if (length > 0 && !readExact(fd, payload, length))
+            return false;
+        payload[length] = '\0';
+
+        const char *dev = payload;
+        const char *flt = payload + std::strlen(payload) + 1;
+        if (dev >= payload + length)
+            dev = "";
+
+        if (debug)
+            std::fprintf(stderr, "[helper] session start dev='%s'\n", dev);
+        captureSession(fd, dev, flt);
+        if (debug)
+            std::fprintf(stderr, "[helper] session end\n");
+    }
+}
 
 const char *valueAfter(int &index, int argc, char **argv)
 {
@@ -170,6 +236,8 @@ const char *valueAfter(int &index, int argc, char **argv)
         return nullptr;
     return argv[++index];
 }
+
+#endif  // !_WIN32
 
 } // namespace
 
@@ -192,26 +260,27 @@ int runCaptureHelper(int argc, char **argv)
 #else
     const char *device = nullptr;
     const char *filter = "";
+    const char *socketPath = nullptr;
+    bool debug = std::getenv("ETHERAPE_DEBUG") != nullptr;
 
     for (int i = 1; i < argc; ++i) {
         if (std::strcmp(argv[i], "--capture-helper") == 0)
             continue;
-        // Legacy fd arguments (ignored: stdin/stdout are used instead).
-        // Legacy fd arguments: no longer used, ignore them.
-        if (std::strncmp(argv[i], "--ctl-fd=", 9) == 0
-            || std::strncmp(argv[i], "--data-fd=", 10) == 0) {
+        if (std::strcmp(argv[i], "--debug") == 0) {
+            debug = true;
             continue;
         }
         if (std::strcmp(argv[i], "--socket") == 0) {
-            if (!valueAfter(i, argc, argv)) {
-                std::fprintf(stderr,
-                             "etherape2026: --socket needs a path\n");
+            socketPath = valueAfter(i, argc, argv);
+            if (!socketPath) {
+                std::fprintf(stderr, "etherape2026: --socket needs a path\n");
                 return 2;
             }
             continue;
         }
-        if (std::strcmp(argv[i], "--debug") == 0) {
-            // handled below by re-reading argv
+        // Legacy descriptors from the first persistent design: ignored.
+        if (std::strncmp(argv[i], "--ctl-fd=", 9) == 0
+            || std::strncmp(argv[i], "--data-fd=", 10) == 0) {
             continue;
         }
         if (std::strcmp(argv[i], "-i") == 0
@@ -238,8 +307,8 @@ int runCaptureHelper(int argc, char **argv)
 
     std::signal(SIGPIPE, SIG_IGN);
 
-    // Legacy one-shot mode, kept for debugging: -i/-f only.
-    if (device) {
+    // Legacy one-shot mode (debugging): -i/-f without a socket.
+    if (!socketPath && device) {
         char errbuf[PCAP_ERRBUF_SIZE] = {0};
         pcap_t *handle = pcap_create(device, errbuf);
         if (!handle) {
@@ -258,7 +327,7 @@ int runCaptureHelper(int argc, char **argv)
             struct bpf_program program;
             if (pcap_compile(handle, &program, filter, 1,
                              PCAP_NETMASK_UNKNOWN)
-                < 0
+                    < 0
                 || pcap_setfilter(handle, &program) < 0) {
                 std::fprintf(stderr, "etherape2026: %s\n",
                              pcap_geterr(handle));
@@ -279,88 +348,47 @@ int runCaptureHelper(int argc, char **argv)
         return 0;
     }
 
-    // Long-lived mode: commands and data share one full-duplex descriptor.
-    // pkexec sanitises the environment, so debug must come from argv.
-    bool debug = std::getenv("ETHERAPE_DEBUG") != nullptr;
-    for (int i = 1; i < argc; ++i) {
-        if (std::strcmp(argv[i], "--debug") == 0)
-            debug = true;
-    }
-    int channel = -1;
-    const char *socketPath = nullptr;
-    for (int i = 1; i < argc; ++i) {
-        if (std::strcmp(argv[i], "--socket") == 0 && i + 1 < argc) {
-            socketPath = argv[i + 1];
-            break;
-        }
+    if (!socketPath || !*socketPath) {
+        std::fprintf(stderr,
+                     "etherape2026: --capture-helper needs --socket <path>\n");
+        return 2;
     }
 
-    if (socketPath && *socketPath) {
+    // Long-lived mode: one connection per capture session. Reconnecting after
+    // STOP guarantees the GUI never reads leftovers as the next status.
+    int connectAttempts = 0;
+    for (;;) {
         struct sockaddr_un address = {};
         address.sun_family = AF_UNIX;
         std::snprintf(address.sun_path, sizeof(address.sun_path), "%s",
                       socketPath);
-        channel = ::socket(AF_UNIX, SOCK_STREAM, 0);
-        if (channel < 0 || ::connect(channel,
-                                     reinterpret_cast<struct sockaddr *>(&address),
-                                     sizeof(address)) != 0) {
-            std::fprintf(stderr,
-                         "etherape2026: cannot connect to %s: %s\n",
-                         socketPath, std::strerror(errno));
+
+        int fd = ::socket(AF_UNIX, SOCK_STREAM, 0);
+        if (fd < 0)
             return 1;
-        }
-    } else {
-        channel = STDIN_FILENO;  // legacy: stdin for commands, stdout for data
-    }
-
-    if (debug)
-        std::fprintf(stderr, "[helper] serving on fd=%d\n", channel);
-
-    for (;;) {
-        HelperCommand command{};
-        if (!readExact(channel, &command, sizeof(command))) {
-            if (debug)
-                std::fprintf(stderr, "[helper] channel closed, exiting\n");
-            break;
-        }
-        if (debug)
-            std::fprintf(stderr, "[helper] command type=%u len=%u\n",
-                         command.type, command.length);
-        if (command.type == kHelperCmdQuit)
-            break;
-        if (command.type != kHelperCmdOpen) {
-            if (command.length > 0 && command.length < 65536) {
-                char drain[4096];
-                size_t left = command.length;
-                while (left > 0) {
-                    const size_t chunk =
-                        left < sizeof(drain) ? left : sizeof(drain);
-                    if (!readExact(channel, drain, chunk))
-                        return 0;
-                    left -= chunk;
-                }
+        if (::connect(fd, reinterpret_cast<struct sockaddr *>(&address),
+                      sizeof(address)) != 0) {
+            ::close(fd);
+            // The GUI may still be starting: retry ~10 s, then give up so an
+            // orphan helper never lingers.
+            if (++connectAttempts > 50) {
+                std::fprintf(stderr,
+                             "etherape2026: cannot connect to %s: %s\n",
+                             socketPath, std::strerror(errno));
+                return 1;
             }
+            ::usleep(200000);
             continue;
         }
+        connectAttempts = 0;
 
-        char payload[65536] = {0};
-        const size_t length =
-            command.length < sizeof(payload) ? command.length
-                                             : sizeof(payload) - 1;
-        if (length > 0 && !readExact(channel, payload, length))
+        if (debug)
+            std::fprintf(stderr, "[helper] connected fd=%d\n", fd);
+
+        const bool quit = serveChannel(fd, debug);
+        ::close(fd);
+        if (quit)
             break;
-        payload[length] = '\0';
-
-        const char *dev = payload;
-        const char *flt = payload + std::strlen(payload) + 1;
-        if (dev >= payload + length)
-            dev = "";
-
-        if (debug)
-            std::fprintf(stderr, "[helper] session start dev='%s'\n", dev);
-        captureSession(channel, dev, flt);
-        if (debug)
-            std::fprintf(stderr, "[helper] session end\n");
     }
 
     return 0;

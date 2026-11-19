@@ -165,7 +165,13 @@ void MainWindow::buildUi()
     toolbar->addWidget(new QLabel(tr(" Interface "), toolbar));
     m_interfaceBox = new QComboBox(toolbar);
     m_interfaceBox->setMinimumWidth(160);
-    m_interfaceBox->addItems(captureInterfaces());
+    QStringList interfaces = captureInterfaces();
+    // "any" first: capturing on a single interface by accident (loopback is
+    // often listed first) is a common surprise.
+    const int anyIndex = interfaces.indexOf(QStringLiteral("any"));
+    if (anyIndex > 0)
+        interfaces.move(anyIndex, 0);
+    m_interfaceBox->addItems(interfaces);
     toolbar->addWidget(m_interfaceBox);
 
     toolbar->addWidget(new QLabel(tr(" Filter "), toolbar));
@@ -334,13 +340,28 @@ void MainWindow::loadSettings()
     m_modeBox->setCurrentIndex(static_cast<int>(m_mode));
 
     // 'interface' is a keyword on Windows (combaseapi.h), hence the name.
+    // 'interface' is a keyword on Windows (combaseapi.h), hence the name.
     const QString interfaceName =
         settings.value(QStringLiteral("capture/interface")).toString();
-    if (!interfaceName.isEmpty()) {
-        const int index = m_interfaceBox->findText(interfaceName);
-        if (index >= 0)
-            m_interfaceBox->setCurrentIndex(index);
+    int selected = interfaceName.isEmpty()
+        ? -1
+        : m_interfaceBox->findText(interfaceName);
+    if (selected < 0) {
+        selected = m_interfaceBox->findText(QStringLiteral("any"));
+        if (selected < 0) {
+            // Fall back to the first non-loopback device.
+            for (int i = 0; i < m_interfaceBox->count(); ++i) {
+                const QString name = m_interfaceBox->itemText(i);
+                if (name != QLatin1String("lo")
+                    && !name.startsWith(QLatin1String("lo"))) {
+                    selected = i;
+                    break;
+                }
+            }
+        }
     }
+    if (selected >= 0)
+        m_interfaceBox->setCurrentIndex(selected);
     m_filterEdit->setText(
         settings.value(QStringLiteral("capture/filter")).toString());
 
