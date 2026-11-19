@@ -7,6 +7,7 @@
 
 #include <QHash>
 #include <QMainWindow>
+#include <QPointer>
 #include <QSet>
 #include <QString>
 
@@ -93,7 +94,7 @@ private:
     QLabel *m_countersLabel = nullptr;
     QLabel *m_graphLabel = nullptr;
 
-    CaptureWorker *m_worker = nullptr;
+    QPointer<CaptureWorker> m_worker;
     QThread *m_captureThread = nullptr;
     QTimer *m_refreshTimer = nullptr;
 

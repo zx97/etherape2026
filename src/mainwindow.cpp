@@ -103,7 +103,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
     connect(m_worker, &CaptureWorker::permissionDenied, this,
             &MainWindow::onPermissionDenied);
     connect(m_worker, &CaptureWorker::counters, this, &MainWindow::onCounters);
-    connect(m_captureThread, &QThread::finished, m_worker,
+    connect(m_captureThread, &QThread::finished, m_worker.data(),
             &QObject::deleteLater);
     m_captureThread->start();
 
@@ -465,7 +465,7 @@ void MainWindow::startReplay(const QString &file, int speedPercent)
     m_replaySpeed = speedPercent;
     m_worker->requestStop();  // in case something is still running
     QMetaObject::invokeMethod(
-        m_worker, "openOffline", Qt::QueuedConnection, Q_ARG(QString, file),
+        m_worker.data(), "openOffline", Qt::QueuedConnection, Q_ARG(QString, file),
         Q_ARG(QString, m_filterEdit->text()), Q_ARG(int, static_cast<int>(m_mode)),
         Q_ARG(int, speedPercent));
 }
@@ -486,12 +486,12 @@ void MainWindow::startCapture()
     m_worker->requestStop();
     if (m_usePolkit) {
         QMetaObject::invokeMethod(
-            m_worker, "openPrivileged", Qt::QueuedConnection,
+            m_worker.data(), "openPrivileged", Qt::QueuedConnection,
             Q_ARG(QString, device), Q_ARG(QString, m_filterEdit->text()),
             Q_ARG(int, static_cast<int>(m_mode)));
     } else {
         QMetaObject::invokeMethod(
-            m_worker, "openLive", Qt::QueuedConnection, Q_ARG(QString, device),
+            m_worker.data(), "openLive", Qt::QueuedConnection, Q_ARG(QString, device),
             Q_ARG(QString, m_filterEdit->text()),
             Q_ARG(int, static_cast<int>(m_mode)));
     }
@@ -546,7 +546,7 @@ void MainWindow::onPermissionDenied(const QString &device,
     resetGraph();
     m_pendingDevice = device;
     QMetaObject::invokeMethod(
-        m_worker, "openPrivileged", Qt::QueuedConnection, Q_ARG(QString, device),
+        m_worker.data(), "openPrivileged", Qt::QueuedConnection, Q_ARG(QString, device),
         Q_ARG(QString, m_filterEdit->text()),
         Q_ARG(int, static_cast<int>(m_mode)));
 #endif
