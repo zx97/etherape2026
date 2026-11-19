@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=EtherApe 2026
+GenericName=Network Traffic Monitor
+Comment=Graphical network traffic monitor (Qt 6)
+Exec=etherape2026 -i any
+Icon=etherape2026
+Terminal=false
+Categories=Network;Monitor;System;
+Keywords=network;traffic;sniffer;monitor;graph;pcap;
+StartupNotify=true
