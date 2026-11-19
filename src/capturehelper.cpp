@@ -177,6 +177,24 @@ void captureSession(int fd, const char *device, const char *filter)
     pcap_close(handle);
 }
 
+// Streams a live capture on stdout until the reader disappears. pcap_dump
+// ignores write errors, and SIGPIPE is ignored, so the closed pipe is detected
+// with poll() on stdout.
+void dumpLoop(pcap_t *handle, pcap_dumper_t *dumper)
+{
+    for (;;) {
+        struct pollfd dataPoll = {STDOUT_FILENO, POLLOUT, 0};
+        if (::poll(&dataPoll, 1, 0) > 0
+            && (dataPoll.revents & (POLLERR | POLLHUP | POLLNVAL))) {
+            break;
+        }
+        const int processed = pcap_dispatch(
+            handle, 64, dumpRecord, reinterpret_cast<u_char *>(dumper));
+        if (processed < 0)
+            break;
+    }
+}
+
 // Serves one connection: OPEN starts a capture, STOP ends it, QUIT exits.
 // Returns true when the helper should terminate.
 bool serveChannel(int fd, bool debug)
@@ -307,6 +325,31 @@ int runCaptureHelper(int argc, char **argv)
 
     std::signal(SIGPIPE, SIG_IGN);
 
+    if (debug) {
+        std::fprintf(stderr,
+                     "[helper] uid=%d euid=%d gid=%d egid=%d\n", (int)getuid(),
+                     (int)geteuid(), (int)getgid(), (int)getegid());
+#ifdef __linux__
+        FILE *status = std::fopen("/proc/self/status", "r");
+        if (status) {
+            char line[256];
+            while (std::fgets(line, sizeof(line), status)) {
+                if (std::strncmp(line, "CapEff:", 7) == 0
+                    || std::strncmp(line, "NoNewPrivs:", 11) == 0)
+                    std::fprintf(stderr, "[helper] %s", line);
+            }
+            std::fclose(status);
+        }
+        FILE *label = std::fopen("/proc/self/attr/current", "r");
+        if (label) {
+            char context[256] = {0};
+            if (std::fgets(context, sizeof(context), label))
+                std::fprintf(stderr, "[helper] selinux=%s", context);
+            std::fclose(label);
+        }
+#endif
+    }
+
     // Legacy one-shot mode (debugging): -i/-f without a socket.
     if (!socketPath && device) {
         char errbuf[PCAP_ERRBUF_SIZE] = {0};
@@ -342,7 +385,7 @@ int runCaptureHelper(int argc, char **argv)
             pcap_close(handle);
             return 1;
         }
-        pcap_loop(handle, -1, pcap_dump, reinterpret_cast<u_char *>(dumper));
+        dumpLoop(handle, dumper);
         pcap_dump_close(dumper);
         pcap_close(handle);
         return 0;

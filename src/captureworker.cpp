@@ -601,8 +601,15 @@ void CaptureWorker::openPrivilegedOneShot(const QString &device,
     ::close(m_dataFd);
     m_dataFd = -1;
 
+    // The helper runs as root: we cannot signal it, and closing the pipe is
+    // what stops it. Never block the UI on its exit.
     int status = 0;
-    ::waitpid(pid, &status, 0);
+    for (int attempt = 0; attempt < 40; ++attempt) {  // up to 2 s
+        const pid_t result = ::waitpid(pid, &status, WNOHANG);
+        if (result == pid || result < 0)
+            break;
+        QThread::usleep(50000);
+    }
     m_childPid.store(-1, std::memory_order_relaxed);
 
     if (m_packets == 0 && !m_stop.load(std::memory_order_relaxed)) {
