@@ -2,6 +2,7 @@
 //
 // EtherApe 2026 - graphical network traffic monitor, Qt 6 port.
 
+#include "capturehelper.h"
 #include "decoder.h"
 #include "mainwindow.h"
 
@@ -36,6 +37,10 @@ etherape::Mode parseMode(const QString &text, bool *ok)
 
 int main(int argc, char *argv[])
 {
+    // Privileged capture helper: never creates a GUI, never keeps privileges.
+    if (etherape::isCaptureHelperInvocation(argc, argv))
+        return etherape::runCaptureHelper(argc, argv);
+
     QApplication app(argc, argv);
     QApplication::setApplicationName(QStringLiteral("etherape2026"));
     QApplication::setOrganizationName(QStringLiteral("etherape"));

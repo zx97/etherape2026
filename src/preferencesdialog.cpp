@@ -49,12 +49,20 @@ PreferencesDialog::PreferencesDialog(const Values &values, QWidget *parent)
     m_speed->setValue(values.replaySpeed);
     m_speed->setToolTip(tr("Replay speed for capture files."));
 
+    m_polkit = new QCheckBox(
+        tr("Ask for the root password (polkit) when capture is denied"), this);
+    m_polkit->setChecked(values.usePolkit);
+    m_polkit->setToolTip(
+        tr("Runs a small helper through pkexec; the GUI itself stays "
+           "unprivileged."));
+
     auto *form = new QFormLayout;
     form->addRow(tr("Node limit:"), m_nodeLimit);
     form->addRow(tr("Link decay:"), m_decay);
     form->addRow(tr("Labels:"), m_font);
     form->addRow(tr("Replay speed:"), m_speed);
     form->addRow(QString(), m_resolve);
+    form->addRow(QString(), m_polkit);
 
     auto *buttons =
         new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel,
@@ -75,6 +83,7 @@ PreferencesDialog::Values PreferencesDialog::values() const
     values.resolveNames = m_resolve->isChecked();
     values.fontScale = m_font->value();
     values.replaySpeed = m_speed->value();
+    values.usePolkit = m_polkit->isChecked();
     return values;
 }
 

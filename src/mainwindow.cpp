@@ -89,6 +89,8 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
             &MainWindow::onCaptureStopped);
     connect(m_worker, &CaptureWorker::errorOccurred, this,
             &MainWindow::onCaptureError);
+    connect(m_worker, &CaptureWorker::permissionDenied, this,
+            &MainWindow::onPermissionDenied);
     connect(m_worker, &CaptureWorker::counters, this, &MainWindow::onCounters);
     connect(m_captureThread, &QThread::finished, m_worker,
             &QObject::deleteLater);
@@ -257,6 +259,8 @@ void MainWindow::loadSettings()
     m_replaySpeed = settings.value(QStringLiteral("capture/replaySpeed"), 100).toInt();
     m_resolveNames =
         settings.value(QStringLiteral("names/resolve"), false).toBool();
+    m_usePolkit =
+        settings.value(QStringLiteral("capture/usePolkit"), false).toBool();
     m_numeric = settings.value(QStringLiteral("names/numeric"), false).toBool();
 
     m_mode = static_cast<Mode>(
@@ -294,6 +298,7 @@ void MainWindow::saveSettings()
     settings.setValue(QStringLiteral("capture/filter"), m_filterEdit->text());
     settings.setValue(QStringLiteral("names/resolve"), m_resolveNames);
     settings.setValue(QStringLiteral("names/numeric"), m_numeric);
+    settings.setValue(QStringLiteral("capture/usePolkit"), m_usePolkit);
 }
 
 void MainWindow::showPreferences()
@@ -304,6 +309,7 @@ void MainWindow::showPreferences()
     values.resolveNames = m_resolveNames;
     values.fontScale = m_graph->fontScale();
     values.replaySpeed = m_replaySpeed;
+    values.usePolkit = m_usePolkit;
 
     PreferencesDialog dialog(values, this);
     if (dialog.exec() != QDialog::Accepted)
@@ -314,6 +320,7 @@ void MainWindow::showPreferences()
     m_model->setDecaySeconds(updated.decaySeconds);
     m_resolveNames = updated.resolveNames;
     m_replaySpeed = updated.replaySpeed;
+    m_usePolkit = updated.usePolkit;
     m_graph->setFontScale(updated.fontScale);
     saveSettings();
     updateStatus();
@@ -388,9 +395,43 @@ void MainWindow::startCapture()
 
     resetGraph();
     m_replayFile.clear();
+    m_pendingDevice = device;
     m_worker->requestStop();
+    if (m_usePolkit) {
+        QMetaObject::invokeMethod(
+            m_worker, "openPrivileged", Qt::QueuedConnection,
+            Q_ARG(QString, device), Q_ARG(QString, m_filterEdit->text()),
+            Q_ARG(int, static_cast<int>(m_mode)));
+    } else {
+        QMetaObject::invokeMethod(
+            m_worker, "openLive", Qt::QueuedConnection, Q_ARG(QString, device),
+            Q_ARG(QString, m_filterEdit->text()),
+            Q_ARG(int, static_cast<int>(m_mode)));
+    }
+}
+
+void MainWindow::onPermissionDenied(const QString &device,
+                                    const QString &message)
+{
+    const auto answer = QMessageBox::question(
+        this, tr("Root privileges required"),
+        tr("Capturing on \"%1\" was denied:\n%2\n\n"
+           "Elevate through polkit? A password dialog will appear and the "
+           "GUI itself stays unprivileged.")
+            .arg(device, message),
+        QMessageBox::Yes | QMessageBox::No, QMessageBox::Yes);
+
+    if (answer != QMessageBox::Yes) {
+        updateStatus();
+        return;
+    }
+
+    m_usePolkit = true;
+    saveSettings();
+    resetGraph();
+    m_pendingDevice = device;
     QMetaObject::invokeMethod(
-        m_worker, "openLive", Qt::QueuedConnection, Q_ARG(QString, device),
+        m_worker, "openPrivileged", Qt::QueuedConnection, Q_ARG(QString, device),
         Q_ARG(QString, m_filterEdit->text()),
         Q_ARG(int, static_cast<int>(m_mode)));
 }

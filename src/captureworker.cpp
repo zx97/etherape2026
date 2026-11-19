@@ -2,19 +2,35 @@
 
 #include "captureworker.h"
 
+#include <QCoreApplication>
 #include <QElapsedTimer>
 #include <QThread>
 
+#include <arpa/inet.h>
+#include <errno.h>
 #include <poll.h>
+#include <signal.h>
 #include <sys/time.h>
+#include <sys/wait.h>
+#include <unistd.h>
 
 #include <algorithm>
+#include <cstring>
 
 namespace etherape {
 
 namespace {
 constexpr int kBatchSize = 512;
-constexpr int kMaxSleepUsec = 20000;  // keeps requestStop() responsive
+constexpr int kMaxSleepUsec = 20000;
+constexpr quint32 kMaxCaplen = 64u * 1024u * 1024u;
+
+inline quint32 readU32(const uchar *p, bool swapped)
+{
+    const quint32 value = static_cast<quint32>(p[0])
+        | (static_cast<quint32>(p[1]) << 8) | (static_cast<quint32>(p[2]) << 16)
+        | (static_cast<quint32>(p[3]) << 24);
+    return swapped ? __builtin_bswap32(value) : value;
+}
 } // namespace
 
 QStringList captureInterfaces()
@@ -49,14 +65,22 @@ void CaptureWorker::requestStop()
     m_stop.store(true, std::memory_order_relaxed);
     if (pcap_t *handle = m_handle.load(std::memory_order_relaxed))
         pcap_breakloop(handle);  // documented as safe from another thread
+
+    const pid_t pid = m_childPid.load(std::memory_order_relaxed);
+    if (pid > 0) {
+        // The child created its own process group (see openPrivileged), so a
+        // negative pid terminates pkexec and the helper together.
+        ::kill(-pid, SIGTERM);
+    }
 }
 
 pcap_t *CaptureWorker::openWithFilter(const QString &source,
                                       const QString &filter, bool live,
-                                      QString *error)
+                                      QString *error, int *activateRc)
 {
     char errbuf[PCAP_ERRBUF_SIZE] = {0};
     pcap_t *handle = nullptr;
+    *activateRc = 0;
 
     if (live) {
         handle = pcap_create(source.toLocal8Bit().constData(), errbuf);
@@ -68,6 +92,7 @@ pcap_t *CaptureWorker::openWithFilter(const QString &source,
         pcap_set_promisc(handle, 1);
         pcap_set_timeout(handle, 100);
         const int rc = pcap_activate(handle);
+        *activateRc = rc;
         if (rc < 0) {
             *error = QString::fromLocal8Bit(pcap_geterr(handle));
             pcap_close(handle);
@@ -80,6 +105,8 @@ pcap_t *CaptureWorker::openWithFilter(const QString &source,
             return nullptr;
         }
     }
+
+    m_decoder.setLinkType(pcap_datalink(handle));
 
     if (!filter.isEmpty()) {
         struct bpf_program program;
@@ -135,9 +162,17 @@ void CaptureWorker::openLive(const QString &device, const QString &filter,
     m_decoder.setMode(static_cast<Mode>(mode));
 
     QString error;
-    pcap_t *handle = openWithFilter(device, filter, true, &error);
+    int activateRc = 0;
+    pcap_t *handle = openWithFilter(device, filter, true, &error, &activateRc);
     if (!handle) {
-        emit errorOccurred(error);
+        if (activateRc == PCAP_ERROR_PERM_DENIED
+            || error.contains(QLatin1String("permission"), Qt::CaseInsensitive)
+            || error.contains(QLatin1String("not permitted"),
+                              Qt::CaseInsensitive)) {
+            emit permissionDenied(device, error);
+        } else {
+            emit errorOccurred(error);
+        }
         emit captureStopped();
         return;
     }
@@ -149,13 +184,14 @@ void CaptureWorker::openLive(const QString &device, const QString &filter,
 }
 
 void CaptureWorker::openOffline(const QString &file, const QString &filter,
-                               int mode, int speedPercent)
+                                int mode, int speedPercent)
 {
     m_stop.store(false, std::memory_order_relaxed);
     m_decoder.setMode(static_cast<Mode>(mode));
 
     QString error;
-    pcap_t *handle = openWithFilter(file, filter, false, &error);
+    int activateRc = 0;
+    pcap_t *handle = openWithFilter(file, filter, false, &error, &activateRc);
     if (!handle) {
         emit errorOccurred(error);
         emit captureStopped();
@@ -168,12 +204,179 @@ void CaptureWorker::openOffline(const QString &file, const QString &filter,
     run(handle, true, speedPercent);
 }
 
+void CaptureWorker::openPrivileged(const QString &device,
+                                   const QString &filter, int mode)
+{
+    m_stop.store(false, std::memory_order_relaxed);
+    m_decoder.setMode(static_cast<Mode>(mode));
+
+    int outPipe[2] = {-1, -1};
+    int errPipe[2] = {-1, -1};
+    if (::pipe(outPipe) != 0 || ::pipe(errPipe) != 0) {
+        emit errorOccurred(QString::fromLocal8Bit(std::strerror(errno)));
+        emit captureStopped();
+        return;
+    }
+
+    const QByteArray exe =
+        QCoreApplication::applicationFilePath().toLocal8Bit();
+    const QByteArray dev = device.toLocal8Bit();
+    const QByteArray flt = filter.toLocal8Bit();
+
+    const pid_t pid = ::fork();
+    if (pid < 0) {
+        emit errorOccurred(QString::fromLocal8Bit(std::strerror(errno)));
+        ::close(outPipe[0]);
+        ::close(outPipe[1]);
+        ::close(errPipe[0]);
+        ::close(errPipe[1]);
+        emit captureStopped();
+        return;
+    }
+
+    if (pid == 0) {
+        // Child: own process group so the GUI can kill pkexec + helper at once.
+        ::setpgid(0, 0);
+        ::dup2(outPipe[1], STDOUT_FILENO);
+        ::dup2(errPipe[1], STDERR_FILENO);
+        ::close(outPipe[0]);
+        ::close(outPipe[1]);
+        ::close(errPipe[0]);
+        ::close(errPipe[1]);
+        ::execlp("pkexec", "pkexec", exe.constData(), "--capture-helper", "-i",
+                 dev.constData(), "-f", flt.constData(),
+                 static_cast<char *>(nullptr));
+        _exit(127);
+    }
+
+    ::close(outPipe[1]);
+    ::close(errPipe[1]);
+    m_childPid.store(pid, std::memory_order_relaxed);
+
+    m_packets = 0;
+    m_bytes = 0;
+    emit captureStarted(device);
+
+    readPcapStream(outPipe[0], errPipe[0]);
+    ::close(outPipe[0]);
+    ::close(errPipe[0]);
+
+    int status = 0;
+    ::waitpid(pid, &status, 0);
+    m_childPid.store(-1, std::memory_order_relaxed);
+
+    if (!m_stop.load(std::memory_order_relaxed) && WIFEXITED(status)
+        && WEXITSTATUS(status) != 0) {
+        emit errorOccurred(tr("Privileged capture helper exited with code %1.")
+                               .arg(WEXITSTATUS(status)));
+    }
+
+    flush();
+    emit counters(m_packets, m_bytes);
+    emit captureStopped();
+}
+
+void CaptureWorker::readPcapStream(int outFd, int errFd)
+{
+    QByteArray buffer;
+    QByteArray errors;
+    bool headerDone = false;
+    bool swapped = false;
+
+    for (;;) {
+        if (m_stop.load(std::memory_order_relaxed))
+            break;
+
+        struct pollfd fds[2] = {{outFd, POLLIN, 0}, {errFd, POLLIN, 0}};
+        const int polled = ::poll(fds, 2, 200);
+        if (polled < 0) {
+            if (errno == EINTR)
+                continue;
+            break;
+        }
+
+        if (fds[1].revents & (POLLIN | POLLHUP)) {
+            char tmp[512];
+            const ssize_t n = ::read(errFd, tmp, sizeof(tmp));
+            if (n > 0)
+                errors.append(tmp, static_cast<int>(n));
+        }
+
+        if (fds[0].revents & (POLLIN | POLLHUP)) {
+            char tmp[65536];
+            const ssize_t n = ::read(outFd, tmp, sizeof(tmp));
+            if (n > 0) {
+                buffer.append(tmp, static_cast<int>(n));
+            } else if (n == 0) {
+                break;  // helper closed its output
+            } else if (errno != EINTR && errno != EAGAIN) {
+                break;
+            }
+        }
+
+        if (!headerDone && buffer.size() >= 24) {
+            const auto *header =
+                reinterpret_cast<const uchar *>(buffer.constData());
+            const quint32 magic = readU32(header, false);
+            switch (magic) {
+            case 0xa1b2c3d4:
+                swapped = false;
+                break;
+            case 0xd4c3b2a4:
+                swapped = true;
+                break;
+            case 0xa1b23c4d:  // nanosecond timestamps
+            case 0x4d3cb2a1:
+                swapped = (magic == 0x4d3cb2a1);
+                break;
+            default:
+                emit errorOccurred(
+                    tr("Privileged helper sent an invalid pcap stream."));
+                return;
+            }
+            const quint32 linkType = readU32(header + 20, swapped);
+            m_decoder.setLinkType(static_cast<int>(linkType));
+            headerDone = true;
+            buffer.remove(0, 24);
+        }
+
+        while (headerDone && buffer.size() >= 16) {
+            const auto *record =
+                reinterpret_cast<const uchar *>(buffer.constData());
+            const quint32 tsSec = readU32(record, swapped);
+            const quint32 tsUsec = readU32(record + 4, swapped);
+            const quint32 caplen = readU32(record + 8, swapped);
+            const quint32 origlen = readU32(record + 12, swapped);
+            if (caplen > kMaxCaplen) {
+                emit errorOccurred(
+                    tr("Privileged helper sent a corrupt packet record."));
+                return;
+            }
+            if (static_cast<quint32>(buffer.size()) < 16 + caplen)
+                break;
+
+            const qint64 tsUsecTotal =
+                static_cast<qint64>(tsSec) * 1000000 + tsUsec;
+            m_batch.append(m_decoder.decode(
+                record + 16, caplen, origlen, tsUsecTotal));
+            m_packets += 1;
+            m_bytes += origlen;
+            buffer.remove(0, static_cast<int>(16 + caplen));
+
+            if (m_batch.size() >= kBatchSize)
+                flush();
+        }
+    }
+
+    if (!headerDone && !errors.isEmpty() && !m_stop.load()) {
+        emit errorOccurred(QString::fromLocal8Bit(errors).trimmed());
+    }
+}
+
 void CaptureWorker::run(pcap_t *handle, bool offline, int speedPercent)
 {
     m_handle.store(handle, std::memory_order_relaxed);
 
-    // Non-blocking mode lets us poll, so requestStop() is honoured promptly
-    // even on a silent interface.
     char errbuf[PCAP_ERRBUF_SIZE] = {0};
     pcap_setnonblock(handle, 1, errbuf);
 
@@ -212,7 +415,6 @@ void CaptureWorker::run(pcap_t *handle, bool offline, int speedPercent)
         if (offline) {
             if (speedPercent > 0 && m_firstTsUsec >= 0
                 && m_lastTsUsec > m_firstTsUsec) {
-                // Replay at the recorded pace, scaled by the requested speed.
                 const qint64 mediaUsec =
                     (m_lastTsUsec - m_firstTsUsec) * 100 / speedPercent;
                 const qint64 sleepUsec = std::clamp<qint64>(

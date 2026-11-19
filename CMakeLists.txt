@@ -8,6 +8,16 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 
 find_package(Qt6 6.5 REQUIRED COMPONENTS Core Gui Widgets Network)
+
+# Build-only dependency prefix: when the system ships libpcap without its
+# development headers, a private prefix extracted from the distribution RPMs
+# keeps the build reproducible (see README, "Compilation").
+if(NOT DEFINED ENV{PKG_CONFIG_PATH}
+   AND EXISTS "$ENV{HOME}/.local/etherape-deps/usr/lib64/pkgconfig/libpcap.pc")
+    set(ENV{PKG_CONFIG_PATH}
+        "$ENV{HOME}/.local/etherape-deps/usr/lib64/pkgconfig")
+endif()
+
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(PCAP REQUIRED IMPORTED_TARGET libpcap)
 find_package(Threads REQUIRED)
@@ -20,6 +30,8 @@ add_executable(etherape2026
     src/mainwindow.h
     src/captureworker.cpp
     src/captureworker.h
+    src/capturehelper.cpp
+    src/capturehelper.h
     src/decoder.cpp
     src/decoder.h
     src/graphmodel.cpp

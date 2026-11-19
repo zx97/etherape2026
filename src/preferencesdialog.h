@@ -22,6 +22,7 @@ public:
         bool resolveNames = false;
         double fontScale = 1.0;
         int replaySpeed = 100;
+        bool usePolkit = false;
     };
 
     explicit PreferencesDialog(const Values &values, QWidget *parent = nullptr);
@@ -34,6 +35,7 @@ private:
     QCheckBox *m_resolve = nullptr;
     QDoubleSpinBox *m_font = nullptr;
     QSpinBox *m_speed = nullptr;
+    QCheckBox *m_polkit = nullptr;
 };
 
 } // namespace etherape

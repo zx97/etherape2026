@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 //
-// EtherApe 2026 - Qt 6 port of EtherApe's packet decoding layer.
-// Decodes Ethernet (with 802.1Q/802.1ad), IPv4, IPv6, ARP, TCP and UDP
-// into a mode-dependent pair of endpoints.
+// EtherApe 2026 - packet decoding layer.
+// Handles Ethernet (802.1Q/802.1ad), Linux cooked capture (SLL/SLL2), raw IP,
+// IPv4, IPv6, ARP, TCP and UDP.
 
 #pragma once
 
@@ -36,20 +36,41 @@ struct PacketInfo
     quint16 dport = 0;
 };
 
-// Decodes link-layer frames into PacketInfo records.
+// Decodes link-layer frames into PacketInfo records. The link type follows the
+// libpcap DLT_* constants (1 = Ethernet, 113 = Linux SLL, 276 = SLL2,
+// 12/101 = raw IP).
 class Decoder
 {
 public:
-    explicit Decoder(Mode mode = Mode::Ip) : m_mode(mode) {}
+    explicit Decoder(Mode mode = Mode::Ip, int linkType = 1)
+        : m_mode(mode), m_linkType(linkType)
+    {
+    }
 
     void setMode(Mode mode) { m_mode = mode; }
     Mode mode() const { return m_mode; }
+
+    void setLinkType(int linkType) { m_linkType = linkType; }
+    int linkType() const { return m_linkType; }
 
     PacketInfo decode(const uchar *data, quint32 caplen, quint32 origlen,
                       qint64 tsUsec) const;
 
 private:
+    struct LinkLayer
+    {
+        quint16 etherType = 0;
+        quint32 offset = 0;
+        QString srcMac;
+        QString dstMac;
+        bool hasMac = false;
+    };
+
+    bool parseLinkLayer(const uchar *data, quint32 caplen,
+                        LinkLayer &layer) const;
+
     Mode m_mode;
+    int m_linkType;
 };
 
 QString macToString(const uchar *mac);

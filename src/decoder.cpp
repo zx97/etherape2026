@@ -15,6 +15,13 @@ constexpr quint16 kEtherTypeIPv6 = 0x86dd;
 constexpr quint16 kEtherTypeVlan = 0x8100;
 constexpr quint16 kEtherTypeQinQ = 0x88a8;
 
+// libpcap DLT_* values we understand.
+constexpr int kDltEthernet = 1;
+constexpr int kDltRaw = 12;         // DLT_RAW (Linux)
+constexpr int kDltRawBsd = 101;     // DLT_RAW (BSD)
+constexpr int kDltLinuxSll = 113;
+constexpr int kDltLinuxSll2 = 276;
+
 inline quint16 rd16(const uchar *p)
 {
     return static_cast<quint16>((p[0] << 8) | p[1]);
@@ -53,6 +60,63 @@ QString macToString(const uchar *mac)
         .toUpper();
 }
 
+bool Decoder::parseLinkLayer(const uchar *data, quint32 caplen,
+                             LinkLayer &layer) const
+{
+    switch (m_linkType) {
+    case kDltLinuxSll: {
+        // 16-byte header: pkttype, arphrd, halen, addr[8], protocol.
+        if (caplen < 16)
+            return false;
+        layer.offset = 16;
+        layer.etherType = rd16(data + 14);
+        const quint16 halen = rd16(data + 4);
+        if (halen == 6) {
+            layer.srcMac = macToString(data + 6);
+            // SLL only carries the source hardware address.
+            layer.dstMac = QStringLiteral("?");
+            layer.hasMac = true;
+        }
+        return true;
+    }
+    case kDltLinuxSll2: {
+        // 20-byte header: protocol, reserved, ifindex, arphrd, pkttype,
+        // halen, addr[8].
+        if (caplen < 20)
+            return false;
+        layer.offset = 20;
+        layer.etherType = rd16(data);
+        const quint8 halen = data[11];
+        if (halen == 6) {
+            layer.srcMac = macToString(data + 12);
+            layer.dstMac = QStringLiteral("?");
+            layer.hasMac = true;
+        }
+        return true;
+    }
+    case kDltRaw:
+    case kDltRawBsd: {
+        if (caplen < 1)
+            return false;
+        layer.offset = 0;
+        const quint8 version = data[0] >> 4;
+        layer.etherType = (version == 6) ? kEtherTypeIPv6 : kEtherTypeIPv4;
+        return true;
+    }
+    case kDltEthernet:
+    default: {
+        if (caplen < 14)
+            return false;
+        layer.offset = 14;
+        layer.etherType = rd16(data + 12);
+        layer.srcMac = macToString(data + 6);
+        layer.dstMac = macToString(data);
+        layer.hasMac = true;
+        return true;
+    }
+    }
+}
+
 PacketInfo Decoder::decode(const uchar *data, quint32 caplen, quint32 origlen,
                            qint64 tsUsec) const
 {
@@ -62,22 +126,22 @@ PacketInfo Decoder::decode(const uchar *data, quint32 caplen, quint32 origlen,
     pkt.origlen = origlen;
     pkt.protocol = QStringLiteral("Other");
 
-    if (caplen < 14)
+    LinkLayer ll;
+    if (!parseLinkLayer(data, caplen, ll) || caplen < ll.offset)
         return pkt;
 
-    const QString srcMac = macToString(data + 6);
-    const QString dstMac = macToString(data);
+    quint32 off = ll.offset;
+    quint16 etherType = ll.etherType;
 
-    // Link-mode endpoints are always the MAC pair; overwritten below when the
-    // selected mode asks for higher layers.
-    pkt.src = {srcMac, srcMac, NodeKind::Mac};
-    pkt.dst = {dstMac, dstMac, NodeKind::Mac};
+    // Default endpoints: MAC pair when the link layer provides one, otherwise
+    // let the L3 parser fill them in.
+    if (ll.hasMac) {
+        pkt.src = {ll.srcMac, ll.srcMac, NodeKind::Mac};
+        pkt.dst = {ll.dstMac, ll.dstMac, NodeKind::Mac};
+    }
 
-    if (m_mode == Mode::Link)
+    if (m_mode == Mode::Link && ll.hasMac)
         return pkt;
-
-    quint32 off = 14;
-    quint16 etherType = rd16(data + 12);
 
     // Walk VLAN tags (802.1Q and 802.1ad).
     while ((etherType == kEtherTypeVlan || etherType == kEtherTypeQinQ)
@@ -89,7 +153,7 @@ PacketInfo Decoder::decode(const uchar *data, quint32 caplen, quint32 origlen,
     auto setAddresses = [&](const QString &srcAddr, const QString &dstAddr,
                             NodeKind kind) {
         if (m_mode == Mode::Tcp && kind == NodeKind::Port)
-            return; // ports are filled by the TCP/UDP parser
+            return;  // ports are filled by the TCP/UDP parser
         pkt.src = {srcAddr, srcAddr, kind};
         pkt.dst = {dstAddr, dstAddr, kind};
     };
@@ -126,9 +190,7 @@ PacketInfo Decoder::decode(const uchar *data, quint32 caplen, quint32 origlen,
         }
 
         const quint32 l4 = off + ihl;
-        const bool isTcp = (proto == 6);
-        const bool isUdp = (proto == 17);
-        if ((isTcp || isUdp) && caplen >= l4 + 4) {
+        if ((proto == 6 || proto == 17) && caplen >= l4 + 4) {
             pkt.sport = rd16(data + l4);
             pkt.dport = rd16(data + l4 + 2);
             if (m_mode == Mode::Tcp) {
@@ -152,7 +214,7 @@ PacketInfo Decoder::decode(const uchar *data, quint32 caplen, quint32 origlen,
         quint8 next = ip6[6];
         quint32 l4 = off + 40;
 
-        // Skip the most common extension headers.
+        // Skip the common extension headers.
         for (int guard = 0; guard < 8; ++guard) {
             const bool ext = (next == 0 || next == 43 || next == 44
                               || next == 60 || next == 51);
@@ -160,7 +222,7 @@ PacketInfo Decoder::decode(const uchar *data, quint32 caplen, quint32 origlen,
                 break;
             const quint8 hdrNext = data[l4];
             quint32 hlen = (next == 44) ? 8u : (data[l4 + 1] + 1u) * 8u;
-            if (next == 51) // AH: length is in 4-byte units, plus 2
+            if (next == 51)  // AH length is in 4-byte units plus two
                 hlen = (data[l4 + 1] + 2u) * 4u;
             next = hdrNext;
             l4 += hlen;
@@ -200,7 +262,8 @@ PacketInfo Decoder::decode(const uchar *data, quint32 caplen, quint32 origlen,
         return pkt;
     }
 
-    pkt.protocol = QStringLiteral("0x%1").arg(etherType, 4, 16, QLatin1Char('0'));
+    pkt.protocol =
+        QStringLiteral("0x%1").arg(etherType, 4, 16, QLatin1Char('0'));
     return pkt;
 }
 

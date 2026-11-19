@@ -51,6 +51,7 @@ private slots:
     void onCaptureStarted(const QString &source);
     void onCaptureStopped();
     void onCaptureError(const QString &message);
+    void onPermissionDenied(const QString &device, const QString &message);
     void onCounters(quint64 packets, quint64 bytes);
     void refreshView();
     void showAbout();
@@ -88,6 +89,8 @@ private:
     bool m_restartPending = false;
     bool m_numeric = false;
     bool m_resolveNames = false;
+    bool m_usePolkit = false;
+    QString m_pendingDevice;
     QString m_replayFile;
     int m_replaySpeed = 100;
 
