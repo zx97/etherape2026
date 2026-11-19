@@ -6,6 +6,7 @@
 
 #include <QCoreApplication>
 #include <QElapsedTimer>
+#include <QFile>
 #include <QThread>
 
 #include <algorithm>
@@ -239,6 +240,11 @@ bool CaptureWorker::ensureHelper()
     // fd 0 and 1 are the only descriptors a setuid program (pkexec) is
     // guaranteed to preserve, so commands go to stdin and data comes back on
     // stdout.
+    m_helperLogPath = QStringLiteral("/dev/shm/etherape2026-helper-%1.log")
+                          .arg(QCoreApplication::applicationPid());
+    const int logFd = ::open(m_helperLogPath.toLocal8Bit().constData(),
+                             O_CREAT | O_WRONLY | O_TRUNC, 0600);
+
     int cmd[2] = {-1, -1};
     int data[2] = {-1, -1};
     if (::pipe(cmd) != 0)
@@ -259,6 +265,8 @@ bool CaptureWorker::ensureHelper()
         ::setpgid(0, 0);
         ::dup2(cmd[0], STDIN_FILENO);
         ::dup2(data[1], STDOUT_FILENO);
+        if (logFd >= 0)
+            ::dup2(logFd, STDERR_FILENO);
         ::close(cmd[0]);
         ::close(cmd[1]);
         ::close(data[0]);
@@ -279,6 +287,8 @@ bool CaptureWorker::ensureHelper()
 
     ::close(cmd[0]);
     ::close(data[1]);
+    if (logFd >= 0)
+        ::close(logFd);
     if (pid < 0) {
         ::close(cmd[1]);
         ::close(data[0]);
@@ -334,7 +344,7 @@ bool CaptureWorker::sendCommand(unsigned type, const QByteArray &payload)
 #endif
 }
 
-bool CaptureWorker::waitForOpenStatus()
+bool CaptureWorker::waitForOpenStatus(QString *detail)
 {
 #ifndef Q_OS_WIN
     const bool debug = qEnvironmentVariableIsSet("ETHERAPE_DEBUG");
@@ -373,7 +383,31 @@ bool CaptureWorker::waitForOpenStatus()
             if (debug)
                 std::fprintf(stderr, "[etherape] OPEN status=%u\n",
                              unsigned(status));
-            return status == 0;
+            if (status == 0)
+                return true;
+
+            // Status 1 is followed by a length and the helper's error text.
+            unsigned length = 0;
+            if (::read(m_dataFd, &length, sizeof(length)) == sizeof(length)
+                && length > 0 && length < 65536) {
+                QByteArray message(static_cast<int>(length), '\0');
+                size_t done = 0;
+                while (done < length) {
+                    const ssize_t n = ::read(m_dataFd,
+                                            message.data() + done,
+                                            length - done);
+                    if (n <= 0)
+                        break;
+                    done += static_cast<size_t>(n);
+                }
+                if (detail)
+                    *detail = QString::fromLocal8Bit(message.constData(),
+                                                     static_cast<int>(done));
+                if (debug)
+                    std::fprintf(stderr, "[etherape] helper error: %s\n",
+                                 message.constData());
+            }
+            return false;
         }
     }
 #else
@@ -437,11 +471,30 @@ void CaptureWorker::openPrivileged(const QString &device,
         return;
     }
 
-    if (!waitForOpenStatus()) {
-        emit errorOccurred(
-            m_stop.load() ? tr("Capture cancelled.")
-                          : tr("The privileged helper could not open the "
-                               "capture (denied or cancelled)."));
+    QString detail;
+    if (!waitForOpenStatus(&detail)) {
+        if (m_stop.load(std::memory_order_relaxed)) {
+            emit errorOccurred(tr("Capture cancelled."));
+        } else if (!detail.isEmpty()) {
+            emit errorOccurred(tr("The privileged helper could not open the "
+                                  "capture: %1")
+                                   .arg(detail));
+        } else {
+            // No structured answer: pkexec itself probably refused or the
+            // helper died. Include its stderr log when available.
+            QString extra;
+            if (!m_helperLogPath.isEmpty()) {
+                QFile log(m_helperLogPath);
+                if (log.open(QIODevice::ReadOnly)) {
+                    extra = QString::fromLocal8Bit(log.readAll()).trimmed();
+                }
+            }
+            emit errorOccurred(
+                extra.isEmpty()
+                    ? tr("The privileged helper did not answer (pkexec refused "
+                         "or the helper exited).")
+                    : tr("The privileged helper did not answer: %1").arg(extra));
+        }
         emit captureStopped();
         return;
     }

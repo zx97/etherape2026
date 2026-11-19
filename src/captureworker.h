@@ -54,7 +54,7 @@ private:
     void readPcapStream(int outFd, int errFd);
     bool ensureHelper();
     bool sendCommand(unsigned type, const QByteArray &payload);
-    bool waitForOpenStatus();
+    bool waitForOpenStatus(QString *detail);
     void closeHelper();
     void flush();
     static void onPacket(u_char *user, const struct pcap_pkthdr *header,
@@ -65,6 +65,7 @@ private:
     int m_ctlFd = -1;
     int m_dataFd = -1;
     QMutex m_ctlMutex;
+    QString m_helperLogPath;
     Decoder m_decoder;
     QList<PacketInfo> m_batch;
     quint64 m_packets = 0;

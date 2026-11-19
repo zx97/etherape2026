@@ -71,30 +71,42 @@ bool writeExact(int fd, const void *buffer, size_t length)
 void captureSession(const char *device, const char *filter)
 {
     unsigned char status = 1;
+    auto reportFailure = [&status](const char *what) {
+        writeExact(STDOUT_FILENO, &status, 1);
+        const unsigned length =
+            what ? static_cast<unsigned>(std::strlen(what)) : 0u;
+        writeExact(STDOUT_FILENO, &length, sizeof(length));
+        if (length > 0)
+            writeExact(STDOUT_FILENO, what, length);
+    };
 
     char errbuf[PCAP_ERRBUF_SIZE] = {0};
     pcap_t *handle = pcap_create(device, errbuf);
     if (!handle) {
         std::fprintf(stderr, "etherape2026: %s\n", errbuf);
-        writeExact(STDOUT_FILENO, &status, 1);
+        reportFailure(errbuf);
         return;
     }
     pcap_set_snaplen(handle, kSnapLen);
     pcap_set_promisc(handle, 1);
     pcap_set_timeout(handle, 100);
     if (pcap_activate(handle) < 0) {
-        std::fprintf(stderr, "etherape2026: %s\n", pcap_geterr(handle));
+        char message[512] = {0};
+        std::snprintf(message, sizeof(message), "%s", pcap_geterr(handle));
+        std::fprintf(stderr, "etherape2026: %s\n", message);
         pcap_close(handle);
-        writeExact(STDOUT_FILENO, &status, 1);
+        reportFailure(message);
         return;
     }
     if (filter && *filter) {
         struct bpf_program program;
         if (pcap_compile(handle, &program, filter, 1, PCAP_NETMASK_UNKNOWN) < 0
             || pcap_setfilter(handle, &program) < 0) {
-            std::fprintf(stderr, "etherape2026: %s\n", pcap_geterr(handle));
+            char message[512] = {0};
+            std::snprintf(message, sizeof(message), "%s", pcap_geterr(handle));
+            std::fprintf(stderr, "etherape2026: %s\n", message);
             pcap_close(handle);
-            writeExact(STDOUT_FILENO, &status, 1);
+            reportFailure(message);
             return;
         }
         pcap_freecode(&program);
@@ -112,7 +124,7 @@ void captureSession(const char *device, const char *filter)
     if (!dumper) {
         std::fclose(sink);
         pcap_close(handle);
-        writeExact(STDOUT_FILENO, &status, 1);
+        reportFailure("cannot open the capture stream");
         return;
     }
 
