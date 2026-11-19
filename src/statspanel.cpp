@@ -20,6 +20,18 @@ namespace etherape {
 
 namespace {
 
+QString vlanText(const QSet<quint16> &vlans)
+{
+    if (vlans.isEmpty())
+        return QStringLiteral("—");
+    QList<quint16> ids = vlans.values();
+    std::sort(ids.begin(), ids.end());
+    QStringList parts;
+    for (quint16 id : std::as_const(ids))
+        parts.append(QString::number(id));
+    return parts.join(QStringLiteral(", "));
+}
+
 QIcon colorDot(const QColor &color)
 {
     QPixmap pixmap(12, 12);
@@ -61,15 +73,15 @@ StatsPanel::StatsPanel(QWidget *parent) : QWidget(parent)
     m_nodesView = new QTreeView(m_tabs);
     m_nodesModel = new QStandardItemModel(this);
     m_nodesModel->setHorizontalHeaderLabels(
-        {tr("Node"), tr("Packets"), tr("Traffic")});
+        {tr("Node"), tr("Packets"), tr("Traffic"), tr("VLAN")});
     m_nodesView->setModel(m_nodesModel);
     configureView(m_nodesView);
 
     m_linksView = new QTreeView(m_tabs);
     m_linksModel = new QStandardItemModel(this);
-    m_linksModel->setHorizontalHeaderLabels({tr("Source"), tr("Destination"),
-                                             tr("Protocol"), tr("Packets"),
-                                             tr("Traffic")});
+    m_linksModel->setHorizontalHeaderLabels(
+        {tr("Source"), tr("Destination"), tr("Protocol"), tr("VLAN"),
+         tr("Packets"), tr("Traffic")});
     m_linksView->setModel(m_linksModel);
     configureView(m_linksView);
 
@@ -98,7 +110,8 @@ void StatsPanel::refresh(const GraphModel &model)
         auto *name = new QStandardItem(node.label.isEmpty() ? node.id : node.label);
         name->setToolTip(node.id);
         row << name << numberItem(node.packets)
-            << new QStandardItem(humanBytes(node.bytes));
+            << new QStandardItem(humanBytes(node.bytes))
+            << new QStandardItem(vlanText(node.vlans));
         m_nodesModel->appendRow(row);
     }
 
@@ -116,7 +129,9 @@ void StatsPanel::refresh(const GraphModel &model)
         QList<QStandardItem *> row;
         row << new QStandardItem(labelFor(link.a))
             << new QStandardItem(labelFor(link.b))
-            << new QStandardItem(link.protocol) << numberItem(link.packets)
+            << new QStandardItem(link.protocol)
+            << new QStandardItem(vlanText(link.vlans))
+            << numberItem(link.packets)
             << new QStandardItem(humanBytes(link.bytes));
         m_linksModel->appendRow(row);
     }

@@ -16,7 +16,7 @@ bibliothèques vivantes et largement packagées sont utilisées.
 | Capture live (libpcap, BPF) | ✅ |
 | Replay de fichier `.pcap` (vitesse réglable) | ✅ |
 | Modes **Link** (MAC), **IP**, **TCP** (adresse:port) | ✅ |
-| Décodage Ethernet, 802.1Q/802.1ad, IPv4, IPv6 (+ ext. headers), ARP, TCP, UDP, ICMP | ✅ |
+| Décodage Ethernet, **VLAN 802.1Q / QinQ 802.1ad**, IPv4, IPv6 (+ ext. headers), ARP, TCP, UDP, ICMP | ✅ |
 | Graphe animé, layout force-directed, zoom/pan, sélection | ✅ |
 | Panneau statistiques (nœuds / liens / protocoles) | ✅ |
 | Résolution DNS inverse asynchrone (optionnelle) | ✅ |
@@ -26,6 +26,7 @@ bibliothèques vivantes et largement packagées sont utilisées.
 | Conversations détaillées par lien | ✅ |
 | Positionnement manuel (drag/pin, JSON, `--position`) | ✅ |
 | Dissection applicative (HTTP, TLS, DNS, SSH…) | ✅ |
+| VLAN affichés (panneau, tooltip, conversations, XML/JSON) | ✅ |
 | Nuages de zones LAN / DMZ / VPN / Internet | ✅ |
 | Tests unitaires (`ctest`) + CI GitLab | ✅ |
 | Préférences persistantes (QSettings) | ✅ |

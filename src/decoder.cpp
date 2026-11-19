@@ -190,9 +190,17 @@ PacketInfo Decoder::decode(const uchar *data, quint32 caplen, quint32 origlen,
     if (m_mode == Mode::Link && ll.hasMac)
         return pkt;
 
-    // Walk VLAN tags (802.1Q and 802.1ad).
+    // Walk VLAN tags (802.1Q and 802.1ad/QinQ), keeping the identifiers.
+    int vlanCount = 0;
     while ((etherType == kEtherTypeVlan || etherType == kEtherTypeQinQ)
            && caplen >= off + 4) {
+        const quint16 tag = rd16(data + off);
+        const int vid = tag & 0x0fff;
+        if (vlanCount == 0)
+            pkt.vlanId = vid;
+        else if (vlanCount == 1)
+            pkt.vlanInner = vid;
+        ++vlanCount;
         etherType = rd16(data + off + 2);
         off += 4;
     }

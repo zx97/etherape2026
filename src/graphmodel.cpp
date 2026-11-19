@@ -39,6 +39,8 @@ void GraphModel::clear()
     m_index.clear();
     m_links.clear();
     m_protocols.clear();
+    m_vlanPackets.clear();
+    m_vlanBytes.clear();
     m_totalPackets = 0;
     m_totalBytes = 0;
     m_startedAtMs = 0;
@@ -152,6 +154,12 @@ void GraphModel::addPacket(const PacketInfo &pkt, qint64 nowMs)
     if (m_startedAtMs == 0)
         m_startedAtMs = nowMs;
 
+    if (pkt.vlanId > 0) {
+        const quint16 vid = static_cast<quint16>(pkt.vlanId);
+        m_vlanPackets[vid] += 1;
+        m_vlanBytes[vid] += pkt.origlen;
+    }
+
     ProtoStat &stat = m_protocols[pkt.protocol];
     stat.packets += 1;
     stat.bytes += pkt.origlen;
@@ -165,6 +173,10 @@ void GraphModel::addPacket(const PacketInfo &pkt, qint64 nowMs)
 
     Node &sn = m_nodes[srcIndex];
     Node &dn = m_nodes[dstIndex];
+    if (pkt.vlanId > 0) {
+        sn.vlans.insert(static_cast<quint16>(pkt.vlanId));
+        dn.vlans.insert(static_cast<quint16>(pkt.vlanId));
+    }
     sn.bytes += pkt.origlen;
     sn.packets += 1;
     dn.bytes += pkt.origlen;
@@ -182,6 +194,8 @@ void GraphModel::addPacket(const PacketInfo &pkt, qint64 nowMs)
         link.bytesAB = pkt.origlen;
         link.packetsAB = 1;
         link.intensity = 0.35;
+        if (pkt.vlanId > 0)
+            link.vlans.insert(static_cast<quint16>(pkt.vlanId));
         link.firstSeenMs = nowMs;
         link.lastSeenMs = nowMs;
         m_links.insert(key, link);
@@ -190,6 +204,8 @@ void GraphModel::addPacket(const PacketInfo &pkt, qint64 nowMs)
     }
 
     Link &link = it.value();
+    if (pkt.vlanId > 0)
+        link.vlans.insert(static_cast<quint16>(pkt.vlanId));
     link.protocol = pkt.protocol;
     link.bytes += pkt.origlen;
     link.packets += 1;
@@ -211,6 +227,17 @@ void GraphModel::addBatch(const QList<PacketInfo> &batch, qint64 nowMs)
 {
     for (const PacketInfo &pkt : batch)
         addPacket(pkt, nowMs);
+}
+
+QList<int> GraphModel::vlanIds() const
+{
+    QList<int> ids;
+    ids.reserve(m_vlanPackets.size());
+    for (auto it = m_vlanPackets.constBegin(); it != m_vlanPackets.constEnd();
+         ++it)
+        ids.append(it.key());
+    std::sort(ids.begin(), ids.end());
+    return ids;
 }
 
 QVector<GraphModel::Link> GraphModel::links() const

@@ -137,6 +137,7 @@ void CoreTests::decodesIpv4TcpWithApplicationProtocol()
         frame.size(), 1234);
 
     QCOMPARE(packet.protocol, QStringLiteral("HTTP"));
+    QCOMPARE(packet.vlanId, -1);  // untagged
     QCOMPARE(packet.src.id, QStringLiteral("10.0.0.1"));
     QCOMPARE(packet.dst.id, QStringLiteral("10.0.0.2"));
 }
@@ -159,6 +160,8 @@ void CoreTests::decodesVlan()
     QCOMPARE(packet.protocol, QStringLiteral("DNS"));
     QCOMPARE(packet.src.id, QStringLiteral("192.168.1.1"));
     QCOMPARE(packet.dst.id, QStringLiteral("8.8.8.8"));
+    QCOMPARE(packet.vlanId, 100);
+    QCOMPARE(packet.vlanInner, -1);
 }
 
 void CoreTests::decodesLinuxCookedCapture()

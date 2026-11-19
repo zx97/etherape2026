@@ -23,6 +23,18 @@ constexpr double kMinRadius = 5.0;
 constexpr double kMaxRadius = 22.0;
 constexpr int kLegendMaxRows = 12;
 
+QString vlanText(const QSet<quint16> &vlans)
+{
+    if (vlans.isEmpty())
+        return QString();
+    QList<quint16> ids = vlans.values();
+    std::sort(ids.begin(), ids.end());
+    QStringList parts;
+    for (quint16 id : std::as_const(ids))
+        parts.append(QString::number(id));
+    return parts.join(QStringLiteral(", "));
+}
+
 } // namespace
 
 GraphView::GraphView(QWidget *parent) : QWidget(parent)
@@ -439,11 +451,14 @@ void GraphView::mouseMoveEvent(QMouseEvent *event)
         m_hover = index;
         if (index >= 0 && m_model) {
             const auto &node = m_model->nodes()[index];
+            const QString vlans = vlanText(node.vlans);
             setToolTip(
-                tr("%1\n%2 packets · %3\n%4")
+                tr("%1\n%2 packets · %3\n%4\n%5")
                     .arg(node.label.isEmpty() ? node.id : node.label)
                     .arg(node.packets)
                     .arg(humanBytes(node.bytes))
+                    .arg(vlans.isEmpty() ? tr("untagged")
+                                         : tr("VLAN %1").arg(vlans))
                     .arg(node.pinned ? tr("position locked (right-click to release)")
                                      : tr("drag to pin")));
             emit nodeHovered(node.id);

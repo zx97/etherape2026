@@ -148,6 +148,18 @@ bool exportGraphXml(const GraphModel &model, const QString &path,
         xml.writeEndElement();  // out
         xml.writeEndElement();  // traffic_stats
 
+        if (!node.vlans.isEmpty()) {
+            xml.writeStartElement(QStringLiteral("vlans"));
+            QList<quint16> ids = node.vlans.values();
+            std::sort(ids.begin(), ids.end());
+            for (quint16 id : std::as_const(ids)) {
+                xml.writeStartElement(QStringLiteral("vlan"));
+                xml.writeAttribute(QStringLiteral("id"), QString::number(id));
+                xml.writeEndElement();
+            }
+            xml.writeEndElement();  // vlans
+        }
+
         xml.writeStartElement(QStringLiteral("position"));
         xml.writeAttribute(QStringLiteral("x"),
                            QString::number(node.x, 'f', 6));
@@ -176,6 +188,15 @@ bool exportGraphXml(const GraphModel &model, const QString &path,
         xml.writeTextElement(QStringLiteral("source"), nodes[link.a].id);
         xml.writeTextElement(QStringLiteral("target"), nodes[link.b].id);
         xml.writeTextElement(QStringLiteral("protocol"), link.protocol);
+        if (!link.vlans.isEmpty()) {
+            QStringList ids;
+            QList<quint16> sorted = link.vlans.values();
+            std::sort(sorted.begin(), sorted.end());
+            for (quint16 id : std::as_const(sorted))
+                ids.append(QString::number(id));
+            xml.writeTextElement(QStringLiteral("vlans"),
+                                 ids.join(QStringLiteral(",")));
+        }
         xml.writeTextElement(QStringLiteral("packets"),
                              QString::number(link.packets));
         xml.writeTextElement(QStringLiteral("bytes"),

@@ -11,6 +11,7 @@
 
 #include <QHash>
 #include <QObject>
+#include <QSet>
 #include <QString>
 #include <QVector>
 
@@ -35,6 +36,7 @@ public:
         qint64 firstSeenMs = 0;
         qint64 lastSeenMs = 0;
         ZoneId zone = ZoneId::Local;  ///< cloud the node belongs to
+        QSet<quint16> vlans;          ///< 802.1Q ids seen for this node
         bool pinned = false;          ///< manually placed, ignored by the layout
     };
 
@@ -49,6 +51,7 @@ public:
         quint64 bytesAB = 0;
         quint64 packetsBA = 0;    ///< packets from b to a
         quint64 bytesBA = 0;
+        QSet<quint16> vlans;      ///< 802.1Q ids seen on this link
         double intensity = 0.0;   ///< 0..1, decays over time
         qint64 firstSeenMs = 0;
         qint64 lastSeenMs = 0;
@@ -74,6 +77,7 @@ public:
     const QVector<Node> &nodes() const { return m_nodes; }
     QVector<Link> links() const;
     const QHash<QString, ProtoStat> &protocols() const { return m_protocols; }
+    QList<int> vlanIds() const;   ///< sorted, traffic-bearing VLAN ids
 
     quint64 totalPackets() const { return m_totalPackets; }
     quint64 totalBytes() const { return m_totalBytes; }
@@ -103,6 +107,8 @@ private:
     QHash<QString, int> m_index;
     QHash<quint64, Link> m_links;
     QHash<QString, ProtoStat> m_protocols;
+    QHash<quint16, quint64> m_vlanPackets;
+    QHash<quint16, quint64> m_vlanBytes;
 
     quint64 m_totalPackets = 0;
     quint64 m_totalBytes = 0;

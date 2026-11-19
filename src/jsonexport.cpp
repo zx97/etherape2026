@@ -111,6 +111,14 @@ bool exportGraphJson(const GraphModel &model, const QString &path,
         object.insert(QStringLiteral("x"), node.x);
         object.insert(QStringLiteral("y"), node.y);
         object.insert(QStringLiteral("pinned"), node.pinned);
+        if (!node.vlans.isEmpty()) {
+            QJsonArray vlanArray;
+            QList<quint16> ids = node.vlans.values();
+            std::sort(ids.begin(), ids.end());
+            for (quint16 id : std::as_const(ids))
+                vlanArray.append(static_cast<int>(id));
+            object.insert(QStringLiteral("vlans"), vlanArray);
+        }
         nodeArray.append(object);
     }
     root.insert(QStringLiteral("nodes"), nodeArray);
@@ -132,6 +140,14 @@ bool exportGraphJson(const GraphModel &model, const QString &path,
                       countersObject(link.packetsAB, link.bytesAB));
         object.insert(QStringLiteral("b_to_a"),
                       countersObject(link.packetsBA, link.bytesBA));
+        if (!link.vlans.isEmpty()) {
+            QJsonArray vlanArray;
+            QList<quint16> ids = link.vlans.values();
+            std::sort(ids.begin(), ids.end());
+            for (quint16 id : std::as_const(ids))
+                vlanArray.append(static_cast<int>(id));
+            object.insert(QStringLiteral("vlans"), vlanArray);
+        }
         linkArray.append(object);
     }
     root.insert(QStringLiteral("links"), linkArray);

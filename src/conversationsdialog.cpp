@@ -6,6 +6,7 @@
 #include "graphmodel.h"
 
 #include <QBrush>
+#include <QSet>
 #include <QHeaderView>
 #include <QStandardItemModel>
 #include <QTimer>
@@ -61,9 +62,9 @@ ConversationsDialog::ConversationsDialog(const GraphModel *model,
 
     m_rows = new QStandardItemModel(this);
     m_rows->setHorizontalHeaderLabels(
-        {tr("Source"), tr("Destination"), tr("Protocol"), tr("Pkts A→B"),
-         tr("Bytes A→B"), tr("Pkts B→A"), tr("Bytes B→A"), tr("Protocol mix"),
-         tr("Duration")});
+        {tr("Source"), tr("Destination"), tr("Protocol"), tr("VLAN"),
+         tr("Pkts A→B"), tr("Bytes A→B"), tr("Pkts B→A"), tr("Bytes B→A"),
+         tr("Protocol mix"), tr("Duration")});
 
     m_view = new QTreeView(this);
     m_view->setModel(m_rows);
@@ -124,10 +125,20 @@ void ConversationsDialog::refresh()
         auto *protocolItem = new QStandardItem(link.protocol);
         protocolItem->setForeground(QBrush(protocolColor(link.protocol)));
 
+        QStringList vlanIds;
+        {
+            QList<quint16> ids = link.vlans.values();
+            std::sort(ids.begin(), ids.end());
+            for (quint16 id : std::as_const(ids))
+                vlanIds.append(QString::number(id));
+        }
+
         m_rows->appendRow({
             sourceItem,
             targetItem,
             protocolItem,
+            new QStandardItem(vlanIds.isEmpty() ? QStringLiteral("—")
+                                                : vlanIds.join(QStringLiteral(", "))),
             new NumericItem(QString::number(link.packetsAB), link.packetsAB),
             new NumericItem(humanBytes(link.bytesAB), link.bytesAB),
             new NumericItem(QString::number(link.packetsBA), link.packetsBA),
