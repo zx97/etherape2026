@@ -481,6 +481,16 @@ void MainWindow::setNumeric(bool numeric)
 void MainWindow::setResolveNames(bool enabled)
 {
     m_resolveNames = enabled;
+    // The two options contradict each other: asking for names while 'numeric'
+    // is on would silently do nothing, which is exactly how a working DNS
+    // setup looks broken.
+    if (enabled && m_numeric) {
+        m_numeric = false;
+        if (m_numericAction) {
+            const QSignalBlocker blocker(m_numericAction);
+            m_numericAction->setChecked(false);
+        }
+    }
     if (m_resolveAction && m_resolveAction->isChecked() != enabled) {
         const QSignalBlocker blocker(m_resolveAction);
         m_resolveAction->setChecked(enabled);
@@ -678,12 +688,11 @@ void MainWindow::maybeResolve(const QString &id, NodeKind kind)
             m_nameCache.insert(id, QString());
             return;
         }
-        // Keep labels compact: strip the trailing dot and the local domain.
+        // Keep the full name (the view elides long labels): cutting at the
+        // first dot turned "dns.google" into "dns" and "one.one.one.one"
+        // into "one", which is both wrong and ambiguous.
         if (name.endsWith(QLatin1Char('.')))
             name.chop(1);
-        const int dot = name.indexOf(QLatin1Char('.'));
-        if (dot > 0)
-            name = name.left(dot);
         m_nameCache.insert(id, name);
         m_model->setLabel(id, name);
     });
