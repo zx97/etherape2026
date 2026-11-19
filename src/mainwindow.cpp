@@ -259,6 +259,14 @@ void MainWindow::buildMenus()
         QSettings().setValue(QStringLiteral("view/legend"), checked);
     });
 
+    m_zonesAction = viewMenu->addAction(tr("Zone &Clouds"));
+    m_zonesAction->setCheckable(true);
+    m_zonesAction->setChecked(true);
+    connect(m_zonesAction, &QAction::toggled, this, [this](bool checked) {
+        m_graph->setZonesVisible(checked);
+        QSettings().setValue(QStringLiteral("view/zones"), checked);
+    });
+
     auto *conversationsAction = viewMenu->addAction(tr("&Conversations…"));
     conversationsAction->setShortcut(QKeySequence(QStringLiteral("Ctrl+T")));
     connect(conversationsAction, &QAction::triggered, this,
@@ -298,6 +306,22 @@ void MainWindow::loadSettings()
     m_usePolkit =
         settings.value(QStringLiteral("capture/usePolkit"), false).toBool();
     m_numeric = settings.value(QStringLiteral("names/numeric"), false).toBool();
+    m_localZones = settings
+                       .value(QStringLiteral("zones/local"),
+                              QStringLiteral("10.0.0.0/8, 172.16.0.0/12, "
+                                             "192.168.0.0/16, 169.254.0.0/16, "
+                                             "127.0.0.0/8, fc00::/7, "
+                                             "fe80::/10, ::1/128"))
+                       .toString();
+    m_dmzZones = settings.value(QStringLiteral("zones/dmz")).toString();
+    m_vpnZones = settings.value(QStringLiteral("zones/vpn")).toString();
+    applyZoneRules();
+
+    const bool zones = settings.value(QStringLiteral("view/zones"), true).toBool();
+    m_graph->setZonesVisible(zones);
+    if (m_zonesAction)
+        m_zonesAction->setChecked(zones);
+
     const bool legend =
         settings.value(QStringLiteral("view/legend"), true).toBool();
     m_graph->setLegendVisible(legend);
@@ -308,10 +332,11 @@ void MainWindow::loadSettings()
         settings.value(QStringLiteral("capture/mode"), 1).toInt());
     m_modeBox->setCurrentIndex(static_cast<int>(m_mode));
 
-    const QString interface =
+    // 'interface' is a keyword on Windows (combaseapi.h), hence the name.
+    const QString interfaceName =
         settings.value(QStringLiteral("capture/interface")).toString();
-    if (!interface.isEmpty()) {
-        const int index = m_interfaceBox->findText(interface);
+    if (!interfaceName.isEmpty()) {
+        const int index = m_interfaceBox->findText(interfaceName);
         if (index >= 0)
             m_interfaceBox->setCurrentIndex(index);
     }
@@ -340,6 +365,9 @@ void MainWindow::saveSettings()
     settings.setValue(QStringLiteral("names/resolve"), m_resolveNames);
     settings.setValue(QStringLiteral("names/numeric"), m_numeric);
     settings.setValue(QStringLiteral("capture/usePolkit"), m_usePolkit);
+    settings.setValue(QStringLiteral("zones/local"), m_localZones);
+    settings.setValue(QStringLiteral("zones/dmz"), m_dmzZones);
+    settings.setValue(QStringLiteral("zones/vpn"), m_vpnZones);
 }
 
 void MainWindow::showPreferences()
@@ -351,6 +379,9 @@ void MainWindow::showPreferences()
     values.fontScale = m_graph->fontScale();
     values.replaySpeed = m_replaySpeed;
     values.usePolkit = m_usePolkit;
+    values.localZones = m_localZones;
+    values.dmzZones = m_dmzZones;
+    values.vpnZones = m_vpnZones;
 
     PreferencesDialog dialog(values, this);
     if (dialog.exec() != QDialog::Accepted)
@@ -362,9 +393,23 @@ void MainWindow::showPreferences()
     m_resolveNames = updated.resolveNames;
     m_replaySpeed = updated.replaySpeed;
     m_usePolkit = updated.usePolkit;
+    m_localZones = updated.localZones;
+    m_dmzZones = updated.dmzZones;
+    m_vpnZones = updated.vpnZones;
+    applyZoneRules();
     m_graph->setFontScale(updated.fontScale);
     saveSettings();
     updateStatus();
+}
+
+void MainWindow::applyZoneRules()
+{
+    ZoneClassifier classifier;
+    if (!m_localZones.trimmed().isEmpty())
+        classifier.setRulesFromText(ZoneId::Local, m_localZones);
+    classifier.setRulesFromText(ZoneId::Dmz, m_dmzZones);
+    classifier.setRulesFromText(ZoneId::Vpn, m_vpnZones);
+    m_model->setZoneClassifier(classifier);
 }
 
 void MainWindow::setMode(Mode mode)

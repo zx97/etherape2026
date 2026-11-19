@@ -3,8 +3,10 @@
 #pragma once
 
 #include <QDialog>
+#include <QString>
 
 class QCheckBox;
+class QLineEdit;
 class QDoubleSpinBox;
 class QSpinBox;
 
@@ -23,6 +25,9 @@ public:
         double fontScale = 1.0;
         int replaySpeed = 100;
         bool usePolkit = false;
+        QString localZones;
+        QString dmzZones;
+        QString vpnZones;
     };
 
     explicit PreferencesDialog(const Values &values, QWidget *parent = nullptr);
@@ -36,6 +41,9 @@ private:
     QDoubleSpinBox *m_font = nullptr;
     QSpinBox *m_speed = nullptr;
     QCheckBox *m_polkit = nullptr;
+    QLineEdit *m_localZones = nullptr;
+    QLineEdit *m_dmzZones = nullptr;
+    QLineEdit *m_vpnZones = nullptr;
 };
 
 } // namespace etherape

@@ -71,6 +71,7 @@ private:
     void resetGraph();
     void setRunning(bool running);
     void updateStatus();
+    void applyZoneRules();
     void maybeResolve(const QString &id, NodeKind kind);
 
     GraphModel *m_model = nullptr;
@@ -84,6 +85,7 @@ private:
     QAction *m_stopAction = nullptr;
     QAction *m_numericAction = nullptr;
     QAction *m_legendAction = nullptr;
+    QAction *m_zonesAction = nullptr;
     QLabel *m_sourceLabel = nullptr;
     QLabel *m_countersLabel = nullptr;
     QLabel *m_graphLabel = nullptr;
@@ -108,6 +110,9 @@ private:
 
     ConversationsDialog *m_conversations = nullptr;
     QString m_finalExportPath;
+    QString m_localZones;
+    QString m_dmzZones;
+    QString m_vpnZones;
 
     QHash<QString, QString> m_nameCache;
     QSet<QString> m_pendingNames;

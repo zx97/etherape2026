@@ -72,6 +72,8 @@ add_executable(etherape2026
     src/conversationsdialog.h
     src/graphmodel.cpp
     src/graphmodel.h
+    src/zones.cpp
+    src/zones.h
     src/graphview.cpp
     src/graphview.h
     src/statspanel.cpp

@@ -72,6 +72,70 @@ void GraphView::setLegendVisible(bool visible)
     update();
 }
 
+void GraphView::setZonesVisible(bool visible)
+{
+    m_showZones = visible;
+    update();
+}
+
+void GraphView::drawZones(QPainter &painter, const QFont &baseFont)
+{
+    if (!m_model || !m_showZones)
+        return;
+
+    const auto nodes = m_model->nodes();
+    QFont font = baseFont;
+    font.setPointSizeF(std::max(7.0, baseFont.pointSizeF() * 1.0));
+    font.setBold(true);
+
+    for (ZoneId zone : ZoneClassifier::allZones()) {
+        bool any = false;
+        QRectF bounds;
+        int count = 0;
+        for (int i = 0; i < nodes.size() && i < m_screenPos.size(); ++i) {
+            if (nodes[i].zone != zone)
+                continue;
+            const QPointF p = m_screenPos[i];
+            const double r = m_radii[i];
+            const QRectF nodeRect(p.x() - r, p.y() - r, 2 * r, 2 * r);
+            bounds = any ? bounds.united(nodeRect) : nodeRect;
+            any = true;
+            ++count;
+        }
+        if (!any)
+            continue;  // an empty cloud would only add clutter
+
+        const double pad = 26.0 * m_zoom;
+        bounds.adjust(-pad, -pad, pad, pad);
+        if (bounds.width() < 120)
+            bounds.setWidth(120);
+        if (bounds.height() < 80)
+            bounds.setHeight(80);
+
+        QColor color = ZoneClassifier::color(zone);
+        QColor fill = color;
+        fill.setAlpha(18);
+        QColor border = color;
+        border.setAlpha(120);
+
+        painter.setBrush(fill);
+        painter.setPen(QPen(border, 1.3, Qt::DashLine));
+        painter.drawRoundedRect(bounds, bounds.height() / 2.0,
+                                bounds.height() / 2.0);
+
+        painter.setFont(font);
+        painter.setPen(color.darker(115));
+        const QString label = QStringLiteral("%1 · %2")
+                                  .arg(ZoneClassifier::name(zone))
+                                  .arg(count);
+        painter.drawText(QRectF(bounds.left(), bounds.top() + 4, bounds.width(), 18),
+                         Qt::AlignHCenter | Qt::AlignTop, label);
+
+        QFont restored = baseFont;
+        painter.setFont(restored);
+    }
+}
+
 void GraphView::selectNode(const QString &id)
 {
     m_selected = id;
@@ -217,7 +281,10 @@ void GraphView::paintEvent(QPaintEvent *)
     const auto nodes = m_model->nodes();
     const auto links = m_model->links();
 
-    // Links first, so nodes sit on top.
+    // Zone clouds first: they are the visual grouping of the graph.
+    drawZones(painter, painter.font());
+
+    // Links next, so nodes sit on top.
     for (const auto &link : links) {
         if (link.a < 0 || link.b < 0 || link.a >= m_screenPos.size()
             || link.b >= m_screenPos.size())

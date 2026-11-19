@@ -6,6 +6,7 @@
 #include <QDialogButtonBox>
 #include <QDoubleSpinBox>
 #include <QFormLayout>
+#include <QLineEdit>
 #include <QSpinBox>
 #include <QVBoxLayout>
 
@@ -56,6 +57,16 @@ PreferencesDialog::PreferencesDialog(const Values &values, QWidget *parent)
         tr("Runs a small helper through pkexec; the GUI itself stays "
            "unprivileged."));
 
+    m_localZones = new QLineEdit(values.localZones, this);
+    m_localZones->setPlaceholderText(QStringLiteral("10.0.0.0/8, 192.168.0.0/16"));
+    m_dmzZones = new QLineEdit(values.dmzZones, this);
+    m_dmzZones->setPlaceholderText(QStringLiteral("192.0.2.0/24"));
+    m_vpnZones = new QLineEdit(values.vpnZones, this);
+    m_vpnZones->setPlaceholderText(QStringLiteral("10.8.0.0/24, fd00::/64"));
+    m_localZones->setToolTip(tr("CIDR blocks considered local (LAN)."));
+    m_dmzZones->setToolTip(tr("CIDR blocks rendered in the DMZ cloud."));
+    m_vpnZones->setToolTip(tr("CIDR blocks rendered in the VPN cloud."));
+
     auto *form = new QFormLayout;
     form->addRow(tr("Node limit:"), m_nodeLimit);
     form->addRow(tr("Link decay:"), m_decay);
@@ -63,6 +74,9 @@ PreferencesDialog::PreferencesDialog(const Values &values, QWidget *parent)
     form->addRow(tr("Replay speed:"), m_speed);
     form->addRow(QString(), m_resolve);
     form->addRow(QString(), m_polkit);
+    form->addRow(tr("LAN zones:"), m_localZones);
+    form->addRow(tr("DMZ zones:"), m_dmzZones);
+    form->addRow(tr("VPN zones:"), m_vpnZones);
 
     auto *buttons =
         new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel,
@@ -84,6 +98,9 @@ PreferencesDialog::Values PreferencesDialog::values() const
     values.fontScale = m_font->value();
     values.replaySpeed = m_speed->value();
     values.usePolkit = m_polkit->isChecked();
+    values.localZones = m_localZones->text();
+    values.dmzZones = m_dmzZones->text();
+    values.vpnZones = m_vpnZones->text();
     return values;
 }
 

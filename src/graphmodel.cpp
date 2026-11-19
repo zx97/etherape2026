@@ -57,12 +57,18 @@ void GraphModel::setDecaySeconds(double seconds)
 
 void GraphModel::placeNewNode(Node &node)
 {
-    // Deterministic golden-angle spiral: stable and evenly spread.
-    const int n = static_cast<int>(m_nodes.size());
+    // Deterministic golden-angle spiral inside the node's own cloud, so a new
+    // host immediately lands in the right area of the graph.
+    const QPointF anchor = ZoneClassifier::center(node.zone);
+    int peers = 0;
+    for (const Node &existing : std::as_const(m_nodes)) {
+        if (existing.zone == node.zone)
+            ++peers;
+    }
     const double golden = 2.39996322972865332;  // radians
-    const double radius = 0.42 * std::sqrt((n + 1.0) / (m_nodeLimit + 1.0));
-    node.x = 0.5 + radius * std::cos(n * golden);
-    node.y = 0.5 + radius * std::sin(n * golden);
+    const double radius = 0.055 + 0.045 * std::sqrt(static_cast<double>(peers + 1));
+    node.x = anchor.x() + radius * std::cos(peers * golden);
+    node.y = anchor.y() + radius * std::sin(peers * golden);
     node.x = std::clamp(node.x, 0.05, 0.95);
     node.y = std::clamp(node.y, 0.05, 0.95);
 }
@@ -131,6 +137,7 @@ int GraphModel::nodeIndex(const Endpoint &endpoint, qint64 nowMs)
     node.id = endpoint.id;
     node.label = endpoint.label;
     node.kind = endpoint.kind;
+    node.zone = m_zones.classify(endpoint.id, endpoint.kind);
     node.firstSeenMs = nowMs;
     node.lastSeenMs = nowMs;
     placeNewNode(node);
@@ -224,6 +231,21 @@ void GraphModel::setLabel(const QString &id, const QString &label)
     if (it == m_index.end() || label.isEmpty())
         return;
     m_nodes[it.value()].label = label;
+}
+
+void GraphModel::setZoneClassifier(const ZoneClassifier &classifier)
+{
+    m_zones = classifier;
+    bool changed = false;
+    for (Node &node : m_nodes) {
+        const ZoneId zone = m_zones.classify(node.id, node.kind);
+        if (zone != node.zone) {
+            node.zone = zone;
+            changed = true;
+        }
+    }
+    if (changed)
+        emit structureChanged();
 }
 
 void GraphModel::setNodePosition(const QString &id, double x, double y)
@@ -428,8 +450,10 @@ void GraphModel::layoutStep(double dtSeconds)
             node.vy = 0.0;
             continue;
         }
-        node.vx += (0.5 - node.x) * 0.0015;
-        node.vy += (0.5 - node.y) * 0.0015;
+        // Zone gravity: each node is pulled towards its own cloud anchor.
+        const QPointF anchor = ZoneClassifier::center(node.zone);
+        node.vx += (anchor.x() - node.x) * 0.006;
+        node.vy += (anchor.y() - node.y) * 0.006;
         node.vx *= kDamping;
         node.vy *= kDamping;
         node.x += node.vx * step * 60.0;

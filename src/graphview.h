@@ -32,6 +32,9 @@ public:
     void setLegendVisible(bool visible);
     bool legendVisible() const { return m_showLegend; }
 
+    void setZonesVisible(bool visible);
+    bool zonesVisible() const { return m_showZones; }
+
     void selectNode(const QString &id);
     void resetView();
 
@@ -54,6 +57,7 @@ private:
     int nodeAt(const QPointF &pos) const;
     void rebuildScreenPositions();
     void drawLegend(QPainter &painter, const QFont &baseFont);
+    void drawZones(QPainter &painter, const QFont &baseFont);
 
     GraphModel *m_model = nullptr;
     QTimer m_timer;
@@ -66,6 +70,7 @@ private:
     QPointF m_pan;
     double m_fontScale = 1.0;
     bool m_showLegend = true;
+    bool m_showZones = true;
     int m_hover = -1;
     QString m_selected;
     int m_dragNode = -1;

@@ -7,6 +7,7 @@
 #pragma once
 
 #include "decoder.h"
+#include "zones.h"
 
 #include <QHash>
 #include <QObject>
@@ -33,7 +34,8 @@ public:
         quint64 packets = 0;
         qint64 firstSeenMs = 0;
         qint64 lastSeenMs = 0;
-        bool pinned = false;      ///< manually placed, ignored by the layout
+        ZoneId zone = ZoneId::Local;  ///< cloud the node belongs to
+        bool pinned = false;          ///< manually placed, ignored by the layout
     };
 
     struct Link
@@ -78,6 +80,8 @@ public:
     qint64 startedAtMs() const { return m_startedAtMs; }
 
     void setLabel(const QString &id, const QString &label);
+    void setZoneClassifier(const ZoneClassifier &classifier);
+    const ZoneClassifier &zoneClassifier() const { return m_zones; }
     void setNodePosition(const QString &id, double x, double y);
     void pinNode(const QString &id, bool pinned = true);
 
@@ -105,6 +109,7 @@ private:
     qint64 m_startedAtMs = 0;
     int m_nodeLimit = 300;
     double m_decaySeconds = 4.0;
+    ZoneClassifier m_zones;
 };
 
 } // namespace etherape
