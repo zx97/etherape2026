@@ -1,11 +1,20 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#ifdef _WIN32
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#include <winsock2.h>
+#include <iphlpapi.h>
+#endif
+
 #include "captureworker.h"
 
 #include "capturehelper.h"
 
 #include <QCoreApplication>
 #include <QElapsedTimer>
+#include <QHash>
 #include <QFile>
 #include <QStandardPaths>
 #include <QThread>
@@ -44,19 +53,77 @@ inline quint32 readU32(const uchar *p, bool swapped)
 }
 } // namespace
 
-QStringList captureInterfaces()
+#ifdef _WIN32
+namespace {
+
+// Maps "{GUID}" to the friendly connection name Windows shows
+// ("Ethernet 2", "Wi-Fi"...).
+QHash<QString, QString> friendlyAdapterNames()
 {
-    QStringList result;
+    QHash<QString, QString> names;
+    ULONG size = 0;
+    if (GetAdaptersAddresses(AF_UNSPEC, GAA_FLAG_INCLUDE_PREFIX, nullptr,
+                             nullptr, &size)
+        != ERROR_BUFFER_OVERFLOW) {
+        return names;
+    }
+    QByteArray buffer(static_cast<int>(size), '\0');
+    auto *addresses =
+        reinterpret_cast<IP_ADAPTER_ADDRESSES *>(buffer.data());
+    if (GetAdaptersAddresses(AF_UNSPEC, GAA_FLAG_INCLUDE_PREFIX, nullptr,
+                             addresses, &size)
+        != NO_ERROR) {
+        return names;
+    }
+    for (auto *entry = addresses; entry; entry = entry->Next) {
+        // AdapterName is char* on MinGW and wchar_t* on MSVC.
+        const QString guid = QString::fromLocal8Bit(entry->AdapterName);
+        const QString friendly = QString::fromWCharArray(entry->FriendlyName);
+        if (!guid.isEmpty() && !friendly.isEmpty())
+            names.insert(guid.toUpper(), friendly);
+    }
+    return names;
+}
+
+QString guidFromNpfDevice(const QString &device)
+{
+    const int marker = device.indexOf(QLatin1String("NPF_"));
+    return marker >= 0 ? device.mid(marker + 4).toUpper() : QString();
+}
+
+} // namespace
+#endif
+
+QList<CaptureInterface> captureInterfaces()
+{
+    QList<CaptureInterface> result;
     pcap_if_t *devices = nullptr;
     char errbuf[PCAP_ERRBUF_SIZE] = {0};
 
     if (pcap_findalldevs(&devices, errbuf) == -1)
         return result;
 
+#ifdef _WIN32
+    const QHash<QString, QString> friendly = friendlyAdapterNames();
+#endif
+
     for (pcap_if_t *dev = devices; dev; dev = dev->next) {
         if (!dev->name)
             continue;
-        result.append(QString::fromLocal8Bit(dev->name));
+        CaptureInterface entry;
+        entry.device = QString::fromLocal8Bit(dev->name);
+        entry.display = entry.device;
+        entry.description = dev->description
+            ? QString::fromLocal8Bit(dev->description)
+            : QString();
+#ifdef _WIN32
+        const QString friendlyName = friendly.value(guidFromNpfDevice(entry.device));
+        if (!friendlyName.isEmpty())
+            entry.display = friendlyName;
+        else if (!entry.description.isEmpty())
+            entry.display = entry.description;
+#endif
+        result.append(entry);
     }
     pcap_freealldevs(devices);
     return result;

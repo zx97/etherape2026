@@ -82,7 +82,15 @@ private:
     std::atomic_bool m_stop{true};
 };
 
-// Enumerates capture interfaces without requiring privileges.
-QStringList captureInterfaces();
+// One capture device: 'device' is what libpcap expects, 'display' is what a
+// human should read (Windows exposes only \Device\NPF_{GUID} technically).
+struct CaptureInterface
+{
+    QString device;
+    QString display;
+    QString description;
+};
+
+QList<CaptureInterface> captureInterfaces();
 
 } // namespace etherape

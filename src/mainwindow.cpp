@@ -33,6 +33,8 @@
 #include <QSplitter>
 #include <QStatusBar>
 #include <QStyle>
+
+#include <algorithm>
 #include <cstdio>
 #include <QThread>
 #include <QTimer>
@@ -169,13 +171,24 @@ void MainWindow::buildUi()
     toolbar->addWidget(new QLabel(tr(" Interface "), toolbar));
     m_interfaceBox = new QComboBox(toolbar);
     m_interfaceBox->setMinimumWidth(160);
-    QStringList interfaces = captureInterfaces();
+    QList<CaptureInterface> interfaces = captureInterfaces();
     // "any" first: capturing on a single interface by accident (loopback is
     // often listed first) is a common surprise.
-    const int anyIndex = interfaces.indexOf(QStringLiteral("any"));
-    if (anyIndex > 0)
-        interfaces.move(anyIndex, 0);
-    m_interfaceBox->addItems(interfaces);
+    std::stable_sort(interfaces.begin(), interfaces.end(),
+                     [](const CaptureInterface &lhs, const CaptureInterface &rhs) {
+                         return lhs.device == QLatin1String("any")
+                             && rhs.device != QLatin1String("any");
+                     });
+    for (const CaptureInterface &entry : std::as_const(interfaces)) {
+        m_interfaceBox->addItem(entry.display, entry.device);
+        const int index = m_interfaceBox->count() - 1;
+        m_interfaceBox->setItemData(
+            index, entry.description.isEmpty()
+                       ? entry.device
+                       : QStringLiteral("%1\n%2").arg(entry.device,
+                                                       entry.description),
+            Qt::ToolTipRole);
+    }
     toolbar->addWidget(m_interfaceBox);
 
     toolbar->addWidget(new QLabel(tr(" Filter "), toolbar));
@@ -366,15 +379,24 @@ void MainWindow::loadSettings()
         settings.value(QStringLiteral("capture/interface")).toString();
     int selected = interfaceName.isEmpty()
         ? -1
-        : m_interfaceBox->findText(interfaceName);
+        : m_interfaceBox->findData(interfaceName);
     if (selected < 0) {
-        selected = m_interfaceBox->findText(QStringLiteral("any"));
+        selected = m_interfaceBox->findData(QStringLiteral("any"));
         if (selected < 0) {
-            // Fall back to the first non-loopback device.
+            // Fall back to the first device that is not a loopback adapter
+            // (Windows names it "Adapter for loopback traffic capture", the
+            // technical name still contains NPF_Loopback).
             for (int i = 0; i < m_interfaceBox->count(); ++i) {
-                const QString name = m_interfaceBox->itemText(i);
-                if (name != QLatin1String("lo")
-                    && !name.startsWith(QLatin1String("lo"))) {
+                const QString device = m_interfaceBox->itemData(i).toString();
+                const QString display = m_interfaceBox->itemText(i);
+                const bool loopback =
+                    display.contains(QLatin1String("loopback"),
+                                     Qt::CaseInsensitive)
+                    || device.contains(QLatin1String("Loopback"),
+                                       Qt::CaseInsensitive)
+                    || device == QLatin1String("lo")
+                    || device.startsWith(QLatin1String("lo"));
+                if (!loopback) {
                     selected = i;
                     break;
                 }
@@ -410,7 +432,7 @@ void MainWindow::saveSettings()
     settings.setValue(QStringLiteral("capture/replaySpeed"), m_replaySpeed);
     settings.setValue(QStringLiteral("capture/mode"), static_cast<int>(m_mode));
     settings.setValue(QStringLiteral("capture/interface"),
-                      m_interfaceBox->currentText());
+                      m_interfaceBox->currentData().toString());
     settings.setValue(QStringLiteral("capture/filter"), m_filterEdit->text());
     settings.setValue(QStringLiteral("names/resolve"), m_resolveNames);
     settings.setValue(QStringLiteral("names/numeric"), m_numeric);
@@ -552,7 +574,7 @@ void MainWindow::setFilter(const QString &filter)
 
 void MainWindow::startLiveCapture(const QString &device)
 {
-    const int index = m_interfaceBox->findText(device);
+    const int index = m_interfaceBox->findData(device);
     if (index >= 0)
         m_interfaceBox->setCurrentIndex(index);
     startCapture();
@@ -576,7 +598,7 @@ void MainWindow::startCapture()
 {
     if (m_running)
         return;
-    const QString device = m_interfaceBox->currentText().trimmed();
+    const QString device = m_interfaceBox->currentData().toString().trimmed();
     if (device.isEmpty()) {
         statusBar()->showMessage(tr("No capture interface available."), 5000);
         return;

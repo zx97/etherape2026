@@ -114,6 +114,10 @@ target_link_libraries(etherape2026 PRIVATE
     Threads::Threads
 )
 
+if(WIN32)
+    target_link_libraries(etherape2026 PRIVATE iphlpapi)
+endif()
+
 if(MSVC)
     target_compile_options(etherape2026 PRIVATE /W3 /utf-8)
     target_compile_options(etherape_core PRIVATE /W3 /utf-8)
