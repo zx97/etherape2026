@@ -41,6 +41,7 @@ public:
     void startReplay(const QString &file, int speedPercent);
     void setFinalExport(const QString &path);
     void requestStopCapture();
+    void requestStartCapture();
     void loadLayoutFile(const QString &path);
 
 protected:

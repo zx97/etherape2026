@@ -225,19 +225,23 @@ bool CaptureWorker::ensureHelper()
     const qint64 existing = m_childPid.load(std::memory_order_relaxed);
     if (existing > 0) {
         int status = 0;
-        if (::waitpid(static_cast<pid_t>(existing), &status, WNOHANG) == 0)
+        const pid_t reaped = ::waitpid(static_cast<pid_t>(existing), &status, WNOHANG);
+        if (qEnvironmentVariableIsSet("ETHERAPE_DEBUG"))
+            std::fprintf(stderr, "[etherape] ensureHelper existing=%lld reap=%d errno=%d\n",
+                         static_cast<long long>(existing), int(reaped), errno);
+        if (reaped == 0)
             return true;  // helper still alive: reuse the authenticated session
         // Helper died (killed, session ended): forget it and start over.
         m_childPid.store(-1, std::memory_order_relaxed);
+        if (qEnvironmentVariableIsSet("ETHERAPE_DEBUG"))
+            std::fprintf(stderr, "[etherape] helper died, respawning\n");
         QMutexLocker lock(&m_ctlMutex);
-        if (m_ctlFd >= 0) {
-            ::close(m_ctlFd);
-            m_ctlFd = -1;
-        }
-        if (m_dataFd >= 0) {
+        if (m_dataFd >= 0)
             ::close(m_dataFd);
-            m_dataFd = -1;
-        }
+        if (m_ctlFd >= 0 && m_ctlFd != m_dataFd)
+            ::close(m_ctlFd);
+        m_ctlFd = -1;
+        m_dataFd = -1;
     }
 
     // fd 0 and 1 are the only descriptors a setuid program (pkexec) is
@@ -295,14 +299,27 @@ bool CaptureWorker::ensureHelper()
             ::dup2(logFd, STDERR_FILENO);
         if (debug)  // read before fork(): getenv is not async-signal-safe
             ::write(STDERR_FILENO, "[etherape] child: exec now\n", 28);
-        if (direct)
-            ::execl(exe.constData(), exe.constData(), "--capture-helper",
-                    "--socket", socketPathBytes.constData(),
-                    static_cast<char *>(nullptr));
-        else
-            ::execlp("pkexec", "pkexec", exe.constData(), "--capture-helper",
-                     "--socket", socketPathBytes.constData(),
-                     static_cast<char *>(nullptr));
+        if (direct) {
+            if (debug)
+                ::execl(exe.constData(), exe.constData(), "--capture-helper",
+                        "--socket", socketPathBytes.constData(), "--debug",
+                        static_cast<char *>(nullptr));
+            else
+                ::execl(exe.constData(), exe.constData(), "--capture-helper",
+                        "--socket", socketPathBytes.constData(),
+                        static_cast<char *>(nullptr));
+        } else {
+            if (debug)
+                ::execlp("pkexec", "pkexec", exe.constData(),
+                         "--capture-helper", "--socket",
+                         socketPathBytes.constData(), "--debug",
+                         static_cast<char *>(nullptr));
+            else
+                ::execlp("pkexec", "pkexec", exe.constData(),
+                         "--capture-helper", "--socket",
+                         socketPathBytes.constData(),
+                         static_cast<char *>(nullptr));
+        }
         const char failure[] = "[etherape] child: exec failed\n";
         ::write(STDERR_FILENO, failure, sizeof(failure) - 1);
         _exit(127);
@@ -335,11 +352,18 @@ bool CaptureWorker::ensureHelper()
     ::unlink(socketPathBytes.constData());
 
     if (client < 0) {
+        // Authentication refused or cancelled: reap the child so it does not
+        // linger as a zombie.
+        ::kill(pid, SIGTERM);
+        int status = 0;
+        ::waitpid(pid, &status, WNOHANG);
         if (debug)
             std::fprintf(stderr, "[etherape] helper never connected\n");
         return false;
     }
 
+    // Remember the helper: this is what makes the next Start skip pkexec.
+    m_childPid.store(pid, std::memory_order_relaxed);
     m_ctlFd = client;    // full-duplex: commands out, status + pcap in
     m_dataFd = client;
     if (debug)
@@ -474,14 +498,14 @@ void CaptureWorker::closeHelper()
         return;
     sendCommand(kHelperCmdQuit, QByteArray());
     QMutexLocker lock(&m_ctlMutex);
-    if (m_ctlFd >= 0) {
-        ::close(m_ctlFd);
-        m_ctlFd = -1;
-    }
-    if (m_dataFd >= 0) {
+    // Commands and data share the same socket: close it exactly once, or the
+    // second close() hits a descriptor Qt may have reused in between.
+    if (m_dataFd >= 0)
         ::close(m_dataFd);
-        m_dataFd = -1;
-    }
+    if (m_ctlFd >= 0 && m_ctlFd != m_dataFd)
+        ::close(m_ctlFd);
+    m_ctlFd = -1;
+    m_dataFd = -1;
 #endif
 }
 

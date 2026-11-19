@@ -723,6 +723,11 @@ void MainWindow::requestStopCapture()
     stopCapture();
 }
 
+void MainWindow::requestStartCapture()
+{
+    startCapture();
+}
+
 void MainWindow::setFinalExport(const QString &path)
 {
     m_finalExportPath = path;

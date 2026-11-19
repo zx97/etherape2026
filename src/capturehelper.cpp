@@ -210,6 +210,10 @@ int runCaptureHelper(int argc, char **argv)
             }
             continue;
         }
+        if (std::strcmp(argv[i], "--debug") == 0) {
+            // handled below by re-reading argv
+            continue;
+        }
         if (std::strcmp(argv[i], "-i") == 0
             || std::strcmp(argv[i], "--interface") == 0) {
             device = valueAfter(i, argc, argv);
@@ -276,6 +280,12 @@ int runCaptureHelper(int argc, char **argv)
     }
 
     // Long-lived mode: commands and data share one full-duplex descriptor.
+    // pkexec sanitises the environment, so debug must come from argv.
+    bool debug = std::getenv("ETHERAPE_DEBUG") != nullptr;
+    for (int i = 1; i < argc; ++i) {
+        if (std::strcmp(argv[i], "--debug") == 0)
+            debug = true;
+    }
     int channel = -1;
     const char *socketPath = nullptr;
     for (int i = 1; i < argc; ++i) {
@@ -303,13 +313,19 @@ int runCaptureHelper(int argc, char **argv)
         channel = STDIN_FILENO;  // legacy: stdin for commands, stdout for data
     }
 
-    if (std::getenv("ETHERAPE_DEBUG"))
+    if (debug)
         std::fprintf(stderr, "[helper] serving on fd=%d\n", channel);
 
     for (;;) {
         HelperCommand command{};
-        if (!readExact(channel, &command, sizeof(command)))
+        if (!readExact(channel, &command, sizeof(command))) {
+            if (debug)
+                std::fprintf(stderr, "[helper] channel closed, exiting\n");
             break;
+        }
+        if (debug)
+            std::fprintf(stderr, "[helper] command type=%u len=%u\n",
+                         command.type, command.length);
         if (command.type == kHelperCmdQuit)
             break;
         if (command.type != kHelperCmdOpen) {
@@ -340,7 +356,11 @@ int runCaptureHelper(int argc, char **argv)
         if (dev >= payload + length)
             dev = "";
 
+        if (debug)
+            std::fprintf(stderr, "[helper] session start dev='%s'\n", dev);
         captureSession(channel, dev, flt);
+        if (debug)
+            std::fprintf(stderr, "[helper] session end\n");
     }
 
     return 0;
