@@ -75,6 +75,7 @@ private:
     void resetGraph();
     void setRunning(bool running);
     void updateStatus();
+    void setResolveNames(bool enabled);
     void applyZoneRules();
     void maybeResolve(const QString &id, NodeKind kind);
 
@@ -88,6 +89,7 @@ private:
     QAction *m_startAction = nullptr;
     QAction *m_stopAction = nullptr;
     QAction *m_numericAction = nullptr;
+    QAction *m_resolveAction = nullptr;
     QAction *m_legendAction = nullptr;
     QAction *m_zonesAction = nullptr;
     QLabel *m_sourceLabel = nullptr;

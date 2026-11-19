@@ -29,6 +29,7 @@
 #include <QMessageBox>
 #include <QMetaObject>
 #include <QSettings>
+#include <QSignalBlocker>
 #include <QSplitter>
 #include <QStatusBar>
 #include <QStyle>
@@ -280,6 +281,11 @@ void MainWindow::buildMenus()
             &MainWindow::showConversations);
 
     viewMenu->addSeparator();
+    m_resolveAction = viewMenu->addAction(tr("&Resolve Names (DNS)"));
+    m_resolveAction->setCheckable(true);
+    connect(m_resolveAction, &QAction::toggled, this,
+            &MainWindow::setResolveNames);
+
     auto *resetZoom = viewMenu->addAction(tr("Reset &Zoom"));
     resetZoom->setShortcut(QKeySequence(QStringLiteral("Ctrl+0")));
     connect(resetZoom, &QAction::triggered, m_graph, &GraphView::resetView);
@@ -368,7 +374,14 @@ void MainWindow::loadSettings()
     m_model->setNodeLimit(nodeLimit);
     m_model->setDecaySeconds(decay);
     m_graph->setFontScale(fontScale);
-    m_numericAction->setChecked(m_numeric);
+    {
+        const QSignalBlocker blocker(m_numericAction);
+        m_numericAction->setChecked(m_numeric);
+    }
+    if (m_resolveAction) {
+        const QSignalBlocker blocker(m_resolveAction);
+        m_resolveAction->setChecked(m_resolveNames);
+    }
 }
 
 void MainWindow::saveSettings()
@@ -413,6 +426,10 @@ void MainWindow::showPreferences()
     m_model->setNodeLimit(updated.nodeLimit);
     m_model->setDecaySeconds(updated.decaySeconds);
     m_resolveNames = updated.resolveNames;
+    if (m_resolveAction) {
+        const QSignalBlocker blocker(m_resolveAction);
+        m_resolveAction->setChecked(m_resolveNames);
+    }
     m_replaySpeed = updated.replaySpeed;
     m_usePolkit = updated.usePolkit;
     m_localZones = updated.localZones;
@@ -453,10 +470,26 @@ void MainWindow::setMode(Mode mode)
 void MainWindow::setNumeric(bool numeric)
 {
     m_numeric = numeric;
-    m_resolveNames = !numeric && m_resolveNames;
+    // "numeric" only controls the display: the resolve preference is kept
+    // as-is (maybeResolve already ignores it while numeric is on). Tying the
+    // two together used to reset the saved preference at every start.
     if (m_numericAction->isChecked() != numeric)
         m_numericAction->setChecked(numeric);
     updateStatus();
+}
+
+void MainWindow::setResolveNames(bool enabled)
+{
+    m_resolveNames = enabled;
+    if (m_resolveAction && m_resolveAction->isChecked() != enabled) {
+        const QSignalBlocker blocker(m_resolveAction);
+        m_resolveAction->setChecked(enabled);
+    }
+    saveSettings();
+    statusBar()->showMessage(
+        enabled ? tr("Reverse DNS enabled for new nodes.")
+                : tr("Reverse DNS disabled."),
+        3000);
 }
 
 void MainWindow::setNodeLimit(int limit)
