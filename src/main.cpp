@@ -10,6 +10,10 @@
 #include <QIcon>
 #include <QCommandLineOption>
 #include <QCommandLineParser>
+#include <cstdio>
+#include <QLocale>
+#include <QSettings>
+#include <QTranslator>
 #include <QTimer>
 
 #ifndef APP_VERSION
@@ -17,6 +21,40 @@
 #endif
 
 namespace {
+
+// Loads the UI language: the saved choice, else the system locale. Technical
+// terms stay in English in every translation.
+void installTranslations(QApplication &app)
+{
+    QSettings settings;
+    QString name = settings.value(QStringLiteral("ui/language")).toString();
+    if (name.isEmpty())
+        name = QLocale::system().name();
+    if (name.isEmpty() || name.startsWith(QLatin1String("en")))
+        return;
+    if (qEnvironmentVariableIsSet("ETHERAPE_DEBUG"))
+        std::fprintf(stderr, "[etherape] translation requested: %s\n",
+                     name.toLocal8Bit().constData());
+
+    auto *translator = new QTranslator(&app);
+    QString loaded = name;
+    if (!translator->load(QStringLiteral(":/translations/etherape2026_%1.qm")
+                              .arg(loaded))) {
+        const QString base = name.section(QLatin1Char('_'), 0, 0);
+        if (base == name
+            || !translator->load(QStringLiteral(":/translations/etherape2026_%1.qm")
+                                     .arg(base))) {
+            delete translator;
+            return;
+        }
+        loaded = base;
+    }
+    app.installTranslator(translator);
+    app.setLayoutDirection(QLocale(loaded).textDirection());
+    if (qEnvironmentVariableIsSet("ETHERAPE_DEBUG"))
+        std::fprintf(stderr, "[etherape] translation loaded: %s\n",
+                     loaded.toLocal8Bit().constData());
+}
 
 etherape::Mode parseMode(const QString &text, bool *ok)
 {
@@ -49,6 +87,7 @@ int main(int argc, char *argv[])
     QApplication::setDesktopFileName(QStringLiteral("etherape2026"));
     // Embedded resource: works on Windows too, where there is no icon theme.
     QApplication::setWindowIcon(QIcon(QStringLiteral(":/etherape.png")));
+    installTranslations(app);
 
     QCommandLineParser parser;
     parser.setApplicationDescription(

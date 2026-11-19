@@ -11,6 +11,7 @@ find_package(Qt6 6.5 REQUIRED COMPONENTS Core Gui Widgets Network)
 find_package(Threads REQUIRED)
 
 qt_standard_project_setup()
+set(CMAKE_AUTORCC ON)
 
 # ---------------------------------------------------------------------------
 # libpcap: pkg-config on POSIX, Npcap SDK on Windows.
@@ -100,6 +101,7 @@ add_executable(etherape2026
     src/statspanel.h
     src/preferencesdialog.cpp
     src/preferencesdialog.h
+    translations.qrc
     ${ET_WIN_RC}
 )
 

@@ -1,0 +1,14 @@
+<!DOCTYPE RCC>
+<RCC version="1.0">
+  <qresource prefix="/translations">
+    <file alias="etherape2026_fr.qm">translations/etherape2026_fr.qm</file>
+    <file alias="etherape2026_es.qm">translations/etherape2026_es.qm</file>
+    <file alias="etherape2026_pt_BR.qm">translations/etherape2026_pt_BR.qm</file>
+    <file alias="etherape2026_ru.qm">translations/etherape2026_ru.qm</file>
+    <file alias="etherape2026_zh_CN.qm">translations/etherape2026_zh_CN.qm</file>
+    <file alias="etherape2026_ar.qm">translations/etherape2026_ar.qm</file>
+    <file alias="etherape2026_hi.qm">translations/etherape2026_hi.qm</file>
+    <file alias="etherape2026_bn.qm">translations/etherape2026_bn.qm</file>
+    <file alias="etherape2026_ur.qm">translations/etherape2026_ur.qm</file>
+  </qresource>
+</RCC>

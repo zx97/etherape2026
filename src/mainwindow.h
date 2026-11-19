@@ -109,6 +109,7 @@ private:
     bool m_resolveNames = false;
     bool m_usePolkit = false;
     bool m_mergeFamilies = true;
+    QString m_language;
     QString m_pendingDevice;
     QString m_replayFile;
     int m_replaySpeed = 100;

@@ -7,6 +7,7 @@
 
 class QCheckBox;
 class QLineEdit;
+class QComboBox;
 class QDoubleSpinBox;
 class QSpinBox;
 
@@ -26,6 +27,7 @@ public:
         int replaySpeed = 100;
         bool usePolkit = false;
         bool mergeFamilies = true;
+        QString language;
         QString localZones;
         QString dmzZones;
         QString vpnZones;
@@ -43,6 +45,7 @@ private:
     QSpinBox *m_speed = nullptr;
     QCheckBox *m_polkit = nullptr;
     QCheckBox *m_merge = nullptr;
+    QComboBox *m_language = nullptr;
     QLineEdit *m_localZones = nullptr;
     QLineEdit *m_dmzZones = nullptr;
     QLineEdit *m_vpnZones = nullptr;

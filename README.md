@@ -39,6 +39,7 @@ complète et le tableau des remplacements.
 | VLAN affichés (panneau, tooltip, conversations, XML/JSON) | ✅ |
 | Nuages de zones LAN / DMZ / VPN / Internet | ✅ |
 | Tests unitaires (`ctest`) + CI GitLab | ✅ |
+| 10 langues (fr, es, pt_BR, ru, zh_CN, ar, hi, bn, ur + en) | ✅ |
 | Préférences persistantes (QSettings) | ✅ |
 
 ## Compilation
@@ -115,6 +116,17 @@ flowchart LR
   donc pas de coût par item et un rendu trivialement maîtrisé.
 
 Voir [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) pour le détail.
+
+## Langues
+
+Interface disponible en **anglais** (source) plus français, espagnol,
+portugais (Brésil), russe, chinois simplifié, arabe (RTL), hindi, bengali et
+ourdou. Les termes techniques (VLAN, MAC, BPF, DNS, TCP/IP, pcap…) restent en
+anglais dans toutes les langues. Sélection dans
+**Settings → Preferences → Language**, ou `ui/language` dans les réglages.
+
+Détail, état par langue et procédure de mise à jour :
+[`docs/TRANSLATIONS.md`](docs/TRANSLATIONS.md).
 
 ## Tests
 

@@ -3,6 +3,7 @@
 #include "preferencesdialog.h"
 
 #include <QCheckBox>
+#include <QComboBox>
 #include <QDialogButtonBox>
 #include <QDoubleSpinBox>
 #include <QFormLayout>
@@ -76,6 +77,23 @@ PreferencesDialog::PreferencesDialog(const Values &values, QWidget *parent)
     m_dmzZones->setToolTip(tr("CIDR blocks rendered in the DMZ cloud."));
     m_vpnZones->setToolTip(tr("CIDR blocks rendered in the VPN cloud."));
 
+    m_language = new QComboBox(this);
+    m_language->addItem(tr("System default"), QString());
+    m_language->addItem(QStringLiteral("Français (fr)"), QStringLiteral("fr"));
+    m_language->addItem(QStringLiteral("Español (es)"), QStringLiteral("es"));
+    m_language->addItem(QStringLiteral("Português do Brasil (pt_BR)"), QStringLiteral("pt_BR"));
+    m_language->addItem(QStringLiteral("Русский (ru)"), QStringLiteral("ru"));
+    m_language->addItem(QStringLiteral("简体中文 (zh_CN)"), QStringLiteral("zh_CN"));
+    m_language->addItem(QStringLiteral("العربية (ar)"), QStringLiteral("ar"));
+    m_language->addItem(QStringLiteral("हिन्दी (hi)"), QStringLiteral("hi"));
+    m_language->addItem(QStringLiteral("বাংলা (bn)"), QStringLiteral("bn"));
+    m_language->addItem(QStringLiteral("اردو (ur)"), QStringLiteral("ur"));
+    const int languageIndex = m_language->findData(values.language);
+    m_language->setCurrentIndex(languageIndex >= 0 ? languageIndex : 0);
+    m_language->setToolTip(
+        tr("Technical terms (VLAN, MAC, BPF, DNS, TCP/IP...) stay in English. "
+           "The change applies at the next start."));
+
     auto *form = new QFormLayout;
     form->addRow(tr("Node limit:"), m_nodeLimit);
     form->addRow(tr("Link decay:"), m_decay);
@@ -84,6 +102,7 @@ PreferencesDialog::PreferencesDialog(const Values &values, QWidget *parent)
     form->addRow(QString(), m_resolve);
     form->addRow(QString(), m_merge);
     form->addRow(QString(), m_polkit);
+    form->addRow(tr("Language:"), m_language);
     form->addRow(tr("LAN zones:"), m_localZones);
     form->addRow(tr("DMZ zones:"), m_dmzZones);
     form->addRow(tr("VPN zones:"), m_vpnZones);
@@ -109,6 +128,7 @@ PreferencesDialog::Values PreferencesDialog::values() const
     values.replaySpeed = m_speed->value();
     values.usePolkit = m_polkit->isChecked();
     values.mergeFamilies = m_merge->isChecked();
+    values.language = m_language->currentData().toString();
     values.localZones = m_localZones->text();
     values.dmzZones = m_dmzZones->text();
     values.vpnZones = m_vpnZones->text();

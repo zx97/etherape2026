@@ -341,6 +341,7 @@ void MainWindow::loadSettings()
         settings.value(QStringLiteral("capture/usePolkit"), false).toBool();
     m_mergeFamilies =
         settings.value(QStringLiteral("graph/mergeFamilies"), true).toBool();
+    m_language = settings.value(QStringLiteral("ui/language")).toString();
     m_model->setMergeFamilies(m_mergeFamilies);
     if (m_mergeAction) {
         const QSignalBlocker blocker(m_mergeAction);
@@ -453,6 +454,7 @@ void MainWindow::showPreferences()
     values.replaySpeed = m_replaySpeed;
     values.usePolkit = m_usePolkit;
     values.mergeFamilies = m_mergeFamilies;
+    values.language = m_language;
     values.localZones = m_localZones;
     values.dmzZones = m_dmzZones;
     values.vpnZones = m_vpnZones;
@@ -472,6 +474,12 @@ void MainWindow::showPreferences()
     m_replaySpeed = updated.replaySpeed;
     m_usePolkit = updated.usePolkit;
     m_mergeFamilies = updated.mergeFamilies;
+    if (updated.language != m_language) {
+        m_language = updated.language;
+        QSettings().setValue(QStringLiteral("ui/language"), m_language);
+        statusBar()->showMessage(
+            tr("Language will change at the next start."), 6000);
+    }
     m_model->setMergeFamilies(m_mergeFamilies);
     if (m_mergeAction) {
         const QSignalBlocker blocker(m_mergeAction);
