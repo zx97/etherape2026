@@ -59,6 +59,7 @@ private slots:
     void refreshView();
     void showAbout();
     void exportXml();
+    bool writeExport(const QString &path, QString *error);
     void saveLayoutAs();
     void openLayout();
     void showConversations();

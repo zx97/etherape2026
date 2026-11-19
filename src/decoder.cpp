@@ -4,6 +4,7 @@
 
 #include "netbios.h"
 
+#include <QHash>
 #include <QHostAddress>
 
 #include <algorithm>
@@ -44,6 +45,47 @@ QString ipv6ToString(const uchar *p)
 {
     QHostAddress address(p);
     return address.toString();
+}
+
+QString applicationProtocol(const QString &transport, quint16 sport,
+                            quint16 dport)
+{
+    static const QHash<quint16, QString> tcpPorts = {
+        {22, QStringLiteral("SSH")},     {23, QStringLiteral("Telnet")},
+        {25, QStringLiteral("SMTP")},    {53, QStringLiteral("DNS")},
+        {80, QStringLiteral("HTTP")},    {110, QStringLiteral("POP3")},
+        {143, QStringLiteral("IMAP")},   {389, QStringLiteral("LDAP")},
+        {443, QStringLiteral("TLS")},    {445, QStringLiteral("SMB")},
+        {636, QStringLiteral("LDAPS")},  {993, QStringLiteral("IMAPS")},
+        {995, QStringLiteral("POP3S")},  {1433, QStringLiteral("MSSQL")},
+        {1521, QStringLiteral("Oracle")}, {3306, QStringLiteral("MySQL")},
+        {3389, QStringLiteral("RDP")},   {5432, QStringLiteral("PostgreSQL")},
+        {5900, QStringLiteral("VNC")},   {6379, QStringLiteral("Redis")},
+        {8080, QStringLiteral("HTTP")},  {8443, QStringLiteral("TLS")},
+    };
+    static const QHash<quint16, QString> udpPorts = {
+        {53, QStringLiteral("DNS")},     {67, QStringLiteral("DHCP")},
+        {68, QStringLiteral("DHCP")},    {69, QStringLiteral("TFTP")},
+        {123, QStringLiteral("NTP")},    {137, QStringLiteral("NBNS")},
+        {138, QStringLiteral("NBDS")},   {161, QStringLiteral("SNMP")},
+        {162, QStringLiteral("SNMP")},   {500, QStringLiteral("IKE")},
+        {514, QStringLiteral("Syslog")}, {1900, QStringLiteral("SSDP")},
+        {4500, QStringLiteral("IPsec")}, {5353, QStringLiteral("mDNS")},
+        {5355, QStringLiteral("LLMNR")},
+    };
+
+    const auto &table = (transport == QLatin1String("TCP")) ? tcpPorts : udpPorts;
+    const bool sourceKnown = table.contains(sport);
+    const bool destKnown = table.contains(dport);
+    // The service is the well-known end of the connection; prefer the lower
+    // port, which resolves both "client -> server" and the reply direction.
+    if (destKnown && (!sourceKnown || dport <= sport))
+        return table.value(dport);
+    if (sourceKnown)
+        return table.value(sport);
+    if (destKnown)
+        return table.value(dport);
+    return transport;
 }
 
 QString portLabel(const QString &addr, quint16 port)
@@ -198,6 +240,8 @@ PacketInfo Decoder::decode(const uchar *data, quint32 caplen, quint32 origlen,
         if ((proto == 6 || proto == 17) && caplen >= l4 + 4) {
             pkt.sport = rd16(data + l4);
             pkt.dport = rd16(data + l4 + 2);
+            pkt.protocol = applicationProtocol(pkt.protocol, pkt.sport,
+                                               pkt.dport);
             if (m_mode == Mode::Tcp) {
                 pkt.src = {portLabel(src, pkt.sport), portLabel(src, pkt.sport),
                            NodeKind::Port};
@@ -259,6 +303,8 @@ PacketInfo Decoder::decode(const uchar *data, quint32 caplen, quint32 origlen,
         if ((next == 6 || next == 17) && caplen >= l4 + 4) {
             pkt.sport = rd16(data + l4);
             pkt.dport = rd16(data + l4 + 2);
+            pkt.protocol = applicationProtocol(pkt.protocol, pkt.sport,
+                                               pkt.dport);
             if (m_mode == Mode::Tcp) {
                 pkt.src = {portLabel(src, pkt.sport), portLabel(src, pkt.sport),
                            NodeKind::Port};

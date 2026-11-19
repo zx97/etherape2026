@@ -7,6 +7,7 @@
 #include "graphmodel.h"
 #include "graphview.h"
 #include "statspanel.h"
+#include "jsonexport.h"
 #include "xmlexport.h"
 
 #include <QAction>
@@ -651,7 +652,7 @@ void MainWindow::onCaptureStopped()
     // --final-export: dump the graph at the end of a replay, then exit.
     if (replayEnded && !m_finalExportPath.isEmpty()) {
         QString error;
-        if (!exportGraphXml(*m_model, m_finalExportPath, m_sourceText, &error))
+        if (!writeExport(m_finalExportPath, &error))
             statusBar()->showMessage(tr("Final export failed: %1").arg(error));
         else
             statusBar()->showMessage(
@@ -731,16 +732,26 @@ void MainWindow::loadLayoutFile(const QString &path)
 void MainWindow::exportXml()
 {
     QString path = QFileDialog::getSaveFileName(
-        this, tr("Export graph as XML"), QStringLiteral("etherape.xml"),
-        tr("XML files (*.xml);;All files (*)"));
+        this, tr("Export graph"), QStringLiteral("etherape.xml"),
+        tr("XML files (*.xml);;JSON files (*.json);;All files (*)"));
     if (path.isEmpty())
         return;
+    if (!path.contains(QLatin1Char('.'))
+        && path.startsWith(QLatin1String("etherape")))
+        ;  // keep the dialog default as-is
 
     QString error;
-    if (exportGraphXml(*m_model, path, m_sourceText, &error))
+    if (writeExport(path, &error))
         statusBar()->showMessage(tr("Exported to %1").arg(path), 5000);
     else
         QMessageBox::warning(this, tr("Export failed"), error);
+}
+
+bool MainWindow::writeExport(const QString &path, QString *error)
+{
+    if (path.endsWith(QLatin1String(".json"), Qt::CaseInsensitive))
+        return exportGraphJson(*m_model, path, m_sourceText, error);
+    return exportGraphXml(*m_model, path, m_sourceText, error);
 }
 
 void MainWindow::saveLayoutAs()
@@ -805,7 +816,7 @@ void MainWindow::closeEvent(QCloseEvent *event)
     saveSettings();
     if (!m_finalExportPath.isEmpty()) {
         QString error;
-        if (!exportGraphXml(*m_model, m_finalExportPath, m_sourceText, &error))
+        if (!writeExport(m_finalExportPath, &error))
             statusBar()->showMessage(tr("Final export failed: %1").arg(error));
     }
     if (m_worker)

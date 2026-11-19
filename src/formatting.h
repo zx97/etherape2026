@@ -26,6 +26,22 @@ inline QColor protocolColor(const QString &protocol)
         return QColor(0xb1, 0x8c, 0xff);
     if (protocol.startsWith(QLatin1String("IP/")))
         return QColor(0xc0, 0xc8, 0xd4);
+    if (protocol == QLatin1String("HTTP"))
+        return QColor(0x4d, 0xab, 0xf7);
+    if (protocol == QLatin1String("TLS") || protocol == QLatin1String("LDAPS"))
+        return QColor(0x2e, 0xc4, 0xb6);
+    if (protocol == QLatin1String("DNS"))
+        return QColor(0xff, 0x9f, 0x43);
+    if (protocol == QLatin1String("SSH") || protocol == QLatin1String("RDP")
+        || protocol == QLatin1String("VNC"))
+        return QColor(0xba, 0x68, 0xc8);
+    if (protocol == QLatin1String("SMB"))
+        return QColor(0xd4, 0x6a, 0x6a);
+    if (protocol == QLatin1String("NBNS"))
+        return QColor(0xc0, 0xa0, 0x50);
+    if (protocol == QLatin1String("NTP") || protocol == QLatin1String("SNMP")
+        || protocol == QLatin1String("DHCP"))
+        return QColor(0x8b, 0xc3, 0x4a);
     if (protocol.startsWith(QLatin1String("0x")))
         return QColor(0x78, 0x90, 0x9c);
     return QColor(0x9a, 0xa5, 0xb1);

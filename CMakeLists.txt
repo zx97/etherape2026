@@ -54,6 +54,26 @@ else()
     set(PCAP_TARGET PkgConfig::PCAP)
 endif()
 
+# ---------------------------------------------------------------------------
+# Core library: no GUI dependency, unit-testable headless.
+# ---------------------------------------------------------------------------
+add_library(etherape_core STATIC
+    src/decoder.cpp
+    src/decoder.h
+    src/netbios.cpp
+    src/netbios.h
+    src/zones.cpp
+    src/zones.h
+    src/graphmodel.cpp
+    src/graphmodel.h
+    src/xmlexport.cpp
+    src/xmlexport.h
+    src/jsonexport.cpp
+    src/jsonexport.h
+)
+target_include_directories(etherape_core PUBLIC src)
+target_link_libraries(etherape_core PUBLIC Qt6::Core Qt6::Gui Qt6::Network ${PCAP_TARGET})
+
 add_executable(etherape2026
     src/main.cpp
     src/mainwindow.cpp
@@ -62,18 +82,8 @@ add_executable(etherape2026
     src/captureworker.h
     src/capturehelper.cpp
     src/capturehelper.h
-    src/decoder.cpp
-    src/decoder.h
-    src/netbios.cpp
-    src/netbios.h
-    src/xmlexport.cpp
-    src/xmlexport.h
     src/conversationsdialog.cpp
     src/conversationsdialog.h
-    src/graphmodel.cpp
-    src/graphmodel.h
-    src/zones.cpp
-    src/zones.h
     src/graphview.cpp
     src/graphview.h
     src/statspanel.cpp
@@ -83,19 +93,31 @@ add_executable(etherape2026
 )
 
 target_link_libraries(etherape2026 PRIVATE
+    etherape_core
     Qt6::Widgets
-    Qt6::Network
-    ${PCAP_TARGET}
     Threads::Threads
 )
 
 if(MSVC)
     target_compile_options(etherape2026 PRIVATE /W3 /utf-8)
+    target_compile_options(etherape_core PRIVATE /W3 /utf-8)
 else()
     target_compile_options(etherape2026 PRIVATE -Wall -Wextra)
+    target_compile_options(etherape_core PRIVATE -Wall -Wextra)
 endif()
 
 target_compile_definitions(etherape2026 PRIVATE APP_VERSION="${PROJECT_VERSION}")
+
+# ---------------------------------------------------------------------------
+# Tests
+# ---------------------------------------------------------------------------
+include(CTest)
+if(BUILD_TESTING)
+    find_package(Qt6 REQUIRED COMPONENTS Test)
+    add_executable(tst_core tests/tst_core.cpp)
+    target_link_libraries(tst_core PRIVATE etherape_core Qt6::Test)
+    add_test(NAME core COMMAND tst_core)
+endif()
 
 # Console subsystem on Windows keeps startup errors visible; set
 # -DETH_WINDOWS_GUI=ON for a windowed build.
@@ -113,7 +135,7 @@ if(WIN32)
     find_program(WINDEPLOYQT_EXE windeployqt HINTS "${QT6_INSTALL_PREFIX}/bin")
     if(WINDEPLOYQT_EXE)
         add_custom_target(deploy
-            COMMAND "${WINDEPLOYQT_EXE}" --no-translations
+            COMMAND "${WINDEPLOYQT_EXE}" --no-translations --compiler-runtime
                     "$<TARGET_FILE:etherape2026>"
             DEPENDS etherape2026
             COMMENT "Deploying Qt runtime with windeployqt")

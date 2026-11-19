@@ -22,9 +22,12 @@ bibliothèques vivantes et largement packagées sont utilisées.
 | Résolution DNS inverse asynchrone (optionnelle) | ✅ |
 | NetBIOS passif (réponses NBNS UDP/137) | ✅ |
 | Légende dynamique des protocoles | ✅ |
-| Export XML (menu, `--final-export`) | ✅ |
+| Export XML **et JSON** (menu, `--final-export`) | ✅ |
 | Conversations détaillées par lien | ✅ |
 | Positionnement manuel (drag/pin, JSON, `--position`) | ✅ |
+| Dissection applicative (HTTP, TLS, DNS, SSH…) | ✅ |
+| Nuages de zones LAN / DMZ / VPN / Internet | ✅ |
+| Tests unitaires (`ctest`) + CI GitLab | ✅ |
 | Préférences persistantes (QSettings) | ✅ |
 
 ## Compilation
@@ -101,6 +104,18 @@ flowchart LR
   donc pas de coût par item et un rendu trivialement maîtrisé.
 
 Voir [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) pour le détail.
+
+## Tests
+
+```bash
+cmake -S . -B build -G Ninja -DBUILD_TESTING=ON
+cmake --build build
+ctest --test-dir build --output-on-failure
+```
+
+Le cœur (décodage, NetBIOS, zones, exports) est dans une bibliothèque sans GUI
+(`etherape_core`), donc les tests tournent sans serveur graphique. La CI
+GitLab (`.gitlab-ci.yml`) couvre Linux et Windows.
 
 ## Windows
 
