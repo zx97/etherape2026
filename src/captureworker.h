@@ -66,6 +66,7 @@ private:
     int m_dataFd = -1;
     QMutex m_ctlMutex;
     QString m_helperLogPath;
+    int m_streamPrefix = -1;
     Decoder m_decoder;
     QList<PacketInfo> m_batch;
     quint64 m_packets = 0;

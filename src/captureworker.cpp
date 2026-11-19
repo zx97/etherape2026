@@ -427,6 +427,16 @@ bool CaptureWorker::waitForOpenStatus(QString *detail)
                              unsigned(status));
             if (status == 0)
                 return true;
+            if (status != 1) {
+                // The stream started before the status byte (older helper):
+                // keep the byte and let the pcap parser see it first.
+                m_streamPrefix = status;
+                if (debug)
+                    std::fprintf(stderr,
+                                 "[etherape] OPEN status missing, byte=0x%02x\n",
+                                 unsigned(status));
+                return true;
+            }
 
             // Status 1 is followed by a length and the helper's error text.
             unsigned length = 0;
@@ -561,6 +571,11 @@ void CaptureWorker::readPcapStream(int outFd, int errFd)
     QByteArray errors;
     bool headerDone = false;
     bool swapped = false;
+
+    if (m_streamPrefix >= 0) {
+        buffer.append(static_cast<char>(m_streamPrefix));
+        m_streamPrefix = -1;
+    }
 
     for (;;) {
         if (m_stop.load(std::memory_order_relaxed))

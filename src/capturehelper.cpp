@@ -114,8 +114,15 @@ void captureSession(int fd, const char *device, const char *filter)
         pcap_freecode(&program);
     }
 
-    // Each session gets its own duplicate of the data pipe, so closing the
-    // dumper never closes the GUI's channel.
+    // The status byte must leave BEFORE pcap_dump_fopen(), which writes the
+    // 24-byte pcap global header immediately. Otherwise the GUI reads 0xd4
+    // (the first magic byte) instead of the status.
+    status = 0;
+    if (!writeExact(fd, &status, 1)) {
+        pcap_close(handle);
+        return;
+    }
+
     FILE *sink = ::fdopen(::dup(fd), "wb");
     if (!sink) {
         pcap_close(handle);
@@ -125,14 +132,6 @@ void captureSession(int fd, const char *device, const char *filter)
     pcap_dumper_t *dumper = pcap_dump_fopen(handle, sink);
     if (!dumper) {
         std::fclose(sink);
-        pcap_close(handle);
-        reportFailure("cannot open the capture stream");
-        return;
-    }
-
-    status = 0;
-    if (!writeExact(fd, &status, 1)) {
-        pcap_dump_close(dumper);
         pcap_close(handle);
         return;
     }
