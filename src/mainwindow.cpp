@@ -135,9 +135,12 @@ MainWindow::~MainWindow()
 void MainWindow::buildUi()
 {
     setWindowTitle(tr("EtherApe 2026"));
-    setWindowIcon(QIcon::fromTheme(QStringLiteral("etherape"),
-                                   QApplication::style()->standardIcon(
-                                       QStyle::SP_ComputerIcon)));
+    QIcon appIcon = QIcon::fromTheme(QStringLiteral("etherape"));
+    if (appIcon.isNull())
+        appIcon = QIcon(QStringLiteral(":/etherape.png"));
+    if (appIcon.isNull())
+        appIcon = QApplication::style()->standardIcon(QStyle::SP_ComputerIcon);
+    setWindowIcon(appIcon);
 
     auto *toolbar = addToolBar(tr("Capture"));
     toolbar->setMovable(false);
@@ -286,6 +289,11 @@ void MainWindow::buildMenus()
     connect(m_resolveAction, &QAction::toggled, this,
             &MainWindow::setResolveNames);
 
+    m_mergeAction = viewMenu->addAction(tr("&Merge IPv4/IPv6 Hosts"));
+    m_mergeAction->setCheckable(true);
+    connect(m_mergeAction, &QAction::toggled, this,
+            &MainWindow::setMergeFamilies);
+
     auto *resetZoom = viewMenu->addAction(tr("Reset &Zoom"));
     resetZoom->setShortcut(QKeySequence(QStringLiteral("Ctrl+0")));
     connect(resetZoom, &QAction::triggered, m_graph, &GraphView::resetView);
@@ -318,6 +326,13 @@ void MainWindow::loadSettings()
         settings.value(QStringLiteral("names/resolve"), false).toBool();
     m_usePolkit =
         settings.value(QStringLiteral("capture/usePolkit"), false).toBool();
+    m_mergeFamilies =
+        settings.value(QStringLiteral("graph/mergeFamilies"), true).toBool();
+    m_model->setMergeFamilies(m_mergeFamilies);
+    if (m_mergeAction) {
+        const QSignalBlocker blocker(m_mergeAction);
+        m_mergeAction->setChecked(m_mergeFamilies);
+    }
     m_numeric = settings.value(QStringLiteral("names/numeric"), false).toBool();
     m_localZones = settings
                        .value(QStringLiteral("zones/local"),
@@ -400,6 +415,7 @@ void MainWindow::saveSettings()
     settings.setValue(QStringLiteral("names/resolve"), m_resolveNames);
     settings.setValue(QStringLiteral("names/numeric"), m_numeric);
     settings.setValue(QStringLiteral("capture/usePolkit"), m_usePolkit);
+    settings.setValue(QStringLiteral("graph/mergeFamilies"), m_mergeFamilies);
     settings.setValue(QStringLiteral("zones/local"), m_localZones);
     settings.setValue(QStringLiteral("zones/dmz"), m_dmzZones);
     settings.setValue(QStringLiteral("zones/vpn"), m_vpnZones);
@@ -414,6 +430,7 @@ void MainWindow::showPreferences()
     values.fontScale = m_graph->fontScale();
     values.replaySpeed = m_replaySpeed;
     values.usePolkit = m_usePolkit;
+    values.mergeFamilies = m_mergeFamilies;
     values.localZones = m_localZones;
     values.dmzZones = m_dmzZones;
     values.vpnZones = m_vpnZones;
@@ -432,6 +449,12 @@ void MainWindow::showPreferences()
     }
     m_replaySpeed = updated.replaySpeed;
     m_usePolkit = updated.usePolkit;
+    m_mergeFamilies = updated.mergeFamilies;
+    m_model->setMergeFamilies(m_mergeFamilies);
+    if (m_mergeAction) {
+        const QSignalBlocker blocker(m_mergeAction);
+        m_mergeAction->setChecked(m_mergeFamilies);
+    }
     m_localZones = updated.localZones;
     m_dmzZones = updated.dmzZones;
     m_vpnZones = updated.vpnZones;
@@ -500,6 +523,21 @@ void MainWindow::setResolveNames(bool enabled)
         enabled ? tr("Reverse DNS enabled for new nodes.")
                 : tr("Reverse DNS disabled."),
         3000);
+}
+
+void MainWindow::setMergeFamilies(bool enabled)
+{
+    m_mergeFamilies = enabled;
+    if (m_mergeAction && m_mergeAction->isChecked() != enabled) {
+        const QSignalBlocker blocker(m_mergeAction);
+        m_mergeAction->setChecked(enabled);
+    }
+    m_model->setMergeFamilies(enabled);
+    saveSettings();
+    statusBar()->showMessage(
+        enabled ? tr("IPv4/IPv6 addresses of the same host are merged.")
+                : tr("IPv4/IPv6 addresses are kept as separate nodes."),
+        4000);
 }
 
 void MainWindow::setNodeLimit(int limit)

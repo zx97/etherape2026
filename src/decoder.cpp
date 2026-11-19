@@ -183,6 +183,8 @@ PacketInfo Decoder::decode(const uchar *data, quint32 caplen, quint32 origlen,
     // Default endpoints: MAC pair when the link layer provides one, otherwise
     // let the L3 parser fill them in.
     if (ll.hasMac) {
+        pkt.srcMac = ll.srcMac;
+        pkt.dstMac = ll.dstMac;
         pkt.src = {ll.srcMac, ll.srcMac, NodeKind::Mac};
         pkt.dst = {ll.dstMac, ll.dstMac, NodeKind::Mac};
     }

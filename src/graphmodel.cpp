@@ -47,6 +47,106 @@ void GraphModel::clear()
     emit structureChanged();
 }
 
+void GraphModel::setMergeFamilies(bool merge)
+{
+    if (m_mergeFamilies == merge)
+        return;
+    m_mergeFamilies = merge;
+    if (merge)
+        mergeByMac();
+}
+
+// Merges nodes that share a MAC (typically the IPv4 and IPv6 addresses of one
+// host). Links are re-keyed and their counters aggregated, keeping each
+// direction attached to the right endpoint.
+void GraphModel::mergeByMac()
+{
+    QHash<QString, int> byMac;
+    QVector<bool> removed(m_nodes.size(), false);
+
+    for (int i = 0; i < m_nodes.size(); ++i) {
+        Node &node = m_nodes[i];
+        if (node.mac.isEmpty() || node.aliases.isEmpty())
+            continue;
+        auto known = byMac.find(node.mac);
+        if (known == byMac.end()) {
+            byMac.insert(node.mac, i);
+            continue;
+        }
+        Node &target = m_nodes[known.value()];
+        target.aliases.unite(node.aliases);
+        target.aliases.insert(node.id);
+        target.vlans.unite(node.vlans);
+        target.bytes += node.bytes;
+        target.packets += node.packets;
+        target.lastSeenMs = std::max(target.lastSeenMs, node.lastSeenMs);
+        if (target.kind == NodeKind::Ipv6 && node.kind == NodeKind::Ipv4) {
+            target.id = node.id;
+            target.kind = NodeKind::Ipv4;
+            if (target.label.isEmpty() || target.label.contains(QLatin1Char(':')))
+                target.label = node.id;
+        }
+        removed[i] = true;
+    }
+
+    if (!removed.contains(true))
+        return;
+
+    QVector<int> remap(m_nodes.size(), -1);
+    QVector<Node> nodes;
+    nodes.reserve(m_nodes.size());
+    for (int i = 0; i < m_nodes.size(); ++i) {
+        if (removed[i])
+            continue;
+        remap[i] = nodes.size();
+        nodes.append(m_nodes[i]);
+    }
+
+    QHash<quint64, Link> links;
+    for (const Link &old : std::as_const(m_links)) {
+        const int a = remap.value(old.a, -1);
+        const int b = remap.value(old.b, -1);
+        if (a < 0 || b < 0 || a == b)
+            continue;
+
+        const QString sourceId = m_nodes[old.a].id;
+        const quint64 key = linkKey(a, b);
+        auto existing = links.find(key);
+        if (existing == links.end()) {
+            Link link = old;
+            link.a = a;
+            link.b = b;
+            links.insert(key, link);
+            continue;
+        }
+
+        Link &aggregate = existing.value();
+        const bool sameDirection = (sourceId == nodes[aggregate.a].id);
+        if (sameDirection) {
+            aggregate.packetsAB += old.packetsAB;
+            aggregate.bytesAB += old.bytesAB;
+            aggregate.packetsBA += old.packetsBA;
+            aggregate.bytesBA += old.bytesBA;
+        } else {
+            aggregate.packetsAB += old.packetsBA;
+            aggregate.bytesAB += old.bytesBA;
+            aggregate.packetsBA += old.packetsAB;
+            aggregate.bytesBA += old.bytesAB;
+        }
+        aggregate.packets += old.packets;
+        aggregate.bytes += old.bytes;
+        aggregate.intensity = std::max(aggregate.intensity, old.intensity);
+        aggregate.vlans.unite(old.vlans);
+        aggregate.lastSeenMs = std::max(aggregate.lastSeenMs, old.lastSeenMs);
+        aggregate.protocol = old.protocol;
+    }
+
+    m_nodes = nodes;
+    m_links = links;
+    rebuildIndexes();
+    emit structureChanged();
+}
+
 void GraphModel::setNodeLimit(int limit)
 {
     m_nodeLimit = std::max(1, limit);
@@ -90,8 +190,6 @@ void GraphModel::removeNodeAt(int idx)
             ++it;
     }
 
-    m_index.remove(removedId);
-
     if (idx != last) {
         m_nodes[idx] = m_nodes[last];
         m_index.insert(m_nodes[idx].id, idx);
@@ -109,9 +207,24 @@ void GraphModel::removeNodeAt(int idx)
     }
 
     m_nodes.removeLast();
+    rebuildIndexes();
 }
 
-int GraphModel::nodeIndex(const Endpoint &endpoint, qint64 nowMs)
+void GraphModel::rebuildIndexes()
+{
+    m_index.clear();
+    m_macIndex.clear();
+    for (int i = 0; i < m_nodes.size(); ++i) {
+        m_index.insert(m_nodes[i].id, i);
+        for (const QString &alias : std::as_const(m_nodes[i].aliases))
+            m_index.insert(alias, i);
+        if (!m_nodes[i].mac.isEmpty())
+            m_macIndex.insert(m_nodes[i].mac, i);
+    }
+}
+
+int GraphModel::nodeIndex(const Endpoint &endpoint, const QString &mac,
+                          qint64 nowMs)
 {
     auto it = m_index.find(endpoint.id);
     if (it != m_index.end()) {
@@ -120,6 +233,33 @@ int GraphModel::nodeIndex(const Endpoint &endpoint, qint64 nowMs)
         if (node.label.isEmpty())
             node.label = endpoint.label;
         return it.value();
+    }
+
+    // Same hardware, other address family: merge into the existing node so a
+    // host seen over IPv4 and IPv6 is a single vertex.
+    if (m_mergeFamilies && !mac.isEmpty()
+        && (endpoint.kind == NodeKind::Ipv4
+            || endpoint.kind == NodeKind::Ipv6)) {
+        auto known = m_macIndex.find(mac);
+        if (known != m_macIndex.end()) {
+            const int idx = known.value();
+            Node &node = m_nodes[idx];
+            node.aliases.insert(endpoint.id);
+            m_index.insert(endpoint.id, idx);
+            node.lastSeenMs = nowMs;
+            // Prefer an IPv4 address as the displayed identity.
+            if (endpoint.kind == NodeKind::Ipv4
+                && node.kind == NodeKind::Ipv6) {
+                m_index.remove(node.id);
+                node.id = endpoint.id;
+                node.kind = NodeKind::Ipv4;
+                if (node.label.isEmpty() || node.label == endpoint.id
+                    || node.label.contains(QLatin1Char(':')))
+                    node.label = endpoint.id;
+                m_index.insert(node.id, idx);
+            }
+            return idx;
+        }
     }
 
     if (m_nodes.size() >= m_nodeLimit) {
@@ -139,14 +279,19 @@ int GraphModel::nodeIndex(const Endpoint &endpoint, qint64 nowMs)
     node.id = endpoint.id;
     node.label = endpoint.label;
     node.kind = endpoint.kind;
+    node.mac = mac;
+    node.aliases.insert(endpoint.id);
     node.zone = m_zones.classify(endpoint.id, endpoint.kind);
     node.firstSeenMs = nowMs;
     node.lastSeenMs = nowMs;
     placeNewNode(node);
     m_nodes.append(node);
-    m_index.insert(node.id, m_nodes.size() - 1);
+    const int index = m_nodes.size() - 1;
+    m_index.insert(node.id, index);
+    if (!mac.isEmpty())
+        m_macIndex.insert(mac, index);
     emit structureChanged();
-    return m_nodes.size() - 1;
+    return index;
 }
 
 void GraphModel::addPacket(const PacketInfo &pkt, qint64 nowMs)
@@ -166,8 +311,8 @@ void GraphModel::addPacket(const PacketInfo &pkt, qint64 nowMs)
     m_totalPackets += 1;
     m_totalBytes += pkt.origlen;
 
-    const int srcIndex = nodeIndex(pkt.src, nowMs);
-    const int dstIndex = nodeIndex(pkt.dst, nowMs);
+    const int srcIndex = nodeIndex(pkt.src, pkt.srcMac, nowMs);
+    const int dstIndex = nodeIndex(pkt.dst, pkt.dstMac, nowMs);
     if (srcIndex < 0 || dstIndex < 0 || srcIndex == dstIndex)
         return;
 

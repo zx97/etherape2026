@@ -25,6 +25,7 @@ public:
         double fontScale = 1.0;
         int replaySpeed = 100;
         bool usePolkit = false;
+        bool mergeFamilies = true;
         QString localZones;
         QString dmzZones;
         QString vpnZones;
@@ -41,6 +42,7 @@ private:
     QDoubleSpinBox *m_font = nullptr;
     QSpinBox *m_speed = nullptr;
     QCheckBox *m_polkit = nullptr;
+    QCheckBox *m_merge = nullptr;
     QLineEdit *m_localZones = nullptr;
     QLineEdit *m_dmzZones = nullptr;
     QLineEdit *m_vpnZones = nullptr;

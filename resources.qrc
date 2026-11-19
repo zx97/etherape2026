@@ -1,0 +1,7 @@
+<!DOCTYPE RCC>
+<RCC version="1.0">
+  <qresource prefix="/">
+    <file alias="etherape.png">data/etherape.png</file>
+    <file alias="etherape.ico">data/etherape.ico</file>
+  </qresource>
+</RCC>

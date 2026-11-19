@@ -74,6 +74,16 @@ add_library(etherape_core STATIC
 target_include_directories(etherape_core PUBLIC src)
 target_link_libraries(etherape_core PUBLIC Qt6::Core Qt6::Gui Qt6::Network ${PCAP_TARGET})
 
+if(WIN32)
+    enable_language(RC)
+    set(ET_WIN_RC data/windows.rc)
+    # windres must find etherape.ico next to windows.rc
+    set_source_files_properties(data/windows.rc PROPERTIES
+        COMPILE_FLAGS "-I${CMAKE_CURRENT_SOURCE_DIR}/data")
+else()
+    set(ET_WIN_RC "")
+endif()
+
 add_executable(etherape2026
     src/main.cpp
     src/mainwindow.cpp
@@ -90,6 +100,12 @@ add_executable(etherape2026
     src/statspanel.h
     src/preferencesdialog.cpp
     src/preferencesdialog.h
+    ${ET_WIN_RC}
+)
+
+qt_add_resources(etherape2026 "appresources"
+    PREFIX "/"
+    FILES data/etherape.png data/etherape.ico
 )
 
 target_link_libraries(etherape2026 PRIVATE

@@ -457,8 +457,8 @@ bool CaptureWorker::waitForOpenStatus(QString *detail)
                     if (marker.endsWith(QByteArrayLiteral("ETHP"))) {
                         if (debug && marker.size() > 4)
                             std::fprintf(stderr,
-                                         "[etherape] resynced after %d bytes\n",
-                                         marker.size() - 4);
+                                         "[etherape] resynced after %lld bytes\n",
+                                         static_cast<long long>(marker.size() - 4));
                         return true;
                     }
                 }
@@ -525,7 +525,12 @@ void CaptureWorker::closeHelper()
 void CaptureWorker::openPrivilegedOneShot(const QString &device,
                                           const QString &filter, int mode)
 {
-#ifndef Q_OS_WIN
+#ifdef Q_OS_WIN
+    Q_UNUSED(device);
+    Q_UNUSED(filter);
+    Q_UNUSED(mode);
+    return;
+#else
     m_stop.store(false, std::memory_order_relaxed);
     m_decoder.setMode(static_cast<Mode>(mode));
 

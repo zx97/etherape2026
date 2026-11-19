@@ -7,6 +7,7 @@
 #include "mainwindow.h"
 
 #include <QApplication>
+#include <QIcon>
 #include <QCommandLineOption>
 #include <QCommandLineParser>
 #include <QTimer>
@@ -46,6 +47,8 @@ int main(int argc, char *argv[])
     QApplication::setOrganizationName(QStringLiteral("etherape"));
     QApplication::setApplicationVersion(QLatin1String(APP_VERSION));
     QApplication::setDesktopFileName(QStringLiteral("etherape2026"));
+    // Embedded resource: works on Windows too, where there is no icon theme.
+    QApplication::setWindowIcon(QIcon(QStringLiteral(":/etherape.png")));
 
     QCommandLineParser parser;
     parser.setApplicationDescription(

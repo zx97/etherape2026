@@ -50,6 +50,14 @@ PreferencesDialog::PreferencesDialog(const Values &values, QWidget *parent)
     m_speed->setValue(values.replaySpeed);
     m_speed->setToolTip(tr("Replay speed for capture files."));
 
+    m_merge = new QCheckBox(
+        tr("Merge a host's IPv4 and IPv6 addresses into one node (by MAC)"),
+        this);
+    m_merge->setChecked(values.mergeFamilies);
+    m_merge->setToolTip(
+        tr("A host that talks over both families then appears once, with its "
+           "MAC as the common identity."));
+
     m_polkit = new QCheckBox(
         tr("Ask for the root password (polkit) when capture is denied"), this);
     m_polkit->setChecked(values.usePolkit);
@@ -74,6 +82,7 @@ PreferencesDialog::PreferencesDialog(const Values &values, QWidget *parent)
     form->addRow(tr("Labels:"), m_font);
     form->addRow(tr("Replay speed:"), m_speed);
     form->addRow(QString(), m_resolve);
+    form->addRow(QString(), m_merge);
     form->addRow(QString(), m_polkit);
     form->addRow(tr("LAN zones:"), m_localZones);
     form->addRow(tr("DMZ zones:"), m_dmzZones);
@@ -99,6 +108,7 @@ PreferencesDialog::Values PreferencesDialog::values() const
     values.fontScale = m_font->value();
     values.replaySpeed = m_speed->value();
     values.usePolkit = m_polkit->isChecked();
+    values.mergeFamilies = m_merge->isChecked();
     values.localZones = m_localZones->text();
     values.dmzZones = m_dmzZones->text();
     values.vpnZones = m_vpnZones->text();

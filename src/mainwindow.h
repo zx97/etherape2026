@@ -76,6 +76,7 @@ private:
     void setRunning(bool running);
     void updateStatus();
     void setResolveNames(bool enabled);
+    void setMergeFamilies(bool enabled);
     void applyZoneRules();
     void maybeResolve(const QString &id, NodeKind kind);
 
@@ -90,6 +91,7 @@ private:
     QAction *m_stopAction = nullptr;
     QAction *m_numericAction = nullptr;
     QAction *m_resolveAction = nullptr;
+    QAction *m_mergeAction = nullptr;
     QAction *m_legendAction = nullptr;
     QAction *m_zonesAction = nullptr;
     QLabel *m_sourceLabel = nullptr;
@@ -106,6 +108,7 @@ private:
     bool m_numeric = false;
     bool m_resolveNames = false;
     bool m_usePolkit = false;
+    bool m_mergeFamilies = true;
     QString m_pendingDevice;
     QString m_replayFile;
     int m_replaySpeed = 100;
