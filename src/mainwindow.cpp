@@ -736,9 +736,6 @@ void MainWindow::exportXml()
         tr("XML files (*.xml);;JSON files (*.json);;All files (*)"));
     if (path.isEmpty())
         return;
-    if (!path.contains(QLatin1Char('.'))
-        && path.startsWith(QLatin1String("etherape")))
-        ;  // keep the dialog default as-is
 
     QString error;
     if (writeExport(path, &error))
