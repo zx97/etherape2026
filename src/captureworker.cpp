@@ -13,6 +13,7 @@
 #include <cstring>
 
 #ifndef Q_OS_WIN
+#include <fcntl.h>
 #include <poll.h>
 #include <signal.h>
 #include <sys/socket.h>
@@ -251,6 +252,8 @@ bool CaptureWorker::ensureHelper()
 
     const QByteArray exe =
         QCoreApplication::applicationFilePath().toLocal8Bit();
+    const bool debug = qEnvironmentVariableIsSet("ETHERAPE_DEBUG");
+    const bool direct = qEnvironmentVariableIsSet("ETHERAPE_HELPER_DIRECT");
     const pid_t pid = ::fork();
     if (pid == 0) {
         ::setpgid(0, 0);
@@ -260,8 +263,17 @@ bool CaptureWorker::ensureHelper()
         ::close(cmd[1]);
         ::close(data[0]);
         ::close(data[1]);
-        ::execlp("pkexec", "pkexec", exe.constData(), "--capture-helper",
-                 static_cast<char *>(nullptr));
+        // Post-fork: only async-signal-safe calls from here on.
+        if (debug)  // read before fork(): getenv is not async-signal-safe
+            ::write(STDERR_FILENO, "[etherape] child: exec now\n", 28);
+        if (direct)
+            ::execl(exe.constData(), exe.constData(), "--capture-helper",
+                    static_cast<char *>(nullptr));
+        else
+            ::execlp("pkexec", "pkexec", exe.constData(), "--capture-helper",
+                     static_cast<char *>(nullptr));
+        const char failure[] = "[etherape] child: exec failed\n";
+        ::write(STDERR_FILENO, failure, sizeof(failure) - 1);
         _exit(127);
     }
 
@@ -275,6 +287,11 @@ bool CaptureWorker::ensureHelper()
 
     m_ctlFd = cmd[1];    // write end: commands to the helper
     m_dataFd = data[0];  // read end: status byte + pcap stream
+    if (debug)
+        std::fprintf(stderr,
+                     "[etherape] helper spawned pid=%d ctl=%d data=%d%s\n",
+                     static_cast<int>(pid), m_ctlFd, m_dataFd,
+                     direct ? " (direct)" : " (pkexec)");
     m_childPid.store(pid, std::memory_order_relaxed);
     return true;
 #endif
@@ -320,9 +337,18 @@ bool CaptureWorker::sendCommand(unsigned type, const QByteArray &payload)
 bool CaptureWorker::waitForOpenStatus()
 {
 #ifndef Q_OS_WIN
+    const bool debug = qEnvironmentVariableIsSet("ETHERAPE_DEBUG");
     // The very first OPEN blocks until pkexec has authenticated the user, so
-    // poll in a loop and stay responsive to Stop.
+    // poll in a loop and stay responsive to Stop. Bound the wait so a silent
+    // helper can never freeze the worker (and the Start button) forever.
+    QElapsedTimer deadline;
+    deadline.start();
     for (;;) {
+        if (deadline.elapsed() > 120000) {
+            if (debug)
+                std::fprintf(stderr, "[etherape] OPEN timed out\n");
+            return false;
+        }
         if (m_stop.load(std::memory_order_relaxed))
             return false;
 
@@ -339,8 +365,14 @@ bool CaptureWorker::waitForOpenStatus()
             return false;
         if (pfd.revents & POLLIN) {
             unsigned char status = 1;
-            if (::read(m_dataFd, &status, 1) != 1)
+            if (::read(m_dataFd, &status, 1) != 1) {
+                if (debug)
+                    std::fprintf(stderr, "[etherape] OPEN read failed\n");
                 return false;
+            }
+            if (debug)
+                std::fprintf(stderr, "[etherape] OPEN status=%u\n",
+                             unsigned(status));
             return status == 0;
         }
     }
@@ -384,10 +416,14 @@ void CaptureWorker::openPrivileged(const QString &device,
     }
 
     // Discard whatever the previous session may have left in the pipe so the
-    // new pcap stream starts on a clean header.
+    // new pcap stream starts on a clean header. The pipe is blocking: a plain
+    // read() with no data would freeze the worker before sending OPEN.
+    const int flags = ::fcntl(m_dataFd, F_GETFL, 0);
+    ::fcntl(m_dataFd, F_SETFL, flags | O_NONBLOCK);
     char drain[8192];
     while (::read(m_dataFd, drain, sizeof(drain)) > 0) {
     }
+    ::fcntl(m_dataFd, F_SETFL, flags);
 
     QByteArray payload;
     payload.append(device.toLocal8Bit());

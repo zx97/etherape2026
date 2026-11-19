@@ -254,6 +254,9 @@ int runCaptureHelper(int argc, char **argv)
         return 0;
     }
 
+    if (std::getenv("ETHERAPE_DEBUG"))
+        std::fprintf(stderr, "[helper] serving on stdin/stdout\n");
+
     // Long-lived mode: commands on stdin, status + pcap stream on stdout.
     for (;;) {
         HelperCommand command{};
