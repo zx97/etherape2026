@@ -12,6 +12,8 @@
 #ifndef _WIN32
 #include <csignal>
 #include <poll.h>
+#include <sys/socket.h>
+#include <sys/un.h>
 #include <unistd.h>
 #endif
 
@@ -68,16 +70,16 @@ bool writeExact(int fd, const void *buffer, size_t length)
 // Runs one capture session until STOP, the GUI closing the pipe, or an error.
 // Command channel is stdin, data channel is stdout; fd 0/1 are the only ones
 // guaranteed to survive pkexec (a setuid program may close everything else).
-void captureSession(const char *device, const char *filter)
+void captureSession(int fd, const char *device, const char *filter)
 {
     unsigned char status = 1;
-    auto reportFailure = [&status](const char *what) {
-        writeExact(STDOUT_FILENO, &status, 1);
+    auto reportFailure = [&status, fd](const char *what) {
+        writeExact(fd, &status, 1);
         const unsigned length =
             what ? static_cast<unsigned>(std::strlen(what)) : 0u;
-        writeExact(STDOUT_FILENO, &length, sizeof(length));
+        writeExact(fd, &length, sizeof(length));
         if (length > 0)
-            writeExact(STDOUT_FILENO, what, length);
+            writeExact(fd, what, length);
     };
 
     char errbuf[PCAP_ERRBUF_SIZE] = {0};
@@ -114,7 +116,7 @@ void captureSession(const char *device, const char *filter)
 
     // Each session gets its own duplicate of the data pipe, so closing the
     // dumper never closes the GUI's channel.
-    FILE *sink = ::fdopen(::dup(STDOUT_FILENO), "wb");
+    FILE *sink = ::fdopen(::dup(fd), "wb");
     if (!sink) {
         pcap_close(handle);
         return;
@@ -129,23 +131,23 @@ void captureSession(const char *device, const char *filter)
     }
 
     status = 0;
-    if (!writeExact(STDOUT_FILENO, &status, 1)) {
+    if (!writeExact(fd, &status, 1)) {
         pcap_dump_close(dumper);
         pcap_close(handle);
         return;
     }
 
     for (;;) {
-        struct pollfd dataPoll = {STDOUT_FILENO, POLLOUT, 0};
+        struct pollfd dataPoll = {fd, POLLOUT, 0};
         if (::poll(&dataPoll, 1, 0) > 0
             && (dataPoll.revents & (POLLERR | POLLHUP | POLLNVAL))) {
             break;  // GUI gone
         }
 
-        struct pollfd ctlPoll = {STDIN_FILENO, POLLIN, 0};
+        struct pollfd ctlPoll = {fd, POLLIN, 0};
         if (::poll(&ctlPoll, 1, 0) > 0 && (ctlPoll.revents & POLLIN)) {
             HelperCommand command{};
-            if (!readExact(STDIN_FILENO, &command, sizeof(command))
+            if (!readExact(fd, &command, sizeof(command))
                 || command.type == kHelperCmdStop
                 || command.type == kHelperCmdQuit)
                 break;
@@ -196,9 +198,17 @@ int runCaptureHelper(int argc, char **argv)
         if (std::strcmp(argv[i], "--capture-helper") == 0)
             continue;
         // Legacy fd arguments (ignored: stdin/stdout are used instead).
-        // Legacy fd arguments: stdin/stdout are used now, ignore them.
+        // Legacy fd arguments: no longer used, ignore them.
         if (std::strncmp(argv[i], "--ctl-fd=", 9) == 0
             || std::strncmp(argv[i], "--data-fd=", 10) == 0) {
+            continue;
+        }
+        if (std::strcmp(argv[i], "--socket") == 0) {
+            if (!valueAfter(i, argc, argv)) {
+                std::fprintf(stderr,
+                             "etherape2026: --socket needs a path\n");
+                return 2;
+            }
             continue;
         }
         if (std::strcmp(argv[i], "-i") == 0
@@ -266,13 +276,40 @@ int runCaptureHelper(int argc, char **argv)
         return 0;
     }
 
-    if (std::getenv("ETHERAPE_DEBUG"))
-        std::fprintf(stderr, "[helper] serving on stdin/stdout\n");
+    // Long-lived mode: commands and data share one full-duplex descriptor.
+    int channel = -1;
+    const char *socketPath = nullptr;
+    for (int i = 1; i < argc; ++i) {
+        if (std::strcmp(argv[i], "--socket") == 0 && i + 1 < argc) {
+            socketPath = argv[i + 1];
+            break;
+        }
+    }
 
-    // Long-lived mode: commands on stdin, status + pcap stream on stdout.
+    if (socketPath && *socketPath) {
+        struct sockaddr_un address = {};
+        address.sun_family = AF_UNIX;
+        std::snprintf(address.sun_path, sizeof(address.sun_path), "%s",
+                      socketPath);
+        channel = ::socket(AF_UNIX, SOCK_STREAM, 0);
+        if (channel < 0 || ::connect(channel,
+                                     reinterpret_cast<struct sockaddr *>(&address),
+                                     sizeof(address)) != 0) {
+            std::fprintf(stderr,
+                         "etherape2026: cannot connect to %s: %s\n",
+                         socketPath, std::strerror(errno));
+            return 1;
+        }
+    } else {
+        channel = STDIN_FILENO;  // legacy: stdin for commands, stdout for data
+    }
+
+    if (std::getenv("ETHERAPE_DEBUG"))
+        std::fprintf(stderr, "[helper] serving on fd=%d\n", channel);
+
     for (;;) {
         HelperCommand command{};
-        if (!readExact(STDIN_FILENO, &command, sizeof(command)))
+        if (!readExact(channel, &command, sizeof(command)))
             break;
         if (command.type == kHelperCmdQuit)
             break;
@@ -283,7 +320,7 @@ int runCaptureHelper(int argc, char **argv)
                 while (left > 0) {
                     const size_t chunk =
                         left < sizeof(drain) ? left : sizeof(drain);
-                    if (!readExact(STDIN_FILENO, drain, chunk))
+                    if (!readExact(channel, drain, chunk))
                         return 0;
                     left -= chunk;
                 }
@@ -295,7 +332,7 @@ int runCaptureHelper(int argc, char **argv)
         const size_t length =
             command.length < sizeof(payload) ? command.length
                                              : sizeof(payload) - 1;
-        if (length > 0 && !readExact(STDIN_FILENO, payload, length))
+        if (length > 0 && !readExact(channel, payload, length))
             break;
         payload[length] = '\0';
 
@@ -304,7 +341,7 @@ int runCaptureHelper(int argc, char **argv)
         if (dev >= payload + length)
             dev = "";
 
-        captureSession(dev, flt);
+        captureSession(channel, dev, flt);
     }
 
     return 0;

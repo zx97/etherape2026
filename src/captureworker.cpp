@@ -7,6 +7,7 @@
 #include <QCoreApplication>
 #include <QElapsedTimer>
 #include <QFile>
+#include <QStandardPaths>
 #include <QThread>
 
 #include <algorithm>
@@ -18,6 +19,8 @@
 #include <poll.h>
 #include <signal.h>
 #include <sys/socket.h>
+#include <sys/stat.h>
+#include <sys/un.h>
 #include <sys/wait.h>
 #include <unistd.h>
 #endif
@@ -245,16 +248,41 @@ bool CaptureWorker::ensureHelper()
     const int logFd = ::open(m_helperLogPath.toLocal8Bit().constData(),
                              O_CREAT | O_WRONLY | O_TRUNC, 0600);
 
-    int cmd[2] = {-1, -1};
-    int data[2] = {-1, -1};
-    if (::pipe(cmd) != 0)
-        return false;
-    if (::pipe(data) != 0) {
-        ::close(cmd[0]);
-        ::close(cmd[1]);
+    ::signal(SIGPIPE, SIG_IGN);
+
+    // A named UNIX socket, because a setuid pkexec may close every inherited
+    // descriptor and even redirect stdin. The path is passed as an argument.
+    QString runtimeDir =
+        QStandardPaths::writableLocation(QStandardPaths::RuntimeLocation);
+    if (runtimeDir.isEmpty())
+        runtimeDir = QStringLiteral("/dev/shm");
+    const QString socketPath =
+        QStringLiteral("%1/etherape2026-%2.sock")
+            .arg(runtimeDir)
+            .arg(QCoreApplication::applicationPid());
+    const QByteArray socketPathBytes = socketPath.toLocal8Bit();
+    ::unlink(socketPathBytes.constData());
+
+    const int server = ::socket(AF_UNIX, SOCK_STREAM, 0);
+    if (server < 0) {
+        if (logFd >= 0)
+            ::close(logFd);
         return false;
     }
-    ::signal(SIGPIPE, SIG_IGN);
+    struct sockaddr_un address = {};
+    address.sun_family = AF_UNIX;
+    std::snprintf(address.sun_path, sizeof(address.sun_path), "%s",
+                  socketPathBytes.constData());
+    if (::bind(server,
+               reinterpret_cast<struct sockaddr *>(&address),
+               sizeof(address)) != 0
+        || ::chmod(socketPathBytes.constData(), 0600) != 0
+        || ::listen(server, 1) != 0) {
+        ::close(server);
+        if (logFd >= 0)
+            ::close(logFd);
+        return false;
+    }
 
     const QByteArray exe =
         QCoreApplication::applicationFilePath().toLocal8Bit();
@@ -263,46 +291,60 @@ bool CaptureWorker::ensureHelper()
     const pid_t pid = ::fork();
     if (pid == 0) {
         ::setpgid(0, 0);
-        ::dup2(cmd[0], STDIN_FILENO);
-        ::dup2(data[1], STDOUT_FILENO);
         if (logFd >= 0)
             ::dup2(logFd, STDERR_FILENO);
-        ::close(cmd[0]);
-        ::close(cmd[1]);
-        ::close(data[0]);
-        ::close(data[1]);
-        // Post-fork: only async-signal-safe calls from here on.
         if (debug)  // read before fork(): getenv is not async-signal-safe
             ::write(STDERR_FILENO, "[etherape] child: exec now\n", 28);
         if (direct)
             ::execl(exe.constData(), exe.constData(), "--capture-helper",
+                    "--socket", socketPathBytes.constData(),
                     static_cast<char *>(nullptr));
         else
             ::execlp("pkexec", "pkexec", exe.constData(), "--capture-helper",
+                     "--socket", socketPathBytes.constData(),
                      static_cast<char *>(nullptr));
         const char failure[] = "[etherape] child: exec failed\n";
         ::write(STDERR_FILENO, failure, sizeof(failure) - 1);
         _exit(127);
     }
 
-    ::close(cmd[0]);
-    ::close(data[1]);
     if (logFd >= 0)
         ::close(logFd);
     if (pid < 0) {
-        ::close(cmd[1]);
-        ::close(data[0]);
+        ::close(server);
+        ::unlink(socketPathBytes.constData());
         return false;
     }
 
-    m_ctlFd = cmd[1];    // write end: commands to the helper
-    m_dataFd = data[0];  // read end: status byte + pcap stream
+    // Wait for the helper to connect; this is where pkexec asks the password,
+    // so poll in a loop and stay interruptible.
+    int client = -1;
+    for (;;) {
+        if (m_stop.load(std::memory_order_relaxed))
+            break;
+        struct pollfd pfd = {server, POLLIN, 0};
+        const int polled = ::poll(&pfd, 1, 200);
+        if (polled < 0 && errno != EINTR)
+            break;
+        if (polled > 0 && (pfd.revents & POLLIN)) {
+            client = ::accept(server, nullptr, nullptr);
+            break;
+        }
+    }
+    ::close(server);
+    ::unlink(socketPathBytes.constData());
+
+    if (client < 0) {
+        if (debug)
+            std::fprintf(stderr, "[etherape] helper never connected\n");
+        return false;
+    }
+
+    m_ctlFd = client;    // full-duplex: commands out, status + pcap in
+    m_dataFd = client;
     if (debug)
-        std::fprintf(stderr,
-                     "[etherape] helper spawned pid=%d ctl=%d data=%d%s\n",
-                     static_cast<int>(pid), m_ctlFd, m_dataFd,
-                     direct ? " (direct)" : " (pkexec)");
-    m_childPid.store(pid, std::memory_order_relaxed);
+        std::fprintf(stderr, "[etherape] helper connected fd=%d%s\n",
+                     client, direct ? " (direct)" : " (pkexec)");
     return true;
 #endif
 }
