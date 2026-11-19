@@ -2,6 +2,8 @@
 
 #include "captureworker.h"
 
+#include "capturehelper.h"
+
 #include <QCoreApplication>
 #include <QElapsedTimer>
 #include <QThread>
@@ -13,6 +15,7 @@
 #ifndef Q_OS_WIN
 #include <poll.h>
 #include <signal.h>
+#include <sys/socket.h>
 #include <sys/wait.h>
 #include <unistd.h>
 #endif
@@ -61,6 +64,7 @@ CaptureWorker::CaptureWorker(QObject *parent) : QObject(parent)
 CaptureWorker::~CaptureWorker()
 {
     requestStop();
+    closeHelper();
 }
 
 void CaptureWorker::requestStop()
@@ -70,12 +74,9 @@ void CaptureWorker::requestStop()
         pcap_breakloop(handle);  // documented as safe from another thread
 
 #ifndef Q_OS_WIN
-    const qint64 pid = m_childPid.load(std::memory_order_relaxed);
-    if (pid > 0) {
-        // The child created its own process group (see openPrivileged), so a
-        // negative pid terminates pkexec and the helper together.
-        ::kill(-static_cast<pid_t>(pid), SIGTERM);
-    }
+    // Ask the persistent helper to stop the current session. The helper runs
+    // as root: signals from this unprivileged process would be rejected.
+    sendCommand(kHelperCmdStop, QByteArray());
 #endif
 }
 
@@ -211,93 +212,204 @@ void CaptureWorker::openOffline(const QString &file, const QString &filter,
     run(handle, true, speedPercent);
 }
 
+bool CaptureWorker::ensureHelper()
+{
+#ifdef Q_OS_WIN
+    return false;
+#else
+    const qint64 existing = m_childPid.load(std::memory_order_relaxed);
+    if (existing > 0) {
+        int status = 0;
+        if (::waitpid(static_cast<pid_t>(existing), &status, WNOHANG) == 0)
+            return true;  // helper still alive: reuse the authenticated session
+        // Helper died (killed, session ended): forget it and start over.
+        m_childPid.store(-1, std::memory_order_relaxed);
+        QMutexLocker lock(&m_ctlMutex);
+        if (m_ctlFd >= 0) {
+            ::close(m_ctlFd);
+            m_ctlFd = -1;
+        }
+        if (m_dataFd >= 0) {
+            ::close(m_dataFd);
+            m_dataFd = -1;
+        }
+    }
+
+    int ctl[2] = {-1, -1};
+    int data[2] = {-1, -1};
+    if (::socketpair(AF_UNIX, SOCK_STREAM, 0, ctl) != 0)
+        return false;
+    if (::pipe(data) != 0) {
+        ::close(ctl[0]);
+        ::close(ctl[1]);
+        return false;
+    }
+
+    const QByteArray exe =
+        QCoreApplication::applicationFilePath().toLocal8Bit();
+    const pid_t pid = ::fork();
+    if (pid == 0) {
+        ::setpgid(0, 0);
+        ::close(ctl[0]);
+        ::close(data[0]);
+        char ctlArg[32];
+        char dataArg[32];
+        std::snprintf(ctlArg, sizeof(ctlArg), "--ctl-fd=%d", ctl[1]);
+        std::snprintf(dataArg, sizeof(dataArg), "--data-fd=%d", data[1]);
+        ::execlp("pkexec", "pkexec", exe.constData(), "--capture-helper",
+                 ctlArg, dataArg, static_cast<char *>(nullptr));
+        _exit(127);
+    }
+
+    ::close(ctl[1]);
+    ::close(data[1]);
+    if (pid < 0) {
+        ::close(ctl[0]);
+        ::close(data[0]);
+        return false;
+    }
+
+    m_ctlFd = ctl[0];
+    m_dataFd = data[0];
+    m_childPid.store(pid, std::memory_order_relaxed);
+    return true;
+#endif
+}
+
+bool CaptureWorker::sendCommand(unsigned type, const QByteArray &payload)
+{
+#ifndef Q_OS_WIN
+    QMutexLocker lock(&m_ctlMutex);
+    if (m_ctlFd < 0)
+        return false;
+
+    HelperCommand command{type, static_cast<unsigned>(payload.size())};
+    auto writeAll = [](int fd, const char *data, size_t length) {
+        size_t done = 0;
+        while (done < length) {
+            const ssize_t n = ::write(fd, data + done, length - done);
+            if (n > 0)
+                done += static_cast<size_t>(n);
+            else if (n < 0 && errno == EINTR)
+                continue;
+            else
+                return false;
+        }
+        return true;
+    };
+
+    if (!writeAll(m_ctlFd, reinterpret_cast<const char *>(&command),
+                  sizeof(command)))
+        return false;
+    if (!payload.isEmpty()
+        && !writeAll(m_ctlFd, payload.constData(),
+                     static_cast<size_t>(payload.size())))
+        return false;
+    return true;
+#else
+    Q_UNUSED(type);
+    Q_UNUSED(payload);
+    return false;
+#endif
+}
+
+bool CaptureWorker::waitForOpenStatus()
+{
+#ifndef Q_OS_WIN
+    // The very first OPEN blocks until pkexec has authenticated the user, so
+    // poll in a loop and stay responsive to Stop.
+    for (;;) {
+        if (m_stop.load(std::memory_order_relaxed))
+            return false;
+
+        struct pollfd pfd = {m_ctlFd, POLLIN, 0};
+        const int polled = ::poll(&pfd, 1, 200);
+        if (polled < 0) {
+            if (errno == EINTR)
+                continue;
+            return false;
+        }
+        if (polled == 0)
+            continue;
+        if (pfd.revents & (POLLERR | POLLHUP | POLLNVAL))
+            return false;
+        if (pfd.revents & POLLIN) {
+            unsigned char status = 1;
+            if (::read(m_ctlFd, &status, 1) != 1)
+                return false;
+            return status == 0;
+        }
+    }
+#else
+    return false;
+#endif
+}
+
+void CaptureWorker::closeHelper()
+{
+#ifndef Q_OS_WIN
+    if (m_childPid.load(std::memory_order_relaxed) <= 0)
+        return;
+    sendCommand(kHelperCmdQuit, QByteArray());
+    QMutexLocker lock(&m_ctlMutex);
+    if (m_ctlFd >= 0) {
+        ::close(m_ctlFd);
+        m_ctlFd = -1;
+    }
+    if (m_dataFd >= 0) {
+        ::close(m_dataFd);
+        m_dataFd = -1;
+    }
+#endif
+}
+
 void CaptureWorker::openPrivileged(const QString &device,
                                    const QString &filter, int mode)
 {
 #ifdef Q_OS_WIN
-    // Windows has no pkexec; the GUI relaunches itself elevated through UAC
-    // (see MainWindow::onPermissionDenied). Just capture directly here.
+    // Windows has no pkexec; the GUI relaunches itself elevated through UAC.
     openLive(device, filter, mode);
 #else
     m_stop.store(false, std::memory_order_relaxed);
     m_decoder.setMode(static_cast<Mode>(mode));
 
-    int outPipe[2] = {-1, -1};
-    int errPipe[2] = {-1, -1};
-    if (::pipe(outPipe) != 0 || ::pipe(errPipe) != 0) {
-        emit errorOccurred(QString::fromLocal8Bit(std::strerror(errno)));
+    if (!ensureHelper()) {
+        emit errorOccurred(tr("Cannot start the privileged capture helper."));
         emit captureStopped();
         return;
     }
 
-    const QByteArray exe =
-        QCoreApplication::applicationFilePath().toLocal8Bit();
-    const QByteArray dev = device.toLocal8Bit();
-    const QByteArray flt = filter.toLocal8Bit();
+    // Discard whatever the previous session may have left in the pipe so the
+    // new pcap stream starts on a clean header.
+    char drain[8192];
+    while (::read(m_dataFd, drain, sizeof(drain)) > 0) {
+    }
 
-    const pid_t pid = ::fork();
-    if (pid < 0) {
-        emit errorOccurred(QString::fromLocal8Bit(std::strerror(errno)));
-        ::close(outPipe[0]);
-        ::close(outPipe[1]);
-        ::close(errPipe[0]);
-        ::close(errPipe[1]);
+    QByteArray payload;
+    payload.append(device.toLocal8Bit());
+    payload.append('\0');
+    payload.append(filter.toLocal8Bit());
+    payload.append('\0');
+
+    if (!sendCommand(kHelperCmdOpen, payload)) {
+        emit errorOccurred(tr("Cannot talk to the privileged capture helper."));
         emit captureStopped();
         return;
     }
 
-    if (pid == 0) {
-        ::setpgid(0, 0);
-        ::dup2(outPipe[1], STDOUT_FILENO);
-        ::dup2(errPipe[1], STDERR_FILENO);
-        ::close(outPipe[0]);
-        ::close(outPipe[1]);
-        ::close(errPipe[0]);
-        ::close(errPipe[1]);
-        ::execlp("pkexec", "pkexec", exe.constData(), "--capture-helper", "-i",
-                 dev.constData(), "-f", flt.constData(),
-                 static_cast<char *>(nullptr));
-        _exit(127);
+    if (!waitForOpenStatus()) {
+        emit errorOccurred(
+            m_stop.load() ? tr("Capture cancelled.")
+                          : tr("The privileged helper could not open the "
+                               "capture (denied or cancelled)."));
+        emit captureStopped();
+        return;
     }
-
-    ::close(outPipe[1]);
-    ::close(errPipe[1]);
-    m_childPid.store(pid, std::memory_order_relaxed);
 
     m_packets = 0;
     m_bytes = 0;
     emit captureStarted(device);
-
-    readPcapStream(outPipe[0], errPipe[0]);
-    ::close(outPipe[0]);
-    ::close(errPipe[0]);
-
-    // The helper runs as root: kill(-pgid) fails with EPERM from an
-    // unprivileged process, so closing the pipe is what stops it. Never block
-    // the UI on its exit.
-    int status = 0;
-    bool reaped = false;
-    for (int attempt = 0; attempt < 40; ++attempt) {  // up to 2 seconds
-        const pid_t result = ::waitpid(pid, &status, WNOHANG);
-        if (result == pid) {
-            reaped = true;
-            break;
-        }
-        if (result < 0)
-            break;
-        QThread::usleep(50000);
-    }
-    m_childPid.store(-1, std::memory_order_relaxed);
-
-    if (!reaped) {
-        // The helper will notice the closed pipe on its next poll and exit on
-        // its own; nothing else we can do without privileges.
-    } else if (!m_stop.load(std::memory_order_relaxed) && WIFEXITED(status)
-               && WEXITSTATUS(status) != 0) {
-        emit errorOccurred(tr("Privileged capture helper exited with code %1.")
-                               .arg(WEXITSTATUS(status)));
-    }
-
+    readPcapStream(m_dataFd, -1);
     flush();
     emit counters(m_packets, m_bytes);
     emit captureStopped();

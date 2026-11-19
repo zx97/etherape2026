@@ -8,7 +8,9 @@
 
 #include "decoder.h"
 
+#include <QByteArray>
 #include <QList>
+#include <QMutex>
 #include <QObject>
 #include <QString>
 #include <QStringList>
@@ -50,12 +52,19 @@ private:
                            bool live, QString *error, int *activateRc);
     void run(pcap_t *handle, bool offline, int speedPercent);
     void readPcapStream(int outFd, int errFd);
+    bool ensureHelper();
+    bool sendCommand(unsigned type, const QByteArray &payload);
+    bool waitForOpenStatus();
+    void closeHelper();
     void flush();
     static void onPacket(u_char *user, const struct pcap_pkthdr *header,
                          const u_char *bytes);
 
     std::atomic<pcap_t *> m_handle{nullptr};
     std::atomic<qint64> m_childPid{-1};
+    int m_ctlFd = -1;
+    int m_dataFd = -1;
+    QMutex m_ctlMutex;
     Decoder m_decoder;
     QList<PacketInfo> m_batch;
     quint64 m_packets = 0;
