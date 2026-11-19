@@ -84,6 +84,10 @@ int main(int argc, char *argv[])
         QStringLiteral("exit-after"),
         QObject::tr("Close the window after <ms> (testing aid)."),
         QObject::tr("ms"));
+    QCommandLineOption stopAfterOption(
+        QStringLiteral("stop-after"),
+        QObject::tr("Press Stop after <ms> (testing aid)."),
+        QObject::tr("ms"));
     QCommandLineOption screenshotOption(
         QStringLiteral("screenshot"),
         QObject::tr("Save a window snapshot to <file> and exit (testing aid)."),
@@ -100,7 +104,7 @@ int main(int argc, char *argv[])
     parser.addOptions({interfaceOption, replayOption, filterOption, modeOption,
                        numericOption, nodeLimitOption, speedOption,
                        finalExportOption, positionOption, screenshotOption,
-                       screenshotDelayOption, exitAfterOption});
+                       screenshotDelayOption, exitAfterOption, stopAfterOption});
     parser.process(app);
 
     etherape::MainWindow window;
@@ -129,6 +133,11 @@ int main(int argc, char *argv[])
 
     if (parser.isSet(positionOption))
         window.loadLayoutFile(parser.value(positionOption));
+
+    if (parser.isSet(stopAfterOption)) {
+        const int delay = parser.value(stopAfterOption).toInt();
+        QTimer::singleShot(delay, &window, &etherape::MainWindow::requestStopCapture);
+    }
 
     if (parser.isSet(exitAfterOption)) {
         const int delay = parser.value(exitAfterOption).toInt();

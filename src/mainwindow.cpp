@@ -717,6 +717,11 @@ void MainWindow::updateStatus()
                               .arg(m_model->links().size()));
 }
 
+void MainWindow::requestStopCapture()
+{
+    stopCapture();
+}
+
 void MainWindow::setFinalExport(const QString &path)
 {
     m_finalExportPath = path;

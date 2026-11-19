@@ -40,6 +40,7 @@ public:
     void startLiveCapture(const QString &device);
     void startReplay(const QString &file, int speedPercent);
     void setFinalExport(const QString &path);
+    void requestStopCapture();
     void loadLayoutFile(const QString &path);
 
 protected:

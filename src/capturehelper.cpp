@@ -7,9 +7,21 @@
 #include <cstdio>
 #include <cstring>
 
+#ifndef _WIN32
+#include <csignal>
+#include <poll.h>
+#include <unistd.h>
+#endif
+
 namespace {
 
 constexpr int kSnapLen = 262144;
+
+void dumpRecord(u_char *user, const struct pcap_pkthdr *header,
+                const u_char *bytes)
+{
+    pcap_dump(user, header, bytes);
+}
 
 const char *valueAfter(int &index, int argc, char **argv)
 {
@@ -114,8 +126,25 @@ int runCaptureHelper(int argc, char **argv)
         return 1;
     }
 
-    // Runs until SIGTERM (GUI closing the pipe) or an unrecoverable error.
+#ifdef _WIN32
     pcap_loop(handle, -1, pcap_dump, reinterpret_cast<u_char *>(dumper));
+#else
+    // The GUI is unprivileged and cannot signal this root process (EPERM), so
+    // the pipe itself is the stop channel: when the reader closes its end,
+    // poll() reports POLLERR on stdout within one poll cycle.
+    std::signal(SIGPIPE, SIG_IGN);
+    for (;;) {
+        struct pollfd pfd = {STDOUT_FILENO, POLLOUT, 0};
+        if (::poll(&pfd, 1, 0) > 0
+            && (pfd.revents & (POLLERR | POLLHUP | POLLNVAL))) {
+            break;
+        }
+        const int processed = pcap_dispatch(
+            handle, 64, dumpRecord, reinterpret_cast<u_char *>(dumper));
+        if (processed < 0)  // -1 error, -2 breakloop
+            break;
+    }
+#endif
 
     pcap_dump_close(dumper);
     pcap_close(handle);

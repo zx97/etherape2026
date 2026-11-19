@@ -272,12 +272,28 @@ void CaptureWorker::openPrivileged(const QString &device,
     ::close(outPipe[0]);
     ::close(errPipe[0]);
 
+    // The helper runs as root: kill(-pgid) fails with EPERM from an
+    // unprivileged process, so closing the pipe is what stops it. Never block
+    // the UI on its exit.
     int status = 0;
-    ::waitpid(pid, &status, 0);
+    bool reaped = false;
+    for (int attempt = 0; attempt < 40; ++attempt) {  // up to 2 seconds
+        const pid_t result = ::waitpid(pid, &status, WNOHANG);
+        if (result == pid) {
+            reaped = true;
+            break;
+        }
+        if (result < 0)
+            break;
+        QThread::usleep(50000);
+    }
     m_childPid.store(-1, std::memory_order_relaxed);
 
-    if (!m_stop.load(std::memory_order_relaxed) && WIFEXITED(status)
-        && WEXITSTATUS(status) != 0) {
+    if (!reaped) {
+        // The helper will notice the closed pipe on its next poll and exit on
+        // its own; nothing else we can do without privileges.
+    } else if (!m_stop.load(std::memory_order_relaxed) && WIFEXITED(status)
+               && WEXITSTATUS(status) != 0) {
         emit errorOccurred(tr("Privileged capture helper exited with code %1.")
                                .arg(WEXITSTATUS(status)));
     }
@@ -437,10 +453,15 @@ void CaptureWorker::run(pcap_t *handle, bool offline, int speedPercent)
                 && m_lastTsUsec > m_firstTsUsec) {
                 const qint64 mediaUsec =
                     (m_lastTsUsec - m_firstTsUsec) * 100 / speedPercent;
-                const qint64 sleepUsec = std::clamp<qint64>(
-                    mediaUsec - wall.nsecsElapsed() / 1000, 0, kMaxSleepUsec);
-                if (sleepUsec > 0)
-                    QThread::usleep(static_cast<unsigned long>(sleepUsec));
+                qint64 remaining = std::clamp<qint64>(
+                    mediaUsec - wall.nsecsElapsed() / 1000, 0, 10000000);
+                while (remaining > 0
+                       && !m_stop.load(std::memory_order_relaxed)) {
+                    const qint64 chunk =
+                        std::min<qint64>(remaining, kMaxSleepUsec);
+                    QThread::usleep(static_cast<unsigned long>(chunk));
+                    remaining -= chunk;
+                }
             } else if (speedPercent <= 0 && batches % 64 == 0) {
                 QThread::usleep(500);  // unbounded speed: yield to the GUI
             }
