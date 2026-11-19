@@ -66,9 +66,9 @@ bool writeExact(int fd, const void *buffer, size_t length)
 }
 
 // Runs one capture session until STOP, the GUI closing the pipe, or an error.
-// A one-byte status is sent back on the control socket first (0 = streaming).
-void captureSession(int ctlFd, int dataFd, const char *device,
-                    const char *filter)
+// Command channel is stdin, data channel is stdout; fd 0/1 are the only ones
+// guaranteed to survive pkexec (a setuid program may close everything else).
+void captureSession(const char *device, const char *filter)
 {
     unsigned char status = 1;
 
@@ -76,7 +76,7 @@ void captureSession(int ctlFd, int dataFd, const char *device,
     pcap_t *handle = pcap_create(device, errbuf);
     if (!handle) {
         std::fprintf(stderr, "etherape2026: %s\n", errbuf);
-        writeExact(ctlFd, &status, 1);
+        writeExact(STDOUT_FILENO, &status, 1);
         return;
     }
     pcap_set_snaplen(handle, kSnapLen);
@@ -85,7 +85,7 @@ void captureSession(int ctlFd, int dataFd, const char *device,
     if (pcap_activate(handle) < 0) {
         std::fprintf(stderr, "etherape2026: %s\n", pcap_geterr(handle));
         pcap_close(handle);
-        writeExact(ctlFd, &status, 1);
+        writeExact(STDOUT_FILENO, &status, 1);
         return;
     }
     if (filter && *filter) {
@@ -94,7 +94,7 @@ void captureSession(int ctlFd, int dataFd, const char *device,
             || pcap_setfilter(handle, &program) < 0) {
             std::fprintf(stderr, "etherape2026: %s\n", pcap_geterr(handle));
             pcap_close(handle);
-            writeExact(ctlFd, &status, 1);
+            writeExact(STDOUT_FILENO, &status, 1);
             return;
         }
         pcap_freecode(&program);
@@ -102,7 +102,7 @@ void captureSession(int ctlFd, int dataFd, const char *device,
 
     // Each session gets its own duplicate of the data pipe, so closing the
     // dumper never closes the GUI's channel.
-    FILE *sink = ::fdopen(::dup(dataFd), "wb");
+    FILE *sink = ::fdopen(::dup(STDOUT_FILENO), "wb");
     if (!sink) {
         pcap_close(handle);
         return;
@@ -112,28 +112,28 @@ void captureSession(int ctlFd, int dataFd, const char *device,
     if (!dumper) {
         std::fclose(sink);
         pcap_close(handle);
-        writeExact(ctlFd, &status, 1);
+        writeExact(STDOUT_FILENO, &status, 1);
         return;
     }
 
     status = 0;
-    if (!writeExact(ctlFd, &status, 1)) {
+    if (!writeExact(STDOUT_FILENO, &status, 1)) {
         pcap_dump_close(dumper);
         pcap_close(handle);
         return;
     }
 
     for (;;) {
-        struct pollfd dataPoll = {dataFd, POLLOUT, 0};
+        struct pollfd dataPoll = {STDOUT_FILENO, POLLOUT, 0};
         if (::poll(&dataPoll, 1, 0) > 0
             && (dataPoll.revents & (POLLERR | POLLHUP | POLLNVAL))) {
             break;  // GUI gone
         }
 
-        struct pollfd ctlPoll = {ctlFd, POLLIN, 0};
+        struct pollfd ctlPoll = {STDIN_FILENO, POLLIN, 0};
         if (::poll(&ctlPoll, 1, 0) > 0 && (ctlPoll.revents & POLLIN)) {
             HelperCommand command{};
-            if (!readExact(ctlFd, &command, sizeof(command))
+            if (!readExact(STDIN_FILENO, &command, sizeof(command))
                 || command.type == kHelperCmdStop
                 || command.type == kHelperCmdQuit)
                 break;
@@ -177,20 +177,16 @@ int runCaptureHelper(int argc, char **argv)
     std::fprintf(stderr, "etherape2026: the capture helper is POSIX-only\n");
     return 2;
 #else
-    int ctlFd = -1;
-    int dataFd = -1;
     const char *device = nullptr;
     const char *filter = "";
 
     for (int i = 1; i < argc; ++i) {
         if (std::strcmp(argv[i], "--capture-helper") == 0)
             continue;
-        if (std::strncmp(argv[i], "--ctl-fd=", 9) == 0) {
-            ctlFd = std::atoi(argv[i] + 9);
-            continue;
-        }
-        if (std::strncmp(argv[i], "--data-fd=", 10) == 0) {
-            dataFd = std::atoi(argv[i] + 10);
+        // Legacy fd arguments (ignored: stdin/stdout are used instead).
+        // Legacy fd arguments: stdin/stdout are used now, ignore them.
+        if (std::strncmp(argv[i], "--ctl-fd=", 9) == 0
+            || std::strncmp(argv[i], "--data-fd=", 10) == 0) {
             continue;
         }
         if (std::strcmp(argv[i], "-i") == 0
@@ -217,8 +213,8 @@ int runCaptureHelper(int argc, char **argv)
 
     std::signal(SIGPIPE, SIG_IGN);
 
-    // Legacy one-shot mode, kept for debugging: -i/-f without file descriptors.
-    if (ctlFd < 0 && device) {
+    // Legacy one-shot mode, kept for debugging: -i/-f only.
+    if (device) {
         char errbuf[PCAP_ERRBUF_SIZE] = {0};
         pcap_t *handle = pcap_create(device, errbuf);
         if (!handle) {
@@ -258,17 +254,10 @@ int runCaptureHelper(int argc, char **argv)
         return 0;
     }
 
-    if (ctlFd < 0 || dataFd < 0) {
-        std::fprintf(stderr,
-                     "etherape2026: --capture-helper needs --ctl-fd and "
-                     "--data-fd\n");
-        return 2;
-    }
-
-    // Long-lived mode: serve sessions until QUIT or the GUI disappears.
+    // Long-lived mode: commands on stdin, status + pcap stream on stdout.
     for (;;) {
         HelperCommand command{};
-        if (!readExact(ctlFd, &command, sizeof(command)))
+        if (!readExact(STDIN_FILENO, &command, sizeof(command)))
             break;
         if (command.type == kHelperCmdQuit)
             break;
@@ -277,8 +266,9 @@ int runCaptureHelper(int argc, char **argv)
                 char drain[4096];
                 size_t left = command.length;
                 while (left > 0) {
-                    const size_t chunk = left < sizeof(drain) ? left : sizeof(drain);
-                    if (!readExact(ctlFd, drain, chunk))
+                    const size_t chunk =
+                        left < sizeof(drain) ? left : sizeof(drain);
+                    if (!readExact(STDIN_FILENO, drain, chunk))
                         return 0;
                     left -= chunk;
                 }
@@ -290,21 +280,18 @@ int runCaptureHelper(int argc, char **argv)
         const size_t length =
             command.length < sizeof(payload) ? command.length
                                              : sizeof(payload) - 1;
-        if (length > 0 && !readExact(ctlFd, payload, length))
+        if (length > 0 && !readExact(STDIN_FILENO, payload, length))
             break;
         payload[length] = '\0';
 
-        // Payload: "device\0filter\0"
         const char *dev = payload;
         const char *flt = payload + std::strlen(payload) + 1;
         if (dev >= payload + length)
             dev = "";
 
-        captureSession(ctlFd, dataFd, dev, flt);
+        captureSession(dev, flt);
     }
 
-    ::close(ctlFd);
-    ::close(dataFd);
     return 0;
 #endif
 }

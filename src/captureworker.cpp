@@ -235,42 +235,46 @@ bool CaptureWorker::ensureHelper()
         }
     }
 
-    int ctl[2] = {-1, -1};
+    // fd 0 and 1 are the only descriptors a setuid program (pkexec) is
+    // guaranteed to preserve, so commands go to stdin and data comes back on
+    // stdout.
+    int cmd[2] = {-1, -1};
     int data[2] = {-1, -1};
-    if (::socketpair(AF_UNIX, SOCK_STREAM, 0, ctl) != 0)
+    if (::pipe(cmd) != 0)
         return false;
     if (::pipe(data) != 0) {
-        ::close(ctl[0]);
-        ::close(ctl[1]);
+        ::close(cmd[0]);
+        ::close(cmd[1]);
         return false;
     }
+    ::signal(SIGPIPE, SIG_IGN);
 
     const QByteArray exe =
         QCoreApplication::applicationFilePath().toLocal8Bit();
     const pid_t pid = ::fork();
     if (pid == 0) {
         ::setpgid(0, 0);
-        ::close(ctl[0]);
+        ::dup2(cmd[0], STDIN_FILENO);
+        ::dup2(data[1], STDOUT_FILENO);
+        ::close(cmd[0]);
+        ::close(cmd[1]);
         ::close(data[0]);
-        char ctlArg[32];
-        char dataArg[32];
-        std::snprintf(ctlArg, sizeof(ctlArg), "--ctl-fd=%d", ctl[1]);
-        std::snprintf(dataArg, sizeof(dataArg), "--data-fd=%d", data[1]);
+        ::close(data[1]);
         ::execlp("pkexec", "pkexec", exe.constData(), "--capture-helper",
-                 ctlArg, dataArg, static_cast<char *>(nullptr));
+                 static_cast<char *>(nullptr));
         _exit(127);
     }
 
-    ::close(ctl[1]);
+    ::close(cmd[0]);
     ::close(data[1]);
     if (pid < 0) {
-        ::close(ctl[0]);
+        ::close(cmd[1]);
         ::close(data[0]);
         return false;
     }
 
-    m_ctlFd = ctl[0];
-    m_dataFd = data[0];
+    m_ctlFd = cmd[1];    // write end: commands to the helper
+    m_dataFd = data[0];  // read end: status byte + pcap stream
     m_childPid.store(pid, std::memory_order_relaxed);
     return true;
 #endif
@@ -322,7 +326,7 @@ bool CaptureWorker::waitForOpenStatus()
         if (m_stop.load(std::memory_order_relaxed))
             return false;
 
-        struct pollfd pfd = {m_ctlFd, POLLIN, 0};
+        struct pollfd pfd = {m_dataFd, POLLIN, 0};
         const int polled = ::poll(&pfd, 1, 200);
         if (polled < 0) {
             if (errno == EINTR)
@@ -335,7 +339,7 @@ bool CaptureWorker::waitForOpenStatus()
             return false;
         if (pfd.revents & POLLIN) {
             unsigned char status = 1;
-            if (::read(m_ctlFd, &status, 1) != 1)
+            if (::read(m_dataFd, &status, 1) != 1)
                 return false;
             return status == 0;
         }
