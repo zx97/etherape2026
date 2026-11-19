@@ -1,13 +1,23 @@
 # EtherApe 2026
 
-Portage **Qt 6 / C++20** d'EtherApe, le moniteur graphique de trafic réseau.
+Portage **Qt 6 / C++20** d'[EtherApe](https://gitlab.com/rghetta/etherape),
+le moniteur graphique de trafic réseau de Juan Toledo et Riccardo Ghetta.
+
+> Base : EtherApe **0.9.22** (tag `rel-0.9.22`, commit `8753ed7`), comparé à
+> `main` (0.9.23, commit `1edfbb8`). Licence **GPL-2.0-or-later**, identique à
+> l'original. Détail des décisions : [`docs/PORTING.md`](docs/PORTING.md) ;
+> traçabilité et licence : [`NOTICE.md`](NOTICE.md).
 Le code historique (GTK 3 + libglade + autotools, ~18 000 lignes de C) est
 remplacé par une base moderne, compacte et maintenable : **CMake + Qt 6
 Widgets + libpcap**.
 
-L'objectif est de survivre à l'abandon des dépendances : plus de libglade
-(obsolète depuis 2011), plus de GtkBuilder XML, plus d'autotools. Seules des
-bibliothèques vivantes et largement packagées sont utilisées.
+L'objectif est de survivre à l'abandon des dépendances. À noter, pour être
+précis : **GTK 3 n'est pas mort** (3.24 est encore maintenu et packagé) ; ce
+qui l'était, c'est **libglade**, abandonné depuis 2011, dont EtherApe dépendait
+pour charger ses 3 238 lignes de XML d'interface — remplacé dans GTK par
+`GtkBuilder`. S'y ajoutaient autotools, gnome-canvas/libart et un modèle
+GObject en C. Voir [`docs/PORTING.md`](docs/PORTING.md) pour l'analyse
+complète et le tableau des remplacements.
 
 ## État
 
@@ -152,7 +162,20 @@ mono-processus.
 `-DETH_WINDOWS_GUI=ON` produit un exécutable fenêtré (sans console) ; par
 défaut la console reste visible pour diagnostiquer les erreurs de démarrage.
 
-## Licence
+## Origine et licence
 
-GPL-2.0-or-later, comme EtherApe original (© 2001 Juan Toledo,
-Riccardo Ghetta et contributeurs).
+Ce projet est un **portage**, pas un fork : il ne reprend pas les correctifs du
+code C historique et n'a pas vocation à le remplacer en amont.
+
+| | |
+|---|---|
+| Projet d'origine | EtherApe, © 2001 Juan Toledo, Riccardo Ghetta et contributeurs |
+| Dépôt amont | <https://gitlab.com/rghetta/etherape> |
+| Ancien hébergement | <https://sourceforge.net/projects/etherape/> |
+| Base du portage | tag `rel-0.9.22` (commit `8753ed7`) |
+| Licence | GPL-2.0-or-later ([`COPYING`](COPYING)) |
+| Qt 6 | LGPL v3 — compatible avec `GPL-2.0-or-later`, liaison dynamique |
+
+Voir [`NOTICE.md`](NOTICE.md) pour la traçabilité (ce qui a été relu dans les
+sources C avant réécriture) et [`docs/PORTING.md`](docs/PORTING.md) pour les
+raisons du portage et les fonctionnalités non reprises.
