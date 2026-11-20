@@ -413,6 +413,9 @@ void CaptureWorker::openPrivileged(const QString &device,
 
 void CaptureWorker::readPcapStream(int fd)
 {
+#ifdef Q_OS_WIN
+    Q_UNUSED(fd);  // the one-shot helper is POSIX-only
+#else
     QByteArray buffer;
     bool headerDone = false;
     bool swapped = false;
@@ -506,6 +509,7 @@ void CaptureWorker::readPcapStream(int fd)
                 flush();
         }
     }
+#endif
 }
 
 void CaptureWorker::run(pcap_t *handle, bool offline, int speedPercent)
