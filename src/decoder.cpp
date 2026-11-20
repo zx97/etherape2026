@@ -88,6 +88,36 @@ QString applicationProtocol(const QString &transport, quint16 sport,
     return transport;
 }
 
+QString etherTypeName(quint16 etherType)
+{
+    switch (etherType) {
+    case 0x88cc:
+        return QStringLiteral("LLDP");
+    case 0x888e:
+        return QStringLiteral("EAPOL");
+    case 0x88f7:
+        return QStringLiteral("gPTP");
+    case 0x88e5:
+        return QStringLiteral("MACsec");
+    case 0x8847:
+        return QStringLiteral("MPLS");
+    case 0x8863:
+    case 0x8864:
+        return QStringLiteral("PPPoE");
+    case 0x8100:
+        return QStringLiteral("802.1Q");
+    case 0x88a8:
+        return QStringLiteral("802.1ad");
+    case 0x2000:
+        return QStringLiteral("CDP");
+    case 0x9000:
+        return QStringLiteral("Loopback");
+    default:
+        break;
+    }
+    return QStringLiteral("0x%1").arg(etherType, 4, 16, QLatin1Char('0'));
+}
+
 QString portLabel(const QString &addr, quint16 port)
 {
     return QStringLiteral("%1:%2").arg(addr).arg(port);
@@ -120,8 +150,10 @@ bool Decoder::parseLinkLayer(const uchar *data, quint32 caplen,
         const quint16 halen = rd16(data + 4);
         if (halen == 6) {
             layer.srcMac = macToString(data + 6);
-            // SLL only carries the source hardware address.
-            layer.dstMac = QStringLiteral("?");
+            // SLL only carries the source hardware address: the destination
+            // is unknown, and inventing a placeholder creates a fake node
+            // gathering every non-IP frame.
+            layer.dstMac.clear();
             layer.hasMac = true;
         }
         return true;
@@ -136,7 +168,7 @@ bool Decoder::parseLinkLayer(const uchar *data, quint32 caplen,
         const quint8 halen = data[11];
         if (halen == 6) {
             layer.srcMac = macToString(data + 12);
-            layer.dstMac = QStringLiteral("?");
+            layer.dstMac.clear();
             layer.hasMac = true;
         }
         return true;
@@ -349,8 +381,14 @@ PacketInfo Decoder::decode(const uchar *data, quint32 caplen, quint32 origlen,
         return pkt;
     }
 
-    pkt.protocol =
-        QStringLiteral("0x%1").arg(etherType, 4, 16, QLatin1Char('0'));
+    pkt.protocol = etherTypeName(etherType);
+
+    // Linux SLL (interface "any") has no destination hardware address. Label
+    // the peer with the protocol itself rather than a placeholder that would
+    // merge every non-IP frame into one bogus node.
+    if (ll.hasMac && ll.dstMac.isEmpty()) {
+        pkt.dst = {pkt.protocol, pkt.protocol, NodeKind::Mac};
+    }
     return pkt;
 }
 

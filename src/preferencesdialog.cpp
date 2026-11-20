@@ -116,6 +116,11 @@ PreferencesDialog::PreferencesDialog(const Values &values, QWidget *parent)
     auto *layout = new QVBoxLayout(this);
     layout->addLayout(form);
     layout->addWidget(buttons);
+    // Eleven rows: let the dialog grow to its content instead of clipping the
+    // last fields on a small screen.
+    layout->setSizeConstraint(QLayout::SetMinimumSize);
+    setMinimumWidth(560);
+    adjustSize();
 }
 
 PreferencesDialog::Values PreferencesDialog::values() const

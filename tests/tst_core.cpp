@@ -113,6 +113,7 @@ private slots:
     void decodesIpv4TcpWithApplicationProtocol();
     void decodesVlan();
     void decodesLinuxCookedCapture();
+    void sllNonIpUsesProtocolAsPeer();
     void decodesArp();
     void decodesUdpDns();
     void parsesNetbiosResponse();
@@ -185,6 +186,32 @@ void CoreTests::decodesLinuxCookedCapture()
 
     QCOMPARE(packet.protocol, QStringLiteral("NTP"));
     QCOMPARE(packet.src.id, QStringLiteral("10.0.0.10"));
+    // SLL has no destination MAC: no bogus "?" node
+    QCOMPARE(packet.dstMac, QString());
+}
+
+void CoreTests::sllNonIpUsesProtocolAsPeer()
+{
+    // SLL header + LLDP ethertype (0x88cc), no IP payload.
+    QByteArray frame(16, '\0');
+    frame[4] = 0;
+    frame[5] = 6;
+    const QByteArray mac = QByteArray::fromHex("66778899aabb");
+    for (int i = 0; i < 6; ++i)
+        frame[6 + i] = mac[i];
+    frame[14] = char(0x88);
+    frame[15] = char(0xcc);
+    frame.append(QByteArray(40, '\0'));
+
+    Decoder decoder(Mode::Ip, 113);
+    const PacketInfo packet = decoder.decode(
+        reinterpret_cast<const uchar *>(frame.constData()), frame.size(),
+        frame.size(), 0);
+
+    QCOMPARE(packet.protocol, QStringLiteral("LLDP"));
+    QVERIFY(packet.dstMac.isEmpty());
+    QCOMPARE(packet.dst.id, QStringLiteral("LLDP"));
+    QVERIFY(packet.dst.id != QStringLiteral("?"));
 }
 
 void CoreTests::decodesArp()
