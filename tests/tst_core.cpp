@@ -4,6 +4,7 @@
 // No GUI is required, so they run headless in CI.
 
 #include "decoder.h"
+#include "displayfilter.h"
 #include "graphmodel.h"
 #include "jsonexport.h"
 #include "netbios.h"
@@ -122,6 +123,8 @@ private slots:
     void exportsJson();
     void modeTcpUsesPorts();
     void nodeStaysInItsZone();
+    void filterAcceptsEqualsAndAliases();
+    void filterWarnsOnUnknownKey();
 };
 
 void CoreTests::decodesIpv4TcpWithApplicationProtocol()
@@ -391,6 +394,38 @@ void CoreTests::nodeStaysInItsZone()
         else
             QCOMPARE(node.zone, ZoneId::Internet);
     }
+}
+
+void CoreTests::filterAcceptsEqualsAndAliases()
+{
+    GraphModel::Node node;
+    node.id = QStringLiteral("10.0.0.1");
+    node.label = QStringLiteral("manux");
+    node.kind = NodeKind::Ipv4;
+
+    // Both separators and the 'hostname' alias must work.
+    QVERIFY(DisplayFilter(QStringLiteral("hostname=manux")).acceptsNode(node));
+    QVERIFY(DisplayFilter(QStringLiteral("host:manux")).acceptsNode(node));
+    QVERIFY(DisplayFilter(QStringLiteral("hostname:10.0.0.1")).acceptsNode(node));
+    QVERIFY(DisplayFilter(QStringLiteral("name=manux")).acceptsNode(node));
+    QVERIFY(!DisplayFilter(QStringLiteral("hostname=autre")).acceptsNode(node));
+    QVERIFY(DisplayFilter(QStringLiteral("-hostname=autre")).acceptsNode(node));
+    QVERIFY(!DisplayFilter(QStringLiteral("-hostname=manux")).acceptsNode(node));
+    QVERIFY(DisplayFilter().acceptsNode(node));
+
+    // Unknown keys are reported but still usable as free text.
+    const DisplayFilter unknown(QStringLiteral("foo:bar"));
+    QCOMPARE(unknown.warnings().size(), 1);
+    QVERIFY(unknown.acceptsNode(node) == false);
+}
+
+void CoreTests::filterWarnsOnUnknownKey()
+{
+    const DisplayFilter filter(QStringLiteral("bogus:value"));
+    QCOMPARE(filter.warnings().size(), 1);
+    QCOMPARE(filter.warnings().first(), QStringLiteral("bogus:value"));
+    QVERIFY(DisplayFilter(QStringLiteral("proto:http")).warnings().isEmpty());
+    QVERIFY(DisplayFilter(QStringLiteral("host=")).warnings().size() == 1);
 }
 
 QTEST_GUILESS_MAIN(CoreTests)

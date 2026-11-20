@@ -6,6 +6,18 @@
 
 namespace etherape {
 
+QStringList DisplayFilter::keyHelp()
+{
+    return {
+        QStringLiteral("proto:http or protocol=http"),
+        QStringLiteral("host:10.0.0 or hostname=manux"),
+        QStringLiteral("vlan:100"),
+        QStringLiteral("zone:dmz  (LAN, DMZ, VPN, Internet)"),
+        QStringLiteral("free text matches node id, label or protocol"),
+        QStringLiteral("-term excludes (e.g. -proto:arp)"),
+    };
+}
+
 DisplayFilter::DisplayFilter(const QString &expression) : m_expression(expression)
 {
     const QStringList tokens =
@@ -16,19 +28,29 @@ DisplayFilter::DisplayFilter(const QString &expression) : m_expression(expressio
             term.negated = true;
             token.remove(0, 1);
         }
-        const int colon = token.indexOf(QLatin1Char(':'));
-        if (colon > 0) {
-            const QString key = token.left(colon).toLower();
-            term.value = token.mid(colon + 1);
-            if (key == QLatin1String("proto"))
+        // Both "key:value" and "key=value" are accepted.
+        int separator = token.indexOf(QLatin1Char(':'));
+        if (separator < 0)
+            separator = token.indexOf(QLatin1Char('='));
+        if (separator > 0) {
+            const QString key = token.left(separator).toLower();
+            term.value = token.mid(separator + 1);
+            if (key == QLatin1String("proto") || key == QLatin1String("protocol")
+                || key == QLatin1String("prot"))
                 term.key = Key::Protocol;
-            else if (key == QLatin1String("host"))
+            else if (key == QLatin1String("host") || key == QLatin1String("hostname")
+                     || key == QLatin1String("name") || key == QLatin1String("node")
+                     || key == QLatin1String("ip") || key == QLatin1String("addr")
+                     || key == QLatin1String("address") || key == QLatin1String("mac"))
                 term.key = Key::Host;
-            else if (key == QLatin1String("vlan"))
+            else if (key == QLatin1String("vlan") || key == QLatin1String("vid"))
                 term.key = Key::Vlan;
-            else if (key == QLatin1String("zone"))
+            else if (key == QLatin1String("zone") || key == QLatin1String("cloud"))
                 term.key = Key::Zone;
             else {
+                // Unknown key: keep the whole token as free text, but say so.
+                m_warnings.append(QStringLiteral("%1:%2")
+                                      .arg(token.left(separator), term.value));
                 term.key = Key::Free;
                 term.value = token;
             }
@@ -36,8 +58,11 @@ DisplayFilter::DisplayFilter(const QString &expression) : m_expression(expressio
             term.key = Key::Free;
             term.value = token;
         }
-        if (term.value.isEmpty())
+        if (term.value.isEmpty()) {
+            if (separator > 0)
+                m_warnings.append(token);
             continue;
+        }
         m_terms.append(term);
     }
 }

@@ -14,6 +14,8 @@
 
 class QAction;
 class QComboBox;
+class QCompleter;
+class QStringListModel;
 class QLabel;
 class QLineEdit;
 class QThread;
@@ -83,6 +85,8 @@ private:
     void findNode();
     void updateTraffic();
     void loadEthers();
+    void updateShowCompletions();
+    void showFilterHelp();
     void applyZoneRules();
     void maybeResolve(const QString &id, NodeKind kind);
 
@@ -94,6 +98,8 @@ private:
     QComboBox *m_modeBox = nullptr;
     QLineEdit *m_filterEdit = nullptr;
     QLineEdit *m_showEdit = nullptr;
+    QCompleter *m_showCompleter = nullptr;
+    QStringListModel *m_showModel = nullptr;
     QAction *m_startAction = nullptr;
     QAction *m_stopAction = nullptr;
     QAction *m_numericAction = nullptr;

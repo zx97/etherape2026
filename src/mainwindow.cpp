@@ -20,7 +20,10 @@
 #include <QDir>
 #include <QFileDialog>
 #include <QFileInfo>
+#include <QCompleter>
 #include <QInputDialog>
+#include <QStringListModel>
+#include <QToolButton>
 #include <QHostInfo>
 #include <QIcon>
 #include <QKeySequence>
@@ -223,7 +226,25 @@ void MainWindow::buildUi()
         tr("Display filter: hides nodes and links without touching the "
            "capture. Keys: proto, host, vlan, zone; prefix a term with '-' "
            "to exclude it."));
+    m_showModel = new QStringListModel(this);
+    m_showCompleter = new QCompleter(m_showModel, this);
+    m_showCompleter->setCaseSensitivity(Qt::CaseInsensitive);
+    m_showCompleter->setFilterMode(Qt::MatchContains);
+    m_showCompleter->setCompletionMode(QCompleter::PopupCompletion);
+    m_showEdit->setCompleter(m_showCompleter);
+    connect(m_showEdit, &QLineEdit::textEdited, this, [this] {
+        if (m_showCompleter)
+            m_showCompleter->complete();
+    });
     toolbar->addWidget(m_showEdit);
+
+    auto *helpButton = new QToolButton(toolbar);
+    helpButton->setText(QStringLiteral("?"));
+    helpButton->setToolTip(tr("Display filter syntax"));
+    helpButton->setAutoRaise(true);
+    connect(helpButton, &QToolButton::clicked, this,
+            &MainWindow::showFilterHelp);
+    toolbar->addWidget(helpButton);
 
     toolbar->addWidget(new QLabel(tr(" Mode "), toolbar));
     m_modeBox = new QComboBox(toolbar);
@@ -608,7 +629,67 @@ void MainWindow::applyDisplayFilter()
     m_displayFilter = DisplayFilter(m_showEdit->text());
     m_graph->setDisplayFilter(m_displayFilter);
     m_stats->refresh(*m_model, m_displayFilter);
+
+    // Tell the user when a term was not understood instead of silently
+    // showing everything (e.g. a typo in a key name).
+    const QStringList warnings = m_displayFilter.warnings();
+    if (warnings.isEmpty()) {
+        m_showEdit->setStyleSheet(QString());
+        m_showEdit->setToolTip(
+            tr("Display filter: proto, host, vlan, zone; '-' excludes."));
+    } else {
+        m_showEdit->setStyleSheet(
+            QStringLiteral("QLineEdit { background: rgba(220,80,60,60); }"));
+        m_showEdit->setToolTip(
+            tr("Not understood: %1\n\nUse proto:, host:, vlan:, zone: "
+               "(or = instead of :). Click ? for help.")
+                .arg(warnings.join(QStringLiteral(", "))));
+    }
+    updateShowCompletions();
     updateStatus();
+}
+
+void MainWindow::showFilterHelp()
+{
+    QString text = tr("<b>Display filter</b><br><br>"
+                      "Hides nodes and links; the capture keeps running and "
+                      "counters keep accumulating.<br><br>");
+    text += tr("Keys (both <code>key:value</code> and "
+               "<code>key=value</code> work):<br><ul>");
+    for (const QString &line : DisplayFilter::keyHelp())
+        text += QStringLiteral("<li><code>%1</code></li>").arg(line.toHtmlEscaped());
+    text += tr("</ul>Several terms are combined with AND; prefix one with "
+               "<code>-</code> to exclude it.<br><br>"
+               "Examples: <code>hostname=manux</code>, "
+               "<code>proto:http -vlan:100</code>, "
+               "<code>zone:dmz</code>.");
+    QMessageBox::information(this, tr("Display filter"), text);
+}
+
+void MainWindow::updateShowCompletions()
+{
+    if (!m_showModel)
+        return;
+    QStringList words{QStringLiteral("proto:"), QStringLiteral("host:"),
+                      QStringLiteral("vlan:"), QStringLiteral("zone:")};
+    const auto protocols = m_model->protocols();
+    for (auto it = protocols.constBegin(); it != protocols.constEnd(); ++it)
+        words.append(QStringLiteral("proto:") + it.key());
+    words << QStringLiteral("zone:LAN") << QStringLiteral("zone:DMZ")
+          << QStringLiteral("zone:VPN") << QStringLiteral("zone:Internet");
+    for (int vlan : m_model->vlanIds())
+        words.append(QStringLiteral("vlan:%1").arg(vlan));
+    int count = 0;
+    for (const auto &node : m_model->nodes()) {
+        const QString name = node.label.isEmpty() ? node.id : node.label;
+        words.append(QStringLiteral("host:") + name);
+        if (!node.id.isEmpty() && node.id != name)
+            words.append(QStringLiteral("host=") + node.id);
+        if (++count >= 80)
+            break;
+    }
+    words.removeDuplicates();
+    m_showModel->setStringList(words);
 }
 
 void MainWindow::findNode()

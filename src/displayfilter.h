@@ -30,6 +30,9 @@ public:
     explicit DisplayFilter(const QString &expression);
 
     bool isEmpty() const { return m_terms.isEmpty(); }
+    // Terms that could not be interpreted (unknown key, empty value).
+    QStringList warnings() const { return m_warnings; }
+    static QStringList keyHelp();
     // True when a term constrains links (protocol), i.e. nodes without a
     // matching link are irrelevant.
     bool constrainsLinks() const;
@@ -54,6 +57,7 @@ private:
                      const GraphModel::Link *link) const;
 
     QString m_expression;
+    QStringList m_warnings;
     QVector<Term> m_terms;
 };
 
