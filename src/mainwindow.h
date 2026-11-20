@@ -3,6 +3,7 @@
 #pragma once
 
 #include "decoder.h"
+#include "displayfilter.h"
 #include "preferencesdialog.h"
 
 #include <QHash>
@@ -38,6 +39,7 @@ public:
     void setNumeric(bool numeric);
     void setNodeLimit(int limit);
     void setFilter(const QString &filter);
+    void setDisplayFilterExpression(const QString &expression);
     void startLiveCapture(const QString &device);
     void startReplay(const QString &file, int speedPercent);
     void setFinalExport(const QString &path);
@@ -77,6 +79,10 @@ private:
     void updateStatus();
     void setResolveNames(bool enabled);
     void setMergeFamilies(bool enabled);
+    void applyDisplayFilter();
+    void findNode();
+    void updateTraffic();
+    void loadEthers();
     void applyZoneRules();
     void maybeResolve(const QString &id, NodeKind kind);
 
@@ -87,6 +93,7 @@ private:
     QComboBox *m_interfaceBox = nullptr;
     QComboBox *m_modeBox = nullptr;
     QLineEdit *m_filterEdit = nullptr;
+    QLineEdit *m_showEdit = nullptr;
     QAction *m_startAction = nullptr;
     QAction *m_stopAction = nullptr;
     QAction *m_numericAction = nullptr;
@@ -101,6 +108,11 @@ private:
     QPointer<CaptureWorker> m_worker;
     QThread *m_captureThread = nullptr;
     QTimer *m_refreshTimer = nullptr;
+    QTimer *m_filterTimer = nullptr;
+    QTimer *m_trafficTimer = nullptr;
+    DisplayFilter m_displayFilter;
+    QHash<QString, QString> m_ethers;
+    quint64 m_lastTrafficBytes = 0;
 
     Mode m_mode = Mode::Ip;
     bool m_running = false;

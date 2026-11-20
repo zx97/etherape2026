@@ -1,19 +1,16 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 //
 // libpcap capture worker. Runs in its own thread; supports live capture
-// (direct, or through the pkexec helper on POSIX), offline replay and the pcap
-// stream produced by the privileged helper.
+// (direct, or through the pkexec helper), offline replay and the pcap stream
+// produced by the privileged helper.
 
 #pragma once
 
 #include "decoder.h"
 
-#include <QByteArray>
 #include <QList>
-#include <QMutex>
 #include <QObject>
 #include <QString>
-#include <QStringList>
 
 #include <atomic>
 
@@ -51,28 +48,14 @@ private:
     pcap_t *openWithFilter(const QString &source, const QString &filter,
                            bool live, QString *error, int *activateRc);
     void run(pcap_t *handle, bool offline, int speedPercent);
-    void readPcapStream(int outFd, int errFd);
-    bool ensureHelper();
-    bool sendCommand(unsigned type, const QByteArray &payload);
-    bool waitForOpenStatus(QString *detail);
-    void closeHelper();
-    void closeClient();
-    void closeServer();
-    void openPrivilegedOneShot(const QString &device, const QString &filter,
-                               int mode);
+    void readPcapStream(int fd);
     void flush();
     static void onPacket(u_char *user, const struct pcap_pkthdr *header,
                          const u_char *bytes);
+    void pruneHelperLogs();
 
     std::atomic<pcap_t *> m_handle{nullptr};
     std::atomic<qint64> m_childPid{-1};
-    int m_serverFd = -1;
-    int m_ctlFd = -1;
-    int m_dataFd = -1;
-    QMutex m_ctlMutex;
-    QString m_helperLogPath;
-    QString m_socketPath;
-    int m_streamPrefix = -1;
     Decoder m_decoder;
     QList<PacketInfo> m_batch;
     quint64 m_packets = 0;
@@ -80,10 +63,11 @@ private:
     qint64 m_firstTsUsec = -1;
     qint64 m_lastTsUsec = -1;
     std::atomic_bool m_stop{true};
+    QString m_helperLogPath;
 };
 
 // One capture device: 'device' is what libpcap expects, 'display' is what a
-// human should read (Windows exposes only \Device\NPF_{GUID} technically).
+// human should read (Windows exposes only \\Device\\NPF_{GUID} technically).
 struct CaptureInterface
 {
     QString device;

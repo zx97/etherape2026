@@ -11,6 +11,8 @@ class QTabWidget;
 namespace etherape {
 
 class GraphModel;
+class TrafficChart;
+class DisplayFilter;
 
 class StatsPanel : public QWidget
 {
@@ -19,10 +21,13 @@ class StatsPanel : public QWidget
 public:
     explicit StatsPanel(QWidget *parent = nullptr);
 
-    void refresh(const GraphModel &model);
+    void refresh(const GraphModel &model, const DisplayFilter &filter);
+    void addTrafficSample(double bytesPerSecond);
+    void clearTraffic();
 
 private:
     QTabWidget *m_tabs = nullptr;
+    TrafficChart *m_chart = nullptr;
     QTreeView *m_nodesView = nullptr;
     QTreeView *m_linksView = nullptr;
     QTreeView *m_protocolsView = nullptr;

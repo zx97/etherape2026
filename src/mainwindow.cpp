@@ -20,6 +20,7 @@
 #include <QDir>
 #include <QFileDialog>
 #include <QFileInfo>
+#include <QInputDialog>
 #include <QHostInfo>
 #include <QIcon>
 #include <QKeySequence>
@@ -114,11 +115,25 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
     buildMenus();
     resize(1280, 800);
     loadSettings();
+    loadEthers();
 
     m_refreshTimer = new QTimer(this);
     m_refreshTimer->setInterval(700);
     connect(m_refreshTimer, &QTimer::timeout, this, &MainWindow::refreshView);
     m_refreshTimer->start();
+
+    m_filterTimer = new QTimer(this);
+    m_filterTimer->setSingleShot(true);
+    m_filterTimer->setInterval(250);
+    connect(m_filterTimer, &QTimer::timeout, this,
+            &MainWindow::applyDisplayFilter);
+    connect(m_showEdit, &QLineEdit::textChanged, this,
+            [this] { m_filterTimer->start(); });
+
+    m_trafficTimer = new QTimer(this);
+    m_trafficTimer->setInterval(1000);
+    connect(m_trafficTimer, &QTimer::timeout, this, &MainWindow::updateTraffic);
+    m_trafficTimer->start();
 
     setRunning(false);
     updateStatus();
@@ -197,6 +212,18 @@ void MainWindow::buildUi()
     m_filterEdit->setClearButtonEnabled(true);
     m_filterEdit->setMinimumWidth(220);
     toolbar->addWidget(m_filterEdit);
+
+    toolbar->addWidget(new QLabel(tr(" Show "), toolbar));
+    m_showEdit = new QLineEdit(toolbar);
+    m_showEdit->setPlaceholderText(
+        tr("proto:http host:10.0 -vlan:100 zone:dmz"));
+    m_showEdit->setClearButtonEnabled(true);
+    m_showEdit->setMinimumWidth(210);
+    m_showEdit->setToolTip(
+        tr("Display filter: hides nodes and links without touching the "
+           "capture. Keys: proto, host, vlan, zone; prefix a term with '-' "
+           "to exclude it."));
+    toolbar->addWidget(m_showEdit);
 
     toolbar->addWidget(new QLabel(tr(" Mode "), toolbar));
     m_modeBox = new QComboBox(toolbar);
@@ -306,6 +333,10 @@ void MainWindow::buildMenus()
     m_mergeAction->setCheckable(true);
     connect(m_mergeAction, &QAction::toggled, this,
             &MainWindow::setMergeFamilies);
+
+    auto *findAction = viewMenu->addAction(tr("&Find Node…"));
+    findAction->setShortcut(QKeySequence::Find);
+    connect(findAction, &QAction::triggered, this, &MainWindow::findNode);
 
     auto *resetZoom = viewMenu->addAction(tr("Reset &Zoom"));
     resetZoom->setShortcut(QKeySequence(QStringLiteral("Ctrl+0")));
@@ -570,6 +601,71 @@ void MainWindow::setMergeFamilies(bool enabled)
         4000);
 }
 
+void MainWindow::applyDisplayFilter()
+{
+    if (!m_showEdit)
+        return;
+    m_displayFilter = DisplayFilter(m_showEdit->text());
+    m_graph->setDisplayFilter(m_displayFilter);
+    m_stats->refresh(*m_model, m_displayFilter);
+    updateStatus();
+}
+
+void MainWindow::findNode()
+{
+    bool accepted = false;
+    const QString text = QInputDialog::getText(
+        this, tr("Find node"),
+        tr("Node name, address or protocol (current display filter applies):"),
+        QLineEdit::Normal, QString(), &accepted);
+    if (!accepted || text.trimmed().isEmpty())
+        return;
+
+    const QString needle = text.trimmed();
+    for (const auto &node : m_model->nodes()) {
+        const bool hit = node.id.contains(needle, Qt::CaseInsensitive)
+            || node.label.contains(needle, Qt::CaseInsensitive);
+        if (!hit)
+            continue;
+        m_graph->selectNode(node.id);
+        m_graph->centerOnNode(node.id);
+        statusBar()->showMessage(tr("Found %1").arg(node.id), 3000);
+        return;
+    }
+    statusBar()->showMessage(tr("No node matches \"%1\".").arg(needle), 4000);
+}
+
+void MainWindow::updateTraffic()
+{
+    const quint64 delta =
+        m_bytes >= m_lastTrafficBytes ? m_bytes - m_lastTrafficBytes : 0;
+    m_lastTrafficBytes = m_bytes;
+    // Counters arrive in bursts (whole replay files): spread them over the
+    // sampling interval so the curve stays readable.
+    m_stats->addTrafficSample(static_cast<double>(delta));
+}
+
+void MainWindow::loadEthers()
+{
+    // The original EtherApe read /etc/ethers to name MAC addresses; keep it
+    // for link mode, where there is no DNS to ask.
+    QFile file(QStringLiteral("/etc/ethers"));
+    if (!file.open(QIODevice::ReadOnly))
+        return;
+    while (!file.atEnd()) {
+        const QByteArray line = file.readLine().trimmed();
+        if (line.isEmpty() || line.startsWith('#'))
+            continue;
+        const QList<QByteArray> parts =
+            line.simplified().split(' ');
+        if (parts.size() < 2)
+            continue;
+        const QString mac = QString::fromLatin1(parts.at(0)).toUpper();
+        const QString name = QString::fromLatin1(parts.at(1));
+        m_ethers.insert(mac, name);
+    }
+}
+
 void MainWindow::setNodeLimit(int limit)
 {
     m_model->setNodeLimit(limit);
@@ -578,6 +674,12 @@ void MainWindow::setNodeLimit(int limit)
 void MainWindow::setFilter(const QString &filter)
 {
     m_filterEdit->setText(filter);
+}
+
+void MainWindow::setDisplayFilterExpression(const QString &expression)
+{
+    m_showEdit->setText(expression);
+    applyDisplayFilter();
 }
 
 void MainWindow::startLiveCapture(const QString &device)
@@ -709,7 +811,9 @@ void MainWindow::resetGraph()
     m_nameCache.clear();
     m_pendingNames.clear();
     m_sourceText.clear();
-    m_stats->refresh(*m_model);
+    m_stats->clearTraffic();
+    m_stats->refresh(*m_model, m_displayFilter);
+    m_lastTrafficBytes = 0;
     updateStatus();
 }
 
@@ -721,6 +825,19 @@ void MainWindow::onBatch(const QList<etherape::PacketInfo> &batch)
     m_model->addBatch(batch, QDateTime::currentMSecsSinceEpoch());
 
     for (const auto &packet : batch) {
+        // /etc/ethers: static MAC -> name mapping, as in the original.
+        if (!m_ethers.isEmpty()) {
+            if (packet.src.kind == NodeKind::Mac) {
+                const auto it = m_ethers.constFind(packet.src.id);
+                if (it != m_ethers.constEnd())
+                    m_model->setLabel(packet.src.id, *it);
+            }
+            if (packet.dst.kind == NodeKind::Mac) {
+                const auto it = m_ethers.constFind(packet.dst.id);
+                if (it != m_ethers.constEnd())
+                    m_model->setLabel(packet.dst.id, *it);
+            }
+        }
         // Passive NetBIOS name service: names Windows hosts announce anyway.
         if (!packet.nbName.isEmpty() && !packet.nbIp.isEmpty()) {
             m_nameCache.insert(packet.nbIp, packet.nbName);
@@ -825,7 +942,9 @@ void MainWindow::onCounters(quint64 packets, quint64 bytes)
 
 void MainWindow::refreshView()
 {
-    m_stats->refresh(*m_model);
+    m_stats->clearTraffic();
+    m_stats->refresh(*m_model, m_displayFilter);
+    m_lastTrafficBytes = 0;
     updateStatus();
 }
 

@@ -65,6 +65,8 @@ add_library(etherape_core STATIC
     src/netbios.h
     src/zones.cpp
     src/zones.h
+    src/displayfilter.cpp
+    src/displayfilter.h
     src/graphmodel.cpp
     src/graphmodel.h
     src/xmlexport.cpp
@@ -99,6 +101,8 @@ add_executable(etherape2026
     src/graphview.h
     src/statspanel.cpp
     src/statspanel.h
+    src/trafficchart.cpp
+    src/trafficchart.h
     src/preferencesdialog.cpp
     src/preferencesdialog.h
     translations.qrc
@@ -151,6 +155,7 @@ endif()
 install(TARGETS etherape2026 RUNTIME DESTINATION bin)
 install(FILES data/etherape2026.desktop DESTINATION share/applications)
 install(FILES data/etherape.png DESTINATION share/pixmaps RENAME etherape2026.png)
+install(FILES etherape2026.1 DESTINATION share/man/man1)
 
 # Windows deployment helper: windeployqt copies the Qt runtime next to the exe.
 if(WIN32)

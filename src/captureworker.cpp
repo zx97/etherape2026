@@ -10,26 +10,24 @@
 
 #include "captureworker.h"
 
-#include "capturehelper.h"
-
 #include <QCoreApplication>
+#include <QDateTime>
+#include <QDir>
 #include <QElapsedTimer>
-#include <QHash>
 #include <QFile>
-#include <QStandardPaths>
+#include <QFileInfo>
+#include <QHash>
 #include <QThread>
 
 #include <algorithm>
 #include <cerrno>
+#include <cstdio>
 #include <cstring>
 
 #ifndef Q_OS_WIN
 #include <fcntl.h>
 #include <poll.h>
 #include <signal.h>
-#include <sys/socket.h>
-#include <sys/stat.h>
-#include <sys/un.h>
 #include <sys/wait.h>
 #include <unistd.h>
 #endif
@@ -68,8 +66,7 @@ QHash<QString, QString> friendlyAdapterNames()
         return names;
     }
     QByteArray buffer(static_cast<int>(size), '\0');
-    auto *addresses =
-        reinterpret_cast<IP_ADAPTER_ADDRESSES *>(buffer.data());
+    auto *addresses = reinterpret_cast<IP_ADAPTER_ADDRESSES *>(buffer.data());
     if (GetAdaptersAddresses(AF_UNSPEC, GAA_FLAG_INCLUDE_PREFIX, nullptr,
                              addresses, &size)
         != NO_ERROR) {
@@ -117,7 +114,8 @@ QList<CaptureInterface> captureInterfaces()
             ? QString::fromLocal8Bit(dev->description)
             : QString();
 #ifdef _WIN32
-        const QString friendlyName = friendly.value(guidFromNpfDevice(entry.device));
+        const QString friendlyName =
+            friendly.value(guidFromNpfDevice(entry.device));
         if (!friendlyName.isEmpty())
             entry.display = friendlyName;
         else if (!entry.description.isEmpty())
@@ -131,12 +129,32 @@ QList<CaptureInterface> captureInterfaces()
 
 CaptureWorker::CaptureWorker(QObject *parent) : QObject(parent)
 {
+    pruneHelperLogs();
 }
 
 CaptureWorker::~CaptureWorker()
 {
     requestStop();
-    closeHelper();
+#ifndef Q_OS_WIN
+    if (!m_helperLogPath.isEmpty())
+        QFile::remove(m_helperLogPath);
+#endif
+}
+
+// Removes helper logs left behind by previous runs (older than a day).
+void CaptureWorker::pruneHelperLogs()
+{
+#ifndef Q_OS_WIN
+    QDir dir(QStringLiteral("/dev/shm"));
+    const QDateTime cutoff = QDateTime::currentDateTime().addDays(-1);
+    const QStringList stale = dir.entryList(
+        {QStringLiteral("etherape2026-helper-*.log")}, QDir::Files);
+    for (const QString &name : stale) {
+        const QFileInfo info(dir.filePath(name));
+        if (info.lastModified() < cutoff)
+            QFile::remove(info.filePath());
+    }
+#endif
 }
 
 void CaptureWorker::requestStop()
@@ -144,12 +162,6 @@ void CaptureWorker::requestStop()
     m_stop.store(true, std::memory_order_relaxed);
     if (pcap_t *handle = m_handle.load(std::memory_order_relaxed))
         pcap_breakloop(handle);  // documented as safe from another thread
-
-#ifndef Q_OS_WIN
-    // Ask the persistent helper to stop the current session. The helper runs
-    // as root: signals from this unprivileged process would be rejected.
-    sendCommand(kHelperCmdStop, QByteArray());
-#endif
 }
 
 pcap_t *CaptureWorker::openWithFilter(const QString &source,
@@ -284,319 +296,14 @@ void CaptureWorker::openOffline(const QString &file, const QString &filter,
     run(handle, true, speedPercent);
 }
 
-void CaptureWorker::closeClient()
-{
-#ifndef Q_OS_WIN
-    QMutexLocker lock(&m_ctlMutex);
-    if (m_dataFd >= 0)
-        ::close(m_dataFd);
-    if (m_ctlFd >= 0 && m_ctlFd != m_dataFd)
-        ::close(m_ctlFd);
-    m_ctlFd = -1;
-    m_dataFd = -1;
-#endif
-}
-
-void CaptureWorker::closeServer()
-{
-#ifndef Q_OS_WIN
-    if (m_serverFd >= 0) {
-        ::close(m_serverFd);
-        m_serverFd = -1;
-    }
-    if (!m_socketPath.isEmpty()) {
-        ::unlink(m_socketPath.toLocal8Bit().constData());
-        m_socketPath.clear();
-    }
-#endif
-}
-
-bool CaptureWorker::ensureHelper()
+// One pkexec per capture: interface and filter in argv, pcap stream on
+// stdout. See docs/PORTING.md for why the persistent helper was dropped.
+void CaptureWorker::openPrivileged(const QString &device,
+                                   const QString &filter, int mode)
 {
 #ifdef Q_OS_WIN
-    return false;
-#else
-    const bool debug = qEnvironmentVariableIsSet("ETHERAPE_DEBUG");
-    const bool direct = qEnvironmentVariableIsSet("ETHERAPE_HELPER_DIRECT");
-
-    // A helper that died must not be reused: tear the session down.
-    const qint64 existing = m_childPid.load(std::memory_order_relaxed);
-    if (existing > 0) {
-        int status = 0;
-        if (::waitpid(static_cast<pid_t>(existing), &status, WNOHANG) != 0) {
-            if (debug)
-                std::fprintf(stderr, "[etherape] helper died, respawning\n");
-            closeClient();
-            closeServer();
-            m_childPid.store(-1, std::memory_order_relaxed);
-        }
-    }
-
-    if (m_serverFd < 0) {
-        QString runtimeDir = QStandardPaths::writableLocation(
-            QStandardPaths::RuntimeLocation);
-        if (runtimeDir.isEmpty())
-            runtimeDir = QStringLiteral("/dev/shm");
-        m_socketPath = QStringLiteral("%1/etherape2026-%2.sock")
-                           .arg(runtimeDir)
-                           .arg(QCoreApplication::applicationPid());
-        const QByteArray pathBytes = m_socketPath.toLocal8Bit();
-        ::unlink(pathBytes.constData());
-
-        const int server = ::socket(AF_UNIX, SOCK_STREAM, 0);
-        if (server < 0)
-            return false;
-        struct sockaddr_un address = {};
-        address.sun_family = AF_UNIX;
-        std::snprintf(address.sun_path, sizeof(address.sun_path), "%s",
-                      pathBytes.constData());
-        if (::bind(server, reinterpret_cast<struct sockaddr *>(&address),
-                   sizeof(address)) != 0
-            || ::chmod(pathBytes.constData(), 0600) != 0
-            || ::listen(server, 1) != 0) {
-            ::close(server);
-            return false;
-        }
-        m_serverFd = server;
-
-        m_helperLogPath = QStringLiteral("/dev/shm/etherape2026-helper-%1.log")
-                              .arg(QCoreApplication::applicationPid());
-        const int logFd = ::open(m_helperLogPath.toLocal8Bit().constData(),
-                                 O_CREAT | O_WRONLY | O_TRUNC, 0600);
-
-        const QByteArray exe =
-            QCoreApplication::applicationFilePath().toLocal8Bit();
-        const pid_t pid = ::fork();
-        if (pid == 0) {
-            ::setpgid(0, 0);
-            if (logFd >= 0)
-                ::dup2(logFd, STDERR_FILENO);
-            if (debug)
-                ::write(STDERR_FILENO, "[etherape] child: exec now\n", 28);
-            if (direct) {
-                if (debug)
-                    ::execl(exe.constData(), exe.constData(),
-                            "--capture-helper", "--socket",
-                            pathBytes.constData(), "--debug",
-                            static_cast<char *>(nullptr));
-                else
-                    ::execl(exe.constData(), exe.constData(),
-                            "--capture-helper", "--socket",
-                            pathBytes.constData(),
-                            static_cast<char *>(nullptr));
-            } else {
-                if (debug)
-                    ::execlp("pkexec", "pkexec", exe.constData(),
-                             "--capture-helper", "--socket",
-                             pathBytes.constData(), "--debug",
-                             static_cast<char *>(nullptr));
-                else
-                    ::execlp("pkexec", "pkexec", exe.constData(),
-                             "--capture-helper", "--socket",
-                             pathBytes.constData(),
-                             static_cast<char *>(nullptr));
-            }
-            const char failure[] = "[etherape] child: exec failed\n";
-            ::write(STDERR_FILENO, failure, sizeof(failure) - 1);
-            _exit(127);
-        }
-        if (logFd >= 0)
-            ::close(logFd);
-        if (pid < 0) {
-            closeServer();
-            return false;
-        }
-        m_childPid.store(pid, std::memory_order_relaxed);
-    }
-
-    if (m_ctlFd >= 0)
-        return true;  // an accepted connection is already available
-
-    // Wait for the helper to connect. This is where pkexec asks the password,
-    // so poll in a loop and stay responsive to Stop.
-    for (;;) {
-        if (m_stop.load(std::memory_order_relaxed))
-            return false;
-        struct pollfd pfd = {m_serverFd, POLLIN, 0};
-        const int polled = ::poll(&pfd, 1, 200);
-        if (polled < 0 && errno != EINTR)
-            return false;
-        if (polled > 0 && (pfd.revents & POLLIN)) {
-            const int client = ::accept(m_serverFd, nullptr, nullptr);
-            if (client < 0)
-                return false;
-            m_ctlFd = client;
-            m_dataFd = client;
-            if (debug)
-                std::fprintf(stderr, "[etherape] helper connected fd=%d%s\n",
-                             client, direct ? " (direct)" : " (pkexec)");
-            return true;
-        }
-    }
-#endif
-}
-
-bool CaptureWorker::sendCommand(unsigned type, const QByteArray &payload)
-{
-#ifndef Q_OS_WIN
-    QMutexLocker lock(&m_ctlMutex);
-    if (m_ctlFd < 0)
-        return false;
-
-    HelperCommand command{type, static_cast<unsigned>(payload.size())};
-    auto writeAll = [](int fd, const char *data, size_t length) {
-        size_t done = 0;
-        while (done < length) {
-            const ssize_t n = ::write(fd, data + done, length - done);
-            if (n > 0)
-                done += static_cast<size_t>(n);
-            else if (n < 0 && errno == EINTR)
-                continue;
-            else
-                return false;
-        }
-        return true;
-    };
-
-    if (!writeAll(m_ctlFd, reinterpret_cast<const char *>(&command),
-                  sizeof(command)))
-        return false;
-    if (!payload.isEmpty()
-        && !writeAll(m_ctlFd, payload.constData(),
-                     static_cast<size_t>(payload.size())))
-        return false;
-    return true;
-#else
-    Q_UNUSED(type);
-    Q_UNUSED(payload);
-    return false;
-#endif
-}
-
-bool CaptureWorker::waitForOpenStatus(QString *detail)
-{
-#ifndef Q_OS_WIN
-    const bool debug = qEnvironmentVariableIsSet("ETHERAPE_DEBUG");
-    // The very first OPEN blocks until pkexec has authenticated the user, so
-    // poll in a loop and stay responsive to Stop. Bound the wait so a silent
-    // helper can never freeze the worker (and the Start button) forever.
-    QElapsedTimer deadline;
-    deadline.start();
-    for (;;) {
-        if (deadline.elapsed() > 120000) {
-            if (debug)
-                std::fprintf(stderr, "[etherape] OPEN timed out\n");
-            return false;
-        }
-        if (m_stop.load(std::memory_order_relaxed))
-            return false;
-
-        struct pollfd pfd = {m_dataFd, POLLIN, 0};
-        const int polled = ::poll(&pfd, 1, 200);
-        if (polled < 0) {
-            if (errno == EINTR)
-                continue;
-            return false;
-        }
-        if (polled == 0)
-            continue;
-        if (pfd.revents & (POLLERR | POLLHUP | POLLNVAL))
-            return false;
-        if (pfd.revents & POLLIN) {
-            unsigned char status = 1;
-            if (::read(m_dataFd, &status, 1) != 1) {
-                if (debug)
-                    std::fprintf(stderr, "[etherape] OPEN read failed\n");
-                return false;
-            }
-            if (debug)
-                std::fprintf(stderr, "[etherape] OPEN status=%u\n",
-                             unsigned(status));
-            if (status == 0) {
-                // Expect the "ETHP" session marker; skip stray bytes if a
-                // previous session left something behind.
-                QByteArray marker;
-                for (int attempt = 0; attempt < 64; ++attempt) {
-                    unsigned char byte = 0;
-                    if (::read(m_dataFd, &byte, 1) != 1)
-                        return false;
-                    marker.append(static_cast<char>(byte));
-                    if (marker.endsWith(QByteArrayLiteral("ETHP"))) {
-                        if (debug && marker.size() > 4)
-                            std::fprintf(stderr,
-                                         "[etherape] resynced after %lld bytes\n",
-                                         static_cast<long long>(marker.size() - 4));
-                        return true;
-                    }
-                }
-                emit errorOccurred(
-                    tr("The capture stream is out of sync (no session "
-                       "marker)."));
-                return false;
-            }
-            if (status != 1) {
-                // The stream started before the status byte (older helper):
-                // keep the byte and let the pcap parser see it first.
-                m_streamPrefix = status;
-                if (debug)
-                    std::fprintf(stderr,
-                                 "[etherape] OPEN status missing, byte=0x%02x\n",
-                                 unsigned(status));
-                return true;
-            }
-
-            // Status 1 is followed by a length and the helper's error text.
-            unsigned length = 0;
-            if (::read(m_dataFd, &length, sizeof(length)) == sizeof(length)
-                && length > 0 && length < 65536) {
-                QByteArray message(static_cast<int>(length), '\0');
-                size_t done = 0;
-                while (done < length) {
-                    const ssize_t n = ::read(m_dataFd,
-                                            message.data() + done,
-                                            length - done);
-                    if (n <= 0)
-                        break;
-                    done += static_cast<size_t>(n);
-                }
-                if (detail)
-                    *detail = QString::fromLocal8Bit(message.constData(),
-                                                     static_cast<int>(done));
-                if (debug)
-                    std::fprintf(stderr, "[etherape] helper error: %s\n",
-                                 message.constData());
-            }
-            return false;
-        }
-    }
-#else
-    return false;
-#endif
-}
-
-void CaptureWorker::closeHelper()
-{
-#ifndef Q_OS_WIN
-    if (m_childPid.load(std::memory_order_relaxed) <= 0)
-        return;
-    if (m_ctlFd >= 0)
-        sendCommand(kHelperCmdQuit, QByteArray());
-    closeClient();
-    closeServer();
-    m_childPid.store(-1, std::memory_order_relaxed);
-#endif
-}
-
-// Reliable path (default): one pkexec per capture, interface and filter in
-// argv, pcap stream on stdout. Costs one password per capture, nothing more.
-void CaptureWorker::openPrivilegedOneShot(const QString &device,
-                                          const QString &filter, int mode)
-{
-#ifdef Q_OS_WIN
-    Q_UNUSED(device);
-    Q_UNUSED(filter);
-    Q_UNUSED(mode);
-    return;
+    // Windows has no pkexec; the GUI relaunches itself elevated through UAC.
+    openLive(device, filter, mode);
 #else
     m_stop.store(false, std::memory_order_relaxed);
     m_decoder.setMode(static_cast<Mode>(mode));
@@ -608,8 +315,9 @@ void CaptureWorker::openPrivilegedOneShot(const QString &device,
         return;
     }
 
-    m_helperLogPath = QStringLiteral("/dev/shm/etherape2026-helper-%1.log")
-                          .arg(QCoreApplication::applicationPid());
+    m_helperLogPath =
+        QStringLiteral("/dev/shm/etherape2026-helper-%1.log")
+            .arg(QCoreApplication::applicationPid());
     const int logFd = ::open(m_helperLogPath.toLocal8Bit().constData(),
                              O_CREAT | O_WRONLY | O_TRUNC, 0600);
 
@@ -663,15 +371,13 @@ void CaptureWorker::openPrivilegedOneShot(const QString &device,
         return;
     }
 
+    ::signal(SIGPIPE, SIG_IGN);
     m_childPid.store(pid, std::memory_order_relaxed);
-    m_ctlFd = -1;
-    m_dataFd = data[0];
     m_packets = 0;
     m_bytes = 0;
     emit captureStarted(device);
-    readPcapStream(m_dataFd, -1);
-    ::close(m_dataFd);
-    m_dataFd = -1;
+    readPcapStream(data[0]);
+    ::close(data[0]);
 
     // The helper runs as root: we cannot signal it, and closing the pipe is
     // what stops it. Never block the UI on its exit.
@@ -689,7 +395,7 @@ void CaptureWorker::openPrivilegedOneShot(const QString &device,
         QFile log(m_helperLogPath);
         if (log.open(QIODevice::ReadOnly))
             extra = QString::fromLocal8Bit(log.readAll()).trimmed();
-        if (qEnvironmentVariableIsSet("ETHERAPE_DEBUG"))
+        if (debug)
             std::fprintf(stderr, "[etherape] one-shot failure: %s\n",
                          extra.toLocal8Bit().constData());
         emit errorOccurred(
@@ -705,137 +411,37 @@ void CaptureWorker::openPrivilegedOneShot(const QString &device,
 #endif
 }
 
-void CaptureWorker::openPrivileged(const QString &device,
-                                   const QString &filter, int mode)
+void CaptureWorker::readPcapStream(int fd)
 {
-#ifdef Q_OS_WIN
-    // Windows has no pkexec; the GUI relaunches itself elevated through UAC.
-    openLive(device, filter, mode);
-#else
-    // The persistent helper is opt-in: the one-shot path is the one that has
-    // proven reliable with pkexec.
-    if (!qEnvironmentVariableIsSet("ETHERAPE_PERSISTENT_HELPER")) {
-        openPrivilegedOneShot(device, filter, mode);
-        return;
-    }
-
-    m_stop.store(false, std::memory_order_relaxed);
-    m_decoder.setMode(static_cast<Mode>(mode));
-
-    if (!ensureHelper()) {
-        emit errorOccurred(tr("Cannot start the privileged capture helper."));
-        emit captureStopped();
-        return;
-    }
-
-    // Discard whatever the previous session may have left in the pipe so the
-    // new pcap stream starts on a clean header. The pipe is blocking: a plain
-    // read() with no data would freeze the worker before sending OPEN.
-    const int flags = ::fcntl(m_dataFd, F_GETFL, 0);
-    ::fcntl(m_dataFd, F_SETFL, flags | O_NONBLOCK);
-    char drain[8192];
-    while (::read(m_dataFd, drain, sizeof(drain)) > 0) {
-    }
-    ::fcntl(m_dataFd, F_SETFL, flags);
-
-    QByteArray payload;
-    payload.append(device.toLocal8Bit());
-    payload.append('\0');
-    payload.append(filter.toLocal8Bit());
-    payload.append('\0');
-
-    if (!sendCommand(kHelperCmdOpen, payload)) {
-        emit errorOccurred(tr("Cannot talk to the privileged capture helper."));
-        emit captureStopped();
-        return;
-    }
-
-    QString detail;
-    if (!waitForOpenStatus(&detail)) {
-        if (m_stop.load(std::memory_order_relaxed)) {
-            emit errorOccurred(tr("Capture cancelled."));
-        } else if (!detail.isEmpty()) {
-            emit errorOccurred(tr("The privileged helper could not open the "
-                                  "capture: %1")
-                                   .arg(detail));
-        } else {
-            // No structured answer: pkexec itself probably refused or the
-            // helper died. Include its stderr log when available.
-            QString extra;
-            if (!m_helperLogPath.isEmpty()) {
-                QFile log(m_helperLogPath);
-                if (log.open(QIODevice::ReadOnly)) {
-                    extra = QString::fromLocal8Bit(log.readAll()).trimmed();
-                }
-            }
-            emit errorOccurred(
-                extra.isEmpty()
-                    ? tr("The privileged helper did not answer (pkexec refused "
-                         "or the helper exited).")
-                    : tr("The privileged helper did not answer: %1").arg(extra));
-        }
-        emit captureStopped();
-        return;
-    }
-
-    m_packets = 0;
-    m_bytes = 0;
-    emit captureStarted(device);
-    readPcapStream(m_dataFd, -1);
-    // One connection per session: close it so the next OPEN cannot read
-    // leftover pcap bytes as a status. The helper reconnects by itself.
-    closeClient();
-    flush();
-    emit counters(m_packets, m_bytes);
-    emit captureStopped();
-#endif
-}
-
-void CaptureWorker::readPcapStream(int outFd, int errFd)
-{
-#ifdef Q_OS_WIN
-    Q_UNUSED(outFd);
-    Q_UNUSED(errFd);
-#else
     QByteArray buffer;
-    QByteArray errors;
     bool headerDone = false;
     bool swapped = false;
-
-    if (m_streamPrefix >= 0) {
-        buffer.append(static_cast<char>(m_streamPrefix));
-        m_streamPrefix = -1;
-    }
 
     for (;;) {
         if (m_stop.load(std::memory_order_relaxed))
             break;
 
-        struct pollfd fds[2] = {{outFd, POLLIN, 0}, {errFd, POLLIN, 0}};
-        const int polled = ::poll(fds, 2, 200);
+        struct pollfd pfd = {fd, POLLIN, 0};
+        const int polled = ::poll(&pfd, 1, 200);
         if (polled < 0) {
             if (errno == EINTR)
                 continue;
             break;
         }
+        if (polled == 0)
+            continue;
+        if (pfd.revents & (POLLERR | POLLHUP | POLLNVAL))
+            break;
 
-        if (fds[1].revents & (POLLIN | POLLHUP)) {
-            char tmp[512];
-            const ssize_t n = ::read(errFd, tmp, sizeof(tmp));
-            if (n > 0)
-                errors.append(tmp, static_cast<int>(n));
-        }
-
-        if (fds[0].revents & (POLLIN | POLLHUP)) {
+        if (pfd.revents & POLLIN) {
             char tmp[65536];
-            const ssize_t n = ::read(outFd, tmp, sizeof(tmp));
-            if (n > 0) {
+            const ssize_t n = ::read(fd, tmp, sizeof(tmp));
+            if (n > 0)
                 buffer.append(tmp, static_cast<int>(n));
-            } else if (n == 0) {
-                break;  // helper closed its output
-            } else if (errno != EINTR && errno != EAGAIN) {
+            else if (n == 0)
                 break;
-            }
+            else if (errno != EINTR && errno != EAGAIN)
+                break;
         }
 
         if (!headerDone && buffer.size() >= 24) {
@@ -849,7 +455,7 @@ void CaptureWorker::readPcapStream(int outFd, int errFd)
             case 0xd4c3b2a4:
                 swapped = true;
                 break;
-            case 0xa1b23c4d:  // nanosecond timestamps
+            case 0xa1b23c4d:
             case 0x4d3cb2a1:
                 swapped = (magic == 0x4d3cb2a1);
                 break;
@@ -860,10 +466,6 @@ void CaptureWorker::readPcapStream(int outFd, int errFd)
                                .arg(static_cast<quint8>(buffer.at(i)), 2, 16,
                                     QLatin1Char('0'));
                 }
-                if (qEnvironmentVariableIsSet("ETHERAPE_DEBUG"))
-                    std::fprintf(stderr,
-                                 "[etherape] bad pcap magic: %s\n",
-                                 hex.toLocal8Bit().constData());
                 emit errorOccurred(
                     tr("Privileged helper sent an invalid pcap stream "
                        "(first bytes: %1).")
@@ -894,8 +496,8 @@ void CaptureWorker::readPcapStream(int outFd, int errFd)
 
             const qint64 tsUsecTotal =
                 static_cast<qint64>(tsSec) * 1000000 + tsUsec;
-            m_batch.append(m_decoder.decode(record + 16, caplen, origlen,
-                                            tsUsecTotal));
+            m_batch.append(
+                m_decoder.decode(record + 16, caplen, origlen, tsUsecTotal));
             m_packets += 1;
             m_bytes += origlen;
             buffer.remove(0, static_cast<int>(16 + caplen));
@@ -904,10 +506,6 @@ void CaptureWorker::readPcapStream(int outFd, int errFd)
                 flush();
         }
     }
-
-    if (!headerDone && !errors.isEmpty() && !m_stop.load())
-        emit errorOccurred(QString::fromLocal8Bit(errors).trimmed());
-#endif
 }
 
 void CaptureWorker::run(pcap_t *handle, bool offline, int speedPercent)
@@ -916,24 +514,27 @@ void CaptureWorker::run(pcap_t *handle, bool offline, int speedPercent)
     m_firstTsUsec = -1;
     m_lastTsUsec = -1;
 
+    // Savefiles must stay blocking: in non-blocking mode libpcap reports 0
+    // instead of -2 at EOF and the loop would spin forever.
+    if (!offline) {
+        char errbuf[PCAP_ERRBUF_SIZE] = {0};
+        pcap_setnonblock(handle, 1, errbuf);
+    }
+
     QElapsedTimer wall;
     wall.start();
     int batches = 0;
-    bool first = true;
 
     while (!m_stop.load(std::memory_order_relaxed)) {
         struct pcap_pkthdr *header = nullptr;
         const u_char *data = nullptr;
         const int rc = pcap_next_ex(handle, &header, &data);
 
-        if (rc == 0) {
-            // Live capture read timeout: nothing to do.
-            continue;
-        }
+        if (rc == 0)
+            continue;  // read timeout (live)
         if (rc == -2) {
-            // EOF on a savefile, or breakloop on a live handle.
             if (offline)
-                break;
+                break;  // EOF
             continue;
         }
         if (rc == -1) {
@@ -941,11 +542,6 @@ void CaptureWorker::run(pcap_t *handle, bool offline, int speedPercent)
             break;
         }
 
-        if (first) {
-            first = false;
-            m_firstTsUsec = static_cast<qint64>(header->ts.tv_sec) * 1000000
-                + header->ts.tv_usec;
-        }
         onPacket(reinterpret_cast<u_char *>(this), header, data);
         flush();
 
@@ -968,7 +564,7 @@ void CaptureWorker::run(pcap_t *handle, bool offline, int speedPercent)
                     remaining -= chunk;
                 }
             } else if (speedPercent <= 0 && batches % 64 == 0) {
-                QThread::usleep(500);  // unbounded speed: yield to the GUI
+                QThread::usleep(500);
             }
         }
     }

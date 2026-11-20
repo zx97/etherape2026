@@ -11,6 +11,7 @@
 class QStandardItemModel;
 class QTreeView;
 class QTimer;
+class QPushButton;
 
 namespace etherape {
 
@@ -29,6 +30,7 @@ signals:
 
 private:
     void refresh();
+    void exportCsv();
 
     const GraphModel *m_model = nullptr;
     QStandardItemModel *m_rows = nullptr;

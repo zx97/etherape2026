@@ -2,10 +2,11 @@
 //
 // Privileged capture helper.
 //
-// Started once per GUI session through pkexec, then kept alive: the GUI sends
-// OPEN/STOP/QUIT commands over a socketpair and reads a pcap stream from a
-// pipe. This is why the password is asked only once, and why no password is
-// ever stored anywhere.
+// Started through pkexec for one capture at a time: the interface and filter
+// come from argv and a pcap file is streamed on stdout. This is the only
+// mechanism that behaves reliably with a setuid pkexec (which closes
+// inherited descriptors and sanitises the environment); the persistent
+// helper experiment was abandoned — see docs/PORTING.md.
 
 #pragma once
 
@@ -13,18 +14,5 @@ namespace etherape {
 
 bool isCaptureHelperInvocation(int argc, char **argv);
 int runCaptureHelper(int argc, char **argv);
-
-// Wire protocol (little-endian, native structs on purpose: same host).
-enum : unsigned {
-    kHelperCmdOpen = 1,
-    kHelperCmdStop = 2,
-    kHelperCmdQuit = 3,
-};
-
-struct HelperCommand
-{
-    unsigned type;
-    unsigned length;
-};
 
 } // namespace etherape

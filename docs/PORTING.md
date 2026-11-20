@@ -112,11 +112,15 @@ Le point le plus délicat du portage, documenté ici parce qu'il a coûté cher 
 
 ```mermaid
 flowchart LR
-    A[1. helper one-shot<br/>argv + stdout] -->|fiable| A1[un mot de passe par capture]
-    B[2. helper persistant<br/>fds hérités] -->|pkexec ferme les fd| B1[échec]
-    C[3. helper persistant<br/>socket UNIX] -->|protocole fragile| C1[expérimental, opt-in]
+    A[1. helper one-shot<br/>argv + stdout] -->|fiable| A1[retenu]
+    B[2. helper persistant<br/>fds hérités] -->|pkexec ferme les fd| B1[abandonné]
+    C[3. helper persistant<br/>socket UNIX] -->|protocole fragile| C1[abandonné et retiré du code]
     A1 --> D[défaut actuel]
 ```
+
+Le code du helper persistant a été **supprimé** (novembre 2026) : il n'était
+plus exercé et constituait un piège. Seul le chemin one-shot subsiste, avec
+le debug `--debug` et les traces `ETHERAPE_DEBUG`.
 
 `pkexec` est setuid : il **ferme les descripteurs au-delà de 2** et ne relaie
 pas notre `stdin`. Seul le chemin « argv + stdout » est robuste, c'est donc le

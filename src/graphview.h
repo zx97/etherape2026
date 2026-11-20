@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include "displayfilter.h"
+
 #include <QColor>
 #include <QPointF>
 #include <QString>
@@ -36,6 +38,8 @@ public:
     bool zonesVisible() const { return m_showZones; }
 
     void selectNode(const QString &id);
+    void centerOnNode(const QString &id);
+    void setDisplayFilter(const DisplayFilter &filter);
     void resetView();
 
 signals:
@@ -57,7 +61,8 @@ private:
     int nodeAt(const QPointF &pos) const;
     void rebuildScreenPositions();
     void drawLegend(QPainter &painter, const QFont &baseFont);
-    void drawZones(QPainter &painter, const QFont &baseFont);
+    void drawZones(QPainter &painter, const QFont &baseFont,
+                   const QVector<bool> &visible);
 
     GraphModel *m_model = nullptr;
     QTimer m_timer;
@@ -73,6 +78,7 @@ private:
     bool m_showZones = true;
     int m_hover = -1;
     QString m_selected;
+    DisplayFilter m_displayFilter;
     int m_dragNode = -1;
     bool m_dragging = false;
     QPointF m_dragStart;

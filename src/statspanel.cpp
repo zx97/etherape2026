@@ -3,7 +3,9 @@
 #include "statspanel.h"
 
 #include "formatting.h"
+#include "displayfilter.h"
 #include "graphmodel.h"
+#include "trafficchart.h"
 
 #include <QHeaderView>
 #include <QIcon>
@@ -92,20 +94,53 @@ StatsPanel::StatsPanel(QWidget *parent) : QWidget(parent)
     m_protocolsView->setModel(m_protocolsModel);
     configureView(m_protocolsView);
 
+    m_chart = new TrafficChart(m_tabs);
     m_tabs->addTab(m_nodesView, tr("Nodes"));
     m_tabs->addTab(m_linksView, tr("Links"));
     m_tabs->addTab(m_protocolsView, tr("Protocols"));
+    m_tabs->addTab(m_chart, tr("Traffic"));
 
     auto *layout = new QVBoxLayout(this);
     layout->setContentsMargins(0, 0, 0, 0);
     layout->addWidget(m_tabs);
 }
 
-void StatsPanel::refresh(const GraphModel &model)
+void StatsPanel::addTrafficSample(double bytesPerSecond)
 {
-    // Nodes.
+    if (m_chart)
+        m_chart->addSample(bytesPerSecond);
+}
+
+void StatsPanel::clearTraffic()
+{
+    if (m_chart)
+        m_chart->clear();
+}
+
+void StatsPanel::refresh(const GraphModel &model, const DisplayFilter &filter)
+{
+    // Nodes. When the filter targets protocols, only endpoints of a visible
+    // link are listed, matching what the graph draws.
+    QSet<QString> linked;
+    if (filter.constrainsLinks()) {
+        const auto allNodes = model.nodes();
+        for (const auto &link : model.links()) {
+            if (link.a < 0 || link.b < 0 || link.a >= allNodes.size()
+                || link.b >= allNodes.size())
+                continue;
+            if (filter.acceptsLink(link, allNodes[link.a], allNodes[link.b])) {
+                linked.insert(allNodes[link.a].id);
+                linked.insert(allNodes[link.b].id);
+            }
+        }
+    }
+
     m_nodesModel->removeRows(0, m_nodesModel->rowCount());
     for (const auto &node : model.nodes()) {
+        if (!filter.isEmpty() && !filter.acceptsNode(node))
+            continue;
+        if (filter.constrainsLinks() && !linked.contains(node.id))
+            continue;
         QList<QStandardItem *> row;
         auto *name = new QStandardItem(node.label.isEmpty() ? node.id : node.label);
         name->setToolTip(node.id);
@@ -121,6 +156,9 @@ void StatsPanel::refresh(const GraphModel &model)
     for (const auto &link : model.links()) {
         if (link.a < 0 || link.b < 0 || link.a >= nodes.size()
             || link.b >= nodes.size())
+            continue;
+        if (!filter.isEmpty()
+            && !filter.acceptsLink(link, nodes[link.a], nodes[link.b]))
             continue;
         const auto labelFor = [&nodes](int index) {
             const auto &node = nodes[index];

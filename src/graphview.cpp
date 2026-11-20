@@ -90,7 +90,8 @@ void GraphView::setZonesVisible(bool visible)
     update();
 }
 
-void GraphView::drawZones(QPainter &painter, const QFont &baseFont)
+void GraphView::drawZones(QPainter &painter, const QFont &baseFont,
+                          const QVector<bool> &visible)
 {
     if (!m_model || !m_showZones)
         return;
@@ -106,6 +107,8 @@ void GraphView::drawZones(QPainter &painter, const QFont &baseFont)
         int count = 0;
         for (int i = 0; i < nodes.size() && i < m_screenPos.size(); ++i) {
             if (nodes[i].zone != zone)
+                continue;
+            if (i < visible.size() && !visible[i])
                 continue;
             const QPointF p = m_screenPos[i];
             const double r = m_radii[i];
@@ -152,6 +155,29 @@ void GraphView::selectNode(const QString &id)
 {
     m_selected = id;
     update();
+}
+
+void GraphView::setDisplayFilter(const DisplayFilter &filter)
+{
+    m_displayFilter = filter;
+    update();
+}
+
+void GraphView::centerOnNode(const QString &id)
+{
+    if (!m_model)
+        return;
+    for (const auto &node : m_model->nodes()) {
+        if (node.id != id && node.label != id)
+            continue;
+        const QPointF center(width() / 2.0, height() / 2.0);
+        const QPointF nodeScreen =
+            QPointF((node.x - 0.5) * width(), (node.y - 0.5) * height()) * m_zoom;
+        m_pan = -nodeScreen;
+        m_selected = node.id;
+        update();
+        return;
+    }
 }
 
 void GraphView::resetView()
@@ -293,13 +319,39 @@ void GraphView::paintEvent(QPaintEvent *)
     const auto nodes = m_model->nodes();
     const auto links = m_model->links();
 
-    // Zone clouds first: they are the visual grouping of the graph.
-    drawZones(painter, painter.font());
 
-    // Links next, so nodes sit on top.
+    // When the filter is about links (proto:...), only the endpoints of a
+    // visible link are worth drawing; otherwise keep every accepted node.
+    QVector<bool> keepNode(nodes.size(), true);
+    if (!m_displayFilter.isEmpty()) {
+        for (int i = 0; i < nodes.size(); ++i)
+            keepNode[i] = m_displayFilter.acceptsNode(nodes[i]);
+        if (m_displayFilter.constrainsLinks()) {
+            keepNode.fill(false);
+            for (const auto &link : links) {
+                if (link.a < 0 || link.b < 0 || link.a >= nodes.size()
+                    || link.b >= nodes.size())
+                    continue;
+                if (m_displayFilter.acceptsLink(link, nodes[link.a],
+                                                nodes[link.b])) {
+                    keepNode[link.a] = true;
+                    keepNode[link.b] = true;
+                }
+            }
+        }
+    }
+
+    // Zone clouds first (behind the links), then links, then nodes.
+    painter.save();
+    drawZones(painter, painter.font(), keepNode);
+    painter.restore();
+
     for (const auto &link : links) {
         if (link.a < 0 || link.b < 0 || link.a >= m_screenPos.size()
             || link.b >= m_screenPos.size())
+            continue;
+        if (!m_displayFilter.isEmpty()
+            && !m_displayFilter.acceptsLink(link, nodes[link.a], nodes[link.b]))
             continue;
 
         const double intensity = std::clamp(link.intensity, 0.0, 1.0);
@@ -323,6 +375,8 @@ void GraphView::paintEvent(QPaintEvent *)
 
     for (int i = 0; i < nodes.size(); ++i) {
         const auto &node = nodes[i];
+        if (!keepNode[i])
+            continue;
         const QPointF center = m_screenPos[i];
         const double radius = m_radii[i];
 

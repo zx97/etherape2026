@@ -6,9 +6,13 @@
 #include "graphmodel.h"
 
 #include <QBrush>
+#include <QFileDialog>
+#include <QMessageBox>
+#include <QPushButton>
 #include <QSet>
 #include <QHeaderView>
 #include <QStandardItemModel>
+#include <QTextStream>
 #include <QTimer>
 #include <QTreeView>
 #include <QVBoxLayout>
@@ -83,9 +87,14 @@ ConversationsDialog::ConversationsDialog(const GraphModel *model,
                     emit nodeActivated(item->data(Qt::UserRole).toString());
             });
 
+    auto *exportButton = new QPushButton(tr("Export CSV…"), this);
+    connect(exportButton, &QPushButton::clicked, this,
+            &ConversationsDialog::exportCsv);
+
     auto *layout = new QVBoxLayout(this);
     layout->setContentsMargins(4, 4, 4, 4);
     layout->addWidget(m_view);
+    layout->addWidget(exportButton);
 
     m_timer = new QTimer(this);
     m_timer->setInterval(1000);
@@ -150,6 +159,39 @@ void ConversationsDialog::refresh()
                         : 0)),
             new QStandardItem(durationText(link.firstSeenMs, link.lastSeenMs)),
         });
+    }
+}
+
+void ConversationsDialog::exportCsv()
+{
+    const QString path = QFileDialog::getSaveFileName(
+        this, tr("Export conversations as CSV"),
+        QStringLiteral("conversations.csv"),
+        tr("CSV files (*.csv);;All files (*)"));
+    if (path.isEmpty())
+        return;
+
+    QFile file(path);
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        QMessageBox::warning(this, tr("Export failed"), file.errorString());
+        return;
+    }
+    QTextStream out(&file);
+    QStringList header;
+    for (int column = 0; column < m_rows->columnCount(); ++column)
+        header.append(m_rows->headerData(column, Qt::Horizontal).toString());
+    out << header.join(QLatin1Char(';')) << '\n';
+
+    for (int row = 0; row < m_rows->rowCount(); ++row) {
+        QStringList cells;
+        for (int column = 0; column < m_rows->columnCount(); ++column) {
+            QString text = m_rows->item(row, column)
+                               ? m_rows->item(row, column)->text()
+                               : QString();
+            text.replace(QLatin1Char(';'), QLatin1Char(','));
+            cells.append(text);
+        }
+        out << cells.join(QLatin1Char(';')) << '\n';
     }
 }
 

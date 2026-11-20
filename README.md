@@ -40,6 +40,11 @@ complète et le tableau des remplacements.
 | Nuages de zones LAN / DMZ / VPN / Internet | ✅ |
 | Tests unitaires (`ctest`) + CI GitLab | ✅ |
 | 10 langues (fr, es, pt_BR, ru, zh_CN, ar, hi, bn, ur + en) | ✅ |
+| Filtre d'affichage (`--show`, barre « Show ») | ✅ |
+| Recherche de nœud (`Ctrl+F`) | ✅ |
+| Courbe de débit (5 min) | ✅ |
+| Export CSV des conversations | ✅ |
+| `/etc/ethers` (MAC → nom) | ✅ |
 | Préférences persistantes (QSettings) | ✅ |
 
 ## Compilation
@@ -92,6 +97,7 @@ etherape2026 -i eth0 --position layout.json
 | `--speed <pct>` | vitesse de replay (0 = maximum) |
 | `--final-export <file>` | exporte le graphe en XML à la fin du replay |
 | `--position <file>` | charge une disposition de nœuds (JSON) |
+| `--show <expr>` | filtre d'affichage : `proto:http host:10.0 -vlan:100` |
 
 ## Architecture
 

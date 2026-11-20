@@ -1,0 +1,85 @@
+.\" SPDX-License-Identifier: GPL-2.0-or-later
+.TH ETHERAPE2026 1 "November 2026" "EtherApe 2026 1.0.0" "User Commands"
+.SH NAME
+etherape2026 \- graphical network traffic monitor (Qt 6 port of EtherApe)
+.SH SYNOPSIS
+.B etherape2026
+.RI [ options ]
+.SH DESCRIPTION
+.B etherape2026
+displays network activity graphically. It captures packets with libpcap (Npcap
+on Windows), decodes them and draws a live graph of the hosts and the links
+between them, with per-protocol colours and traffic statistics.
+.PP
+Nodes can be grouped into network zones (LAN, DMZ, VPN, Internet) and merged
+across IPv4 and IPv6 when they share a MAC address. Capture files can be
+replayed, and the graph exported as XML or JSON.
+.PP
+Live capture requires privileges: either run as root, grant
+.B cap_net_raw,cap_net_admin
+to the binary with
+.BR setcap ,
+or let the application elevate a small helper through
+.BR pkexec .
+.SH OPTIONS
+.TP
+.BI \-i ", \-\-interface " device
+Capture on
+.IR device .
+Under Linux, "any" captures on all interfaces at once (Linux cooked capture).
+.TP
+.BI \-r ", \-\-replay " file
+Replay packets from a pcap file instead of capturing live.
+.TP
+.BI \-f ", \-\-filter " bpf
+Apply a BPF capture filter (for example "tcp port 443"). Packets that do not
+match are dropped by libpcap.
+.TP
+.BI \-m ", \-\-mode " link|ip|tcp
+Granularity of the nodes: MAC addresses, IP addresses, or address:port pairs.
+Default: ip.
+.TP
+.B \-\-show " expression"
+Display filter. Hides nodes and links without touching the capture.
+Space-separated terms: proto:http, host:10.0.0, vlan:100, zone:dmz, or free
+text; prefix a term with '-' to exclude it.
+.TP
+.B \-n ", \-\-numeric"
+Keep addresses numeric: no reverse DNS lookups.
+.TP
+.BI \-\-node\-limit " count"
+Keep at most
+.I count
+nodes in the graph (default 300).
+.TP
+.BI \-\-speed " percent"
+Replay speed, in percent of the recorded pace (0 = as fast as possible).
+.TP
+.BI \-\-final\-export " file"
+Export the graph to
+.I file
+at the end of a replay and exit. The format follows the extension: .xml or
+.json.
+.TP
+.BI \-\-position " file"
+Load a node layout (JSON) saved from the interface.
+.SH FILES
+.TP
+.I ~/.config/etherape/etherape2026.conf
+User settings (language, zones, filters, window geometry).
+.TP
+.I /etc/ethers
+Optional static MAC to name mapping, read at start-up.
+.TP
+.I /dev/shm/etherape2026-helper-*.log
+Diagnostic output of the privileged capture helper (removed at exit).
+.SH SEE ALSO
+.BR pcap (3),
+.BR tcpdump (8),
+.BR setcap (8),
+.BR pkexec (1)
+.PP
+Project page: https://gitlab.com/rghetta/etherape
+.SH AUTHOR
+Port to Qt 6 (2026). EtherApe original: Juan Toledo, Riccardo Ghetta and
+contributors. Licensed under GPL-2.0-or-later.
