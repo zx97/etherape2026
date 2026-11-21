@@ -101,6 +101,12 @@ release:
 windows:
   stage: build
   image: msys2/msys2-ci-base:latest
+  # No Windows runner on the shared GitLab instance: the job stays available
+  # for a runner that can take it, without blocking the pipeline. The GitHub
+  # release builds the installer.
+  rules:
+    - when: manual
+      allow_failure: true
   variables:
     MSYSTEM: UCRT64
     NPCAP_SDK_DIR: /tmp/npcap

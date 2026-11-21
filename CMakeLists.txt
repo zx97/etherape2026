@@ -7,7 +7,9 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 
-find_package(Qt6 6.5 REQUIRED COMPONENTS Core Gui Widgets Network)
+# 6.4 is what Ubuntu 24.04 LTS ships; the CI builds with it so the
+# distribution package works on the current LTS without extra repositories.
+find_package(Qt6 6.4 REQUIRED COMPONENTS Core Gui Widgets Network)
 find_package(Threads REQUIRED)
 
 qt_standard_project_setup()
