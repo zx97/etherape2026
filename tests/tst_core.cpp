@@ -12,6 +12,8 @@
 #include "zones.h"
 
 #include <QFile>
+#include <QNetworkAddressEntry>
+#include <QNetworkInterface>
 #include <QTemporaryDir>
 #include <QtTest>
 
@@ -124,6 +126,7 @@ private slots:
     void modeTcpUsesPorts();
     void nodeStaysInItsZone();
     void mergesNodesByResolvedName();
+    void ownInterfaceAddressesAreLocal();
     void filterAcceptsEqualsAndAliases();
     void filterWarnsOnUnknownKey();
 };
@@ -425,6 +428,44 @@ void CoreTests::mergesNodesByResolvedName()
     }
     QCOMPARE(manux, 1);
     QCOMPARE(model.nodes().size(), 3);
+}
+
+void CoreTests::ownInterfaceAddressesAreLocal()
+{
+    // A LAN host has a global IPv6 nowadays: the only reliable rule is that
+    // an address belongs to one of this machine's interface prefixes.
+    QHostAddress sample;
+    for (const QNetworkInterface &iface : QNetworkInterface::allInterfaces()) {
+        if (!(iface.flags() & QNetworkInterface::IsUp))
+            continue;
+        for (const QNetworkAddressEntry &entry : iface.addressEntries()) {
+            if (!entry.ip().isLoopback() && !entry.ip().isLinkLocal()
+                && !entry.ip().isNull() && entry.prefixLength() > 0) {
+                sample = entry.ip();
+                break;
+            }
+        }
+        if (!sample.isNull())
+            break;
+    }
+    if (sample.isNull())
+        QSKIP("no non-loopback interface on this host");
+
+    ZoneClassifier classifier;
+    classifier.addInterfacePrefixes();
+    QCOMPARE(classifier.classify(sample.toString(),
+                                 sample.protocol()
+                                         == QAbstractSocket::IPv6Protocol
+                                     ? NodeKind::Ipv6
+                                     : NodeKind::Ipv4),
+             ZoneId::Local);
+
+    // A well-known public address stays on the Internet side.
+    ZoneClassifier plain;
+    plain.addInterfacePrefixes();
+    QCOMPARE(plain.classify(QStringLiteral("2a06:98c1:3120::3"),
+                            NodeKind::Ipv6),
+             ZoneId::Internet);
 }
 
 void CoreTests::filterAcceptsEqualsAndAliases()

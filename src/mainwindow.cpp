@@ -567,6 +567,9 @@ void MainWindow::applyZoneRules()
         classifier.setRulesFromText(ZoneId::Local, m_localZones);
     classifier.setRulesFromText(ZoneId::Dmz, m_dmzZones);
     classifier.setRulesFromText(ZoneId::Vpn, m_vpnZones);
+    // Prefixes of this machine's own interfaces are local by definition;
+    // IPv6 gives LAN hosts global addresses, so CIDR rules alone misfile them.
+    classifier.addInterfacePrefixes();
     m_model->setZoneClassifier(classifier);
 }
 

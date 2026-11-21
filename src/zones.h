@@ -34,6 +34,11 @@ public:
 
     ZoneId classify(const QString &nodeId, NodeKind kind) const;
 
+    // Addresses of this machine's own interfaces are local by definition:
+    // with IPv6, a LAN host has a global address and RFC1918 says nothing.
+    // Interfaces named tun*/tap*/wg*/ppp* are treated as VPN.
+    void addInterfacePrefixes();
+
     static QString name(ZoneId zone);
     static QColor color(ZoneId zone);
     static QPointF center(ZoneId zone);  ///< normalized anchor in [0,1]²
@@ -52,6 +57,8 @@ private:
     static QString addressPart(const QString &nodeId, NodeKind kind);
 
     QVector<Rule> m_local;
+    QVector<Rule> m_autoLocal;
+    QVector<Rule> m_autoVpn;
     QVector<Rule> m_dmz;
     QVector<Rule> m_vpn;
 };

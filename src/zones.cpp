@@ -3,7 +3,10 @@
 #include "zones.h"
 
 #include <QAbstractSocket>
+#include <QNetworkInterface>
 #include <QStringList>
+
+#include <algorithm>
 
 namespace etherape {
 
@@ -155,6 +158,53 @@ QString ZoneClassifier::rulesAsText(ZoneId zone) const
     return rules(zone).join(QStringLiteral(", "));
 }
 
+void ZoneClassifier::addInterfacePrefixes()
+{
+    const auto addNetwork = [](QVector<Rule> &list, const QHostAddress &address,
+                               int prefix) {
+        if (address.protocol() == QAbstractSocket::IPv4Protocol) {
+            const quint32 value = address.toIPv4Address();
+            const quint32 mask =
+                prefix == 0 ? 0u : (~0u << (32 - prefix));
+            QHostAddress network;
+            network.setAddress(value & mask);
+            list.append({network, prefix});
+        } else if (address.protocol() == QAbstractSocket::IPv6Protocol) {
+            QIPv6Address raw = address.toIPv6Address();
+            int remaining = prefix;
+            for (int i = 0; i < 16 && remaining > 0; ++i) {
+                const int bits = std::min(8, remaining);
+                raw.c[i] &= static_cast<quint8>(0xff << (8 - bits) & 0xff);
+                remaining -= bits;
+            }
+            list.append({QHostAddress(raw), prefix});
+        }
+    };
+
+    const auto interfaces = QNetworkInterface::allInterfaces();
+    for (const QNetworkInterface &iface : interfaces) {
+        if (!(iface.flags() & QNetworkInterface::IsUp))
+            continue;
+        const QString name = iface.name().toLower();
+        const bool vpnLike = name.startsWith(QLatin1String("tun"))
+            || name.startsWith(QLatin1String("tap"))
+            || name.startsWith(QLatin1String("wg"))
+            || name.startsWith(QLatin1String("ppp"))
+            || name.startsWith(QLatin1String("vti"))
+            || name.contains(QLatin1String("ipsec"));
+        for (const QNetworkAddressEntry &entry : iface.addressEntries()) {
+            const QHostAddress address = entry.ip();
+            if (address.isNull() || address.isLoopback()
+                || address.isLinkLocal())
+                continue;
+            if (entry.prefixLength() <= 0)
+                continue;
+            addNetwork(vpnLike ? m_autoVpn : m_autoLocal, address,
+                       entry.prefixLength());
+        }
+    }
+}
+
 bool ZoneClassifier::matches(const QVector<Rule> &rules,
                              const QHostAddress &address) const
 {
@@ -198,9 +248,9 @@ ZoneId ZoneClassifier::classify(const QString &nodeId, NodeKind kind) const
 
     if (matches(m_dmz, address))
         return ZoneId::Dmz;
-    if (matches(m_vpn, address))
+    if (matches(m_vpn, address) || matches(m_autoVpn, address))
         return ZoneId::Vpn;
-    if (matches(m_local, address))
+    if (matches(m_local, address) || matches(m_autoLocal, address))
         return ZoneId::Local;
     return ZoneId::Internet;
 }
