@@ -30,7 +30,11 @@ QMAKE="$(command -v qmake6 || command -v qmake)"
 [ -n "$QMAKE" ] || { echo "qmake6 not found" >&2; exit 1; }
 export QMAKE
 
-stage="$(mktemp -d -p /dev/shm appimage.XXXXXX)"
+# The AppDir must live on an executable filesystem: linuxdeploy runs ldd on
+# the staged binary, and ldd answers "not a dynamic executable" when the file
+# sits on a noexec mount (which /dev/shm is on CI runners and in containers).
+mkdir -p "$build"
+stage="$(mktemp -d "$build/appimage.XXXXXX")"
 # appimagetool refuses a 0700 AppDir: the AppImage is meant to be run by others.
 chmod 0755 "$stage"
 trap 'rm -rf "$stage"' EXIT
