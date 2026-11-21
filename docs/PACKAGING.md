@@ -50,7 +50,11 @@ polkit (Linux) ou UAC (Windows), jamais par `setcap` sur le binaire installé.
   n'ont pas besoin de FUSE pour tourner (c'est ce que fait la CI) ;
 - `NO_STRIP=1` : le `strip` embarqué par `linuxdeploy` est plus ancien que la
   section `.relr.dyn` produite par les chaînes de compilation récentes ; sans
-  cela, le déploiement des bibliothèques Qt échoue.
+  cela, le déploiement des bibliothèques Qt échoue ;
+- `EXTRA_PLATFORM_PLUGINS=libqwayland.so` : sans cela, `linuxdeploy` n'embarque
+  que le plugin **xcb** de la machine de build et l'application retombe sur
+  XWayland sur les bureaux Wayland. Le plugin Wayland doit être installé sur le
+  runner (`qt6-wayland` sur Ubuntu).
 
 ## RPM
 

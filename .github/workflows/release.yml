@@ -73,7 +73,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
             build-essential cmake ninja-build pkg-config \
-            qt6-base-dev libpcap-dev file
+            qt6-base-dev qt6-wayland libpcap-dev file
       - name: AppImage tools
         run: |
           set -euo pipefail

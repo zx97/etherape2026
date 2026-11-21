@@ -39,6 +39,11 @@ install -Dm644 data/etherape2026.desktop "$stage/usr/share/applications/etherape
 install -Dm644 data/etherape.png "$stage/usr/share/icons/hicolor/48x48/apps/etherape2026.png"
 install -Dm644 etherape2026.1 "$stage/usr/share/man/man1/etherape2026.1"
 
+# linuxdeploy only deploys the platform plugin of the build machine (xcb on a
+# CI runner). Ask for Wayland explicitly, otherwise the AppImage falls back to
+# XWayland on every modern desktop and prints a plugin warning at start-up.
+export EXTRA_PLATFORM_PLUGINS="${EXTRA_PLATFORM_PLUGINS:-libqwayland.so}"
+
 # linuxdeploy bundles its own binutils, which predates the .relr.dyn section
 # emitted by recent toolchains; stripping would fail on every Qt library.
 export NO_STRIP="${NO_STRIP:-1}"

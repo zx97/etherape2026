@@ -40,8 +40,8 @@ package-linux:
   before_script:
     - apt-get update
     - apt-get install -y --no-install-recommends
-        build-essential cmake ninja-build pkg-config qt6-base-dev libpcap-dev
-        curl file ca-certificates
+        build-essential cmake ninja-build pkg-config qt6-base-dev qt6-wayland
+        libpcap-dev curl file ca-certificates
     - mkdir -p tools
     - |
       base=https://github.com
