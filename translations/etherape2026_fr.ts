@@ -24,9 +24,9 @@
     </message>
     <message>
         <location filename="../src/main.cpp" line="103" />
-        <location filename="../src/main.cpp" line="124" />
         <location filename="../src/main.cpp" line="128" />
-        <location filename="../src/main.cpp" line="144" />
+        <location filename="../src/main.cpp" line="132" />
+        <location filename="../src/main.cpp" line="148" />
         <source>file</source>
         <translation>fichier</translation>
     </message>
@@ -52,79 +52,89 @@
     </message>
     <message>
         <location filename="../src/main.cpp" line="113" />
+        <source>Select the node matching &lt;text&gt; at start-up.</source>
+        <translation>Sélectionner au démarrage le nœud correspondant à &lt;text&gt;.</translation>
+    </message>
+    <message>
+        <location filename="../src/main.cpp" line="114" />
+        <source>text</source>
+        <translation>texte</translation>
+    </message>
+    <message>
+        <location filename="../src/main.cpp" line="117" />
         <source>Display filter, e.g. "proto:http host:10.0 -vlan:100".</source>
         <translation>Filtre d'affichage, par ex. « proto:http host:10.0 -vlan:100 ».</translation>
     </message>
     <message>
-        <location filename="../src/main.cpp" line="114" />
+        <location filename="../src/main.cpp" line="118" />
         <source>expression</source>
         <translation>expression</translation>
     </message>
     <message>
-        <location filename="../src/main.cpp" line="117" />
+        <location filename="../src/main.cpp" line="121" />
         <source>Keep addresses numeric (no reverse DNS).</source>
         <translation>Garder les adresses numériques (pas de DNS inverse).</translation>
     </message>
     <message>
-        <location filename="../src/main.cpp" line="120" />
+        <location filename="../src/main.cpp" line="124" />
         <source>Keep at most &lt;count&gt; nodes.</source>
         <translation>Conserver au plus &lt;count&gt; nœuds.</translation>
     </message>
     <message>
-        <location filename="../src/main.cpp" line="120" />
+        <location filename="../src/main.cpp" line="124" />
         <source>count</source>
         <translation>nombre</translation>
     </message>
     <message>
-        <location filename="../src/main.cpp" line="123" />
+        <location filename="../src/main.cpp" line="127" />
         <source>Export the graph as XML to &lt;file&gt; on exit.</source>
         <translation>Exporter le graphe en XML vers &lt;file&gt; à la fermeture.</translation>
     </message>
     <message>
-        <location filename="../src/main.cpp" line="127" />
+        <location filename="../src/main.cpp" line="131" />
         <source>Load the node layout from &lt;file&gt;.</source>
         <translation>Charger la disposition des nœuds depuis &lt;file&gt;.</translation>
     </message>
     <message>
-        <location filename="../src/main.cpp" line="131" />
+        <location filename="../src/main.cpp" line="135" />
         <source>Close the window after &lt;ms&gt; (testing aid).</source>
         <translation type="unfinished" />
     </message>
     <message>
-        <location filename="../src/main.cpp" line="132" />
         <location filename="../src/main.cpp" line="136" />
         <location filename="../src/main.cpp" line="140" />
-        <location filename="../src/main.cpp" line="148" />
+        <location filename="../src/main.cpp" line="144" />
+        <location filename="../src/main.cpp" line="152" />
         <source>ms</source>
         <translation type="unfinished" />
     </message>
     <message>
-        <location filename="../src/main.cpp" line="135" />
+        <location filename="../src/main.cpp" line="139" />
         <source>Press Stop after &lt;ms&gt; (testing aid).</source>
         <translation type="unfinished" />
     </message>
     <message>
-        <location filename="../src/main.cpp" line="139" />
+        <location filename="../src/main.cpp" line="143" />
         <source>Stop then Start again after &lt;ms&gt; (testing aid).</source>
         <translation type="unfinished" />
     </message>
     <message>
-        <location filename="../src/main.cpp" line="143" />
+        <location filename="../src/main.cpp" line="147" />
         <source>Save a window snapshot to &lt;file&gt; and exit (testing aid).</source>
         <translation type="unfinished" />
     </message>
     <message>
-        <location filename="../src/main.cpp" line="147" />
+        <location filename="../src/main.cpp" line="151" />
         <source>Wait &lt;ms&gt; before taking the snapshot.</source>
         <translation type="unfinished" />
     </message>
     <message>
-        <location filename="../src/main.cpp" line="151" />
+        <location filename="../src/main.cpp" line="155" />
         <source>Replay speed in percent (0 = as fast as possible).</source>
         <translation>Vitesse de relecture en pourcentage (0 = aussi vite que possible).</translation>
     </message>
     <message>
-        <location filename="../src/main.cpp" line="152" />
+        <location filename="../src/main.cpp" line="156" />
         <source>percent</source>
         <translation type="unfinished" />
     </message>
@@ -233,17 +243,17 @@
 <context>
     <name>etherape::GraphView</name>
     <message>
-        <location filename="../src/graphview.cpp" line="313" />
+        <location filename="../src/graphview.cpp" line="322" />
         <source>No capture in progress.</source>
         <translation>Aucune capture en cours.</translation>
     </message>
     <message>
-        <location filename="../src/graphview.cpp" line="434" />
+        <location filename="../src/graphview.cpp" line="443" />
         <source>%1 nodes · %2 links · zoom %3%</source>
         <translation>%1 nœuds · %2 liens · zoom %3 %</translation>
     </message>
     <message>
-        <location filename="../src/graphview.cpp" line="510" />
+        <location filename="../src/graphview.cpp" line="519" />
         <source>%1
 %2 packets · %3
 %4
@@ -251,22 +261,22 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <location filename="../src/graphview.cpp" line="514" />
+        <location filename="../src/graphview.cpp" line="523" />
         <source>untagged</source>
         <translation>sans VLAN</translation>
     </message>
     <message>
-        <location filename="../src/graphview.cpp" line="515" />
+        <location filename="../src/graphview.cpp" line="524" />
         <source>VLAN %1</source>
         <translation>VLAN %1</translation>
     </message>
     <message>
-        <location filename="../src/graphview.cpp" line="516" />
+        <location filename="../src/graphview.cpp" line="525" />
         <source>position locked (right-click to release)</source>
         <translation>position verrouillée (clic droit pour libérer)</translation>
     </message>
     <message>
-        <location filename="../src/graphview.cpp" line="517" />
+        <location filename="../src/graphview.cpp" line="526" />
         <source>drag to pin</source>
         <translation>glisser pour épingler</translation>
     </message>
@@ -274,240 +284,240 @@
 <context>
     <name>etherape::MainWindow</name>
     <message>
-        <location filename="../src/mainwindow.cpp" line="157" />
+        <location filename="../src/mainwindow.cpp" line="161" />
         <source>EtherApe 2026</source>
         <translation type="unfinished" />
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="165" />
+        <location filename="../src/mainwindow.cpp" line="169" />
         <source>Capture</source>
         <translation>Capture</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="172" />
+        <location filename="../src/mainwindow.cpp" line="176" />
         <source>Start</source>
         <translation>Démarrer</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="178" />
+        <location filename="../src/mainwindow.cpp" line="182" />
         <source>Stop</source>
         <translation>Arrêter</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="184" />
+        <location filename="../src/mainwindow.cpp" line="188" />
         <source>Open</source>
         <translation>Ouvrir</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="189" />
+        <location filename="../src/mainwindow.cpp" line="193" />
         <source> Interface </source>
         <translation> Interface </translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="212" />
+        <location filename="../src/mainwindow.cpp" line="216" />
         <source> Filter </source>
         <translation> Filtre </translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="214" />
+        <location filename="../src/mainwindow.cpp" line="218" />
         <source>BPF, e.g. tcp port 443</source>
         <translation>BPF, ex. tcp port 443</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="219" />
+        <location filename="../src/mainwindow.cpp" line="223" />
         <source> Show </source>
         <translation> Filtre </translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="222" />
+        <location filename="../src/mainwindow.cpp" line="226" />
         <source>proto:http host:10.0 -vlan:100 zone:dmz</source>
         <translation type="unfinished" />
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="226" />
+        <location filename="../src/mainwindow.cpp" line="230" />
         <source>Display filter: hides nodes and links without touching the capture. Keys: proto, host, vlan, zone; prefix a term with '-' to exclude it.</source>
         <translation>Filtre d'affichage : masque des nœuds et des liens sans toucher à la capture. Clés : proto, host, vlan, zone ; préfixez un terme par '-' pour l'exclure.</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="243" />
+        <location filename="../src/mainwindow.cpp" line="247" />
         <source>Display filter syntax</source>
         <translation>Syntaxe du filtre d'affichage</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="249" />
+        <location filename="../src/mainwindow.cpp" line="253" />
         <source> Mode </source>
         <translation> Mode </translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="251" />
-        <location filename="../src/mainwindow.cpp" line="305" />
+        <location filename="../src/mainwindow.cpp" line="255" />
+        <location filename="../src/mainwindow.cpp" line="309" />
         <source>Link</source>
         <translation type="unfinished" />
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="251" />
-        <location filename="../src/mainwindow.cpp" line="305" />
+        <location filename="../src/mainwindow.cpp" line="255" />
+        <location filename="../src/mainwindow.cpp" line="309" />
         <source>IP</source>
         <translation type="unfinished" />
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="251" />
-        <location filename="../src/mainwindow.cpp" line="305" />
+        <location filename="../src/mainwindow.cpp" line="255" />
+        <location filename="../src/mainwindow.cpp" line="309" />
         <source>TCP</source>
         <translation type="unfinished" />
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="267" />
+        <location filename="../src/mainwindow.cpp" line="271" />
         <source>&amp;File</source>
         <translation>&amp;Fichier</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="270" />
+        <location filename="../src/mainwindow.cpp" line="274" />
         <source>Open Capture &amp;File…</source>
         <translation>Ouvrir un &amp;fichier de capture…</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="274" />
+        <location filename="../src/mainwindow.cpp" line="278" />
         <source>&amp;Export Graph as XML…</source>
         <translation>&amp;Exporter le graphe en XML…</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="279" />
+        <location filename="../src/mainwindow.cpp" line="283" />
         <source>Save &amp;Layout…</source>
         <translation>Enregistrer la &amp;disposition…</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="282" />
+        <location filename="../src/mainwindow.cpp" line="286" />
         <source>Load Layout…</source>
         <translation>Charger la disposition…</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="287" />
+        <location filename="../src/mainwindow.cpp" line="291" />
         <source>&amp;Quit</source>
         <translation>&amp;Quitter</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="291" />
+        <location filename="../src/mainwindow.cpp" line="295" />
         <source>&amp;Capture</source>
         <translation>&amp;Capture</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="297" />
+        <location filename="../src/mainwindow.cpp" line="301" />
         <source>&amp;Clear Graph</source>
         <translation>&amp;Effacer le graphe</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="301" />
+        <location filename="../src/mainwindow.cpp" line="305" />
         <source>&amp;View</source>
         <translation>&amp;Affichage</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="302" />
+        <location filename="../src/mainwindow.cpp" line="306" />
         <source>&amp;Mode</source>
         <translation>&amp;Mode</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="319" />
+        <location filename="../src/mainwindow.cpp" line="323" />
         <source>&amp;Numeric Addresses</source>
         <translation>&amp;Adresses numériques</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="326" />
+        <location filename="../src/mainwindow.cpp" line="330" />
         <source>Protocol &amp;Legend</source>
         <translation>&amp;Légende des protocoles</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="334" />
+        <location filename="../src/mainwindow.cpp" line="338" />
         <source>Zone &amp;Clouds</source>
         <translation>&amp;Nuages de zones</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="342" />
+        <location filename="../src/mainwindow.cpp" line="346" />
         <source>&amp;Conversations…</source>
         <translation>&amp;Conversations…</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="348" />
+        <location filename="../src/mainwindow.cpp" line="352" />
         <source>&amp;Resolve Names (DNS)</source>
         <translation>&amp;Résoudre les noms (DNS)</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="353" />
+        <location filename="../src/mainwindow.cpp" line="357" />
         <source>&amp;Merge IPv4/IPv6 Hosts</source>
         <translation>&amp;Fusionner les hôtes IPv4/IPv6</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="358" />
+        <location filename="../src/mainwindow.cpp" line="362" />
         <source>&amp;Find Node…</source>
         <translation>&amp;Rechercher un nœud…</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="362" />
+        <location filename="../src/mainwindow.cpp" line="366" />
         <source>Reset &amp;Zoom</source>
         <translation>Réinitialiser le &amp;zoom</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="366" />
+        <location filename="../src/mainwindow.cpp" line="370" />
         <source>&amp;Settings</source>
         <translation>&amp;Paramètres</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="367" />
+        <location filename="../src/mainwindow.cpp" line="371" />
         <source>&amp;Preferences…</source>
         <translation>&amp;Préférences…</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="372" />
+        <location filename="../src/mainwindow.cpp" line="376" />
         <source>&amp;Help</source>
         <translation>&amp;Aide</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="373" />
+        <location filename="../src/mainwindow.cpp" line="377" />
         <source>&amp;About EtherApe 2026</source>
         <translation>À &amp;propos d'EtherApe 2026</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="375" />
+        <location filename="../src/mainwindow.cpp" line="379" />
         <source>About &amp;Qt</source>
         <translation>À propos de &amp;Qt</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="533" />
+        <location filename="../src/mainwindow.cpp" line="537" />
         <source>Language will change at the next start.</source>
         <translation>La langue changera au prochain démarrage.</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="571" />
+        <location filename="../src/mainwindow.cpp" line="575" />
         <source>Mode will apply to the next capture.</source>
         <translation>Le mode s'appliquera à la prochaine capture.</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="605" />
+        <location filename="../src/mainwindow.cpp" line="612" />
         <source>Reverse DNS enabled for new nodes.</source>
         <translation>DNS inverse activé pour les nouveaux nœuds.</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="606" />
+        <location filename="../src/mainwindow.cpp" line="613" />
         <source>Reverse DNS disabled.</source>
         <translation>DNS inverse désactivé.</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="620" />
+        <location filename="../src/mainwindow.cpp" line="627" />
         <source>IPv4/IPv6 addresses of the same host are merged.</source>
         <translation>Les adresses IPv4/IPv6 d'un même hôte sont fusionnées.</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="621" />
+        <location filename="../src/mainwindow.cpp" line="628" />
         <source>IPv4/IPv6 addresses are kept as separate nodes.</source>
         <translation>Les adresses IPv4/IPv6 restent des nœuds distincts.</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="639" />
+        <location filename="../src/mainwindow.cpp" line="646" />
         <source>Display filter: proto, host, vlan, zone; '-' excludes.</source>
         <translation>Filtre d'affichage : proto, host, vlan, zone ; '-' exclut.</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="644" />
+        <location filename="../src/mainwindow.cpp" line="651" />
         <source>Not understood: %1
 
 Use proto:, host:, vlan:, zone: (or = instead of :). Click ? for help.</source>
@@ -516,57 +526,57 @@ Use proto:, host:, vlan:, zone: (or = instead of :). Click ? for help.</source>
 Utilisez proto:, host:, vlan:, zone: (ou = à la place de :). Cliquez sur ? pour l'aide.</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="654" />
+        <location filename="../src/mainwindow.cpp" line="661" />
         <source>&lt;b&gt;Display filter&lt;/b&gt;&lt;br&gt;&lt;br&gt;Hides nodes and links; the capture keeps running and counters keep accumulating.&lt;br&gt;&lt;br&gt;</source>
-        <translation type="unfinished" />
+        <translation>&lt;b&gt;Filtre d'affichage&lt;/b&gt;&lt;br&gt;&lt;br&gt;Masque des nœuds et des liens ; la capture continue et les compteurs s'accumulent.&lt;br&gt;&lt;br&gt;</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="657" />
+        <location filename="../src/mainwindow.cpp" line="664" />
         <source>Keys (both &lt;code&gt;key:value&lt;/code&gt; and &lt;code&gt;key=value&lt;/code&gt; work):&lt;br&gt;&lt;ul&gt;</source>
         <translation>Clés (&lt;code&gt;clé:valeur&lt;/code&gt; et &lt;code&gt;clé=valeur&lt;/code&gt; fonctionnent) :&lt;br&gt;&lt;ul&gt;</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="661" />
+        <location filename="../src/mainwindow.cpp" line="668" />
         <source>&lt;/ul&gt;Several terms are combined with AND; prefix one with &lt;code&gt;-&lt;/code&gt; to exclude it.&lt;br&gt;&lt;br&gt;Examples: &lt;code&gt;hostname=manux&lt;/code&gt;, &lt;code&gt;proto:http -vlan:100&lt;/code&gt;, &lt;code&gt;zone:dmz&lt;/code&gt;.</source>
         <translation>&lt;/ul&gt;Plusieurs termes se combinent en ET ; préfixez-en un par &lt;code&gt;-&lt;/code&gt; pour l'exclure.&lt;br&gt;&lt;br&gt;Exemples : &lt;code&gt;hostname=manux&lt;/code&gt;, &lt;code&gt;proto:http -vlan:100&lt;/code&gt;, &lt;code&gt;zone:dmz&lt;/code&gt;.</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="666" />
+        <location filename="../src/mainwindow.cpp" line="673" />
         <source>Display filter</source>
         <translation>Filtre d'affichage</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="699" />
+        <location filename="../src/mainwindow.cpp" line="706" />
         <source>Find node</source>
         <translation>Rechercher un nœud</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="700" />
+        <location filename="../src/mainwindow.cpp" line="707" />
         <source>Node name, address or protocol (current display filter applies):</source>
         <translation>Nom, adresse ou protocole du nœud (le filtre d'affichage courant s'applique) :</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="713" />
+        <location filename="../src/mainwindow.cpp" line="720" />
         <source>Found %1</source>
         <translation>%1 trouvé</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="716" />
+        <location filename="../src/mainwindow.cpp" line="723" />
         <source>No node matches "%1".</source>
         <translation>Aucun nœud ne correspond à « %1 ».</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="794" />
+        <location filename="../src/mainwindow.cpp" line="809" />
         <source>No capture interface available.</source>
         <translation>Aucune interface de capture disponible.</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="822" />
+        <location filename="../src/mainwindow.cpp" line="837" />
         <source>Administrator rights required</source>
         <translation>Droits administrateur requis</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="823" />
+        <location filename="../src/mainwindow.cpp" line="838" />
         <source>Capturing on "%1" requires administrator rights:
 %2
 
@@ -577,17 +587,17 @@ Restart EtherApe 2026 elevated?</source>
 Redémarrer EtherApe 2026 avec élévation ?</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="843" />
+        <location filename="../src/mainwindow.cpp" line="858" />
         <source>Elevation was cancelled.</source>
         <translation>Élévation annulée.</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="846" />
+        <location filename="../src/mainwindow.cpp" line="861" />
         <source>Root privileges required</source>
         <translation>Privilèges root requis</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="847" />
+        <location filename="../src/mainwindow.cpp" line="862" />
         <source>Capturing on "%1" was denied:
 %2
 
@@ -598,39 +608,39 @@ Elevate through polkit? The password is asked once per application session: the 
 Élever via polkit ? Le mot de passe est demandé une fois par session : le helper privilégié est ensuite réutilisé par Start/Stop, et l'interface reste non privilégiée.</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="880" />
+        <location filename="../src/mainwindow.cpp" line="895" />
         <source>Open capture file</source>
         <translation>Ouvrir un fichier de capture</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="881" />
+        <location filename="../src/mainwindow.cpp" line="896" />
         <source>Capture files (*.pcap *.pcapng *.cap);;All files (*)</source>
         <translation>Fichiers de capture (*.pcap *.pcapng *.cap);;Tous les fichiers (*)</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="986" />
-        <location filename="../src/mainwindow.cpp" line="1159" />
+        <location filename="../src/mainwindow.cpp" line="1004" />
+        <location filename="../src/mainwindow.cpp" line="1177" />
         <source>Final export failed: %1</source>
         <translation>Échec de l'export final : %1</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="989" />
-        <location filename="../src/mainwindow.cpp" line="1084" />
+        <location filename="../src/mainwindow.cpp" line="1007" />
+        <location filename="../src/mainwindow.cpp" line="1102" />
         <source>Exported to %1</source>
         <translation>Exporté vers %1</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1004" />
+        <location filename="../src/mainwindow.cpp" line="1022" />
         <source>Capture error: %1</source>
         <translation>Erreur de capture : %1</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1009" />
+        <location filename="../src/mainwindow.cpp" line="1027" />
         <source>Capture denied</source>
         <translation>Capture refusée</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1010" />
+        <location filename="../src/mainwindow.cpp" line="1028" />
         <source>libpcap needs CAP_NET_RAW. Either run as root or grant the capability once:
 
 sudo setcap cap_net_raw,cap_net_admin+eip %1</source>
@@ -639,73 +649,73 @@ sudo setcap cap_net_raw,cap_net_admin+eip %1</source>
 sudo setcap cap_net_raw,cap_net_admin+eip %1</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1043" />
+        <location filename="../src/mainwindow.cpp" line="1061" />
         <source>idle</source>
         <translation>inactif</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1046" />
+        <location filename="../src/mainwindow.cpp" line="1064" />
         <source>%1 packets · %2</source>
         <translation>%1 paquets · %2</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1047" />
+        <location filename="../src/mainwindow.cpp" line="1065" />
         <source>%1 nodes · %2 links</source>
         <translation>%1 nœuds · %2 liens</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1071" />
+        <location filename="../src/mainwindow.cpp" line="1089" />
         <source>Cannot load layout: %1</source>
         <translation>Impossible de charger la disposition : %1</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1077" />
+        <location filename="../src/mainwindow.cpp" line="1095" />
         <source>Export graph</source>
         <translation>Exporter le graphe</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1078" />
+        <location filename="../src/mainwindow.cpp" line="1096" />
         <source>XML files (*.xml);;JSON files (*.json);;All files (*)</source>
         <translation>Fichiers XML (*.xml);;Fichiers JSON (*.json);;Tous les fichiers (*)</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1086" />
+        <location filename="../src/mainwindow.cpp" line="1104" />
         <source>Export failed</source>
         <translation>Échec de l'export</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1099" />
+        <location filename="../src/mainwindow.cpp" line="1117" />
         <source>Save node layout</source>
         <translation>Enregistrer la disposition des nœuds</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1100" />
-        <location filename="../src/mainwindow.cpp" line="1115" />
+        <location filename="../src/mainwindow.cpp" line="1118" />
+        <location filename="../src/mainwindow.cpp" line="1133" />
         <source>JSON files (*.json);;All files (*)</source>
         <translation>Fichiers JSON (*.json);;Tous les fichiers (*)</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1106" />
+        <location filename="../src/mainwindow.cpp" line="1124" />
         <source>Layout saved to %1</source>
         <translation>Disposition enregistrée dans %1</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1108" />
+        <location filename="../src/mainwindow.cpp" line="1126" />
         <source>Save failed</source>
         <translation>Échec de l'enregistrement</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1114" />
+        <location filename="../src/mainwindow.cpp" line="1132" />
         <source>Load node layout</source>
         <translation>Charger une disposition de nœuds</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1143" />
+        <location filename="../src/mainwindow.cpp" line="1161" />
         <source>About EtherApe 2026</source>
         <translation>À propos d'EtherApe 2026</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1144" />
+        <location filename="../src/mainwindow.cpp" line="1162" />
         <source>&lt;h3&gt;EtherApe 2026 %1&lt;/h3&gt;&lt;p&gt;Graphical network traffic monitor, Qt 6 port of EtherApe.&lt;/p&gt;&lt;p&gt;Original EtherApe © 2001 Juan Toledo, Riccardo Ghetta and contributors.&lt;br&gt;This port: GPL-2.0-or-later.&lt;/p&gt;&lt;p&gt;Capture powered by libpcap.&lt;/p&gt;</source>
         <translation type="unfinished" />
     </message>
@@ -846,61 +856,82 @@ sudo setcap cap_net_raw,cap_net_admin+eip %1</translation>
 <context>
     <name>etherape::StatsPanel</name>
     <message>
-        <location filename="../src/statspanel.cpp" line="78" />
+        <location filename="../src/statspanel.cpp" line="79" />
+        <location filename="../src/statspanel.cpp" line="108" />
         <source>Node</source>
         <translation>Nœud</translation>
     </message>
     <message>
-        <location filename="../src/statspanel.cpp" line="78" />
-        <location filename="../src/statspanel.cpp" line="86" />
-        <location filename="../src/statspanel.cpp" line="93" />
+        <location filename="../src/statspanel.cpp" line="79" />
+        <location filename="../src/statspanel.cpp" line="87" />
+        <location filename="../src/statspanel.cpp" line="94" />
+        <location filename="../src/statspanel.cpp" line="170" />
         <source>Packets</source>
         <translation>Paquets</translation>
     </message>
     <message>
-        <location filename="../src/statspanel.cpp" line="78" />
-        <location filename="../src/statspanel.cpp" line="86" />
-        <location filename="../src/statspanel.cpp" line="93" />
-        <location filename="../src/statspanel.cpp" line="101" />
+        <location filename="../src/statspanel.cpp" line="79" />
+        <location filename="../src/statspanel.cpp" line="87" />
+        <location filename="../src/statspanel.cpp" line="94" />
+        <location filename="../src/statspanel.cpp" line="107" />
+        <location filename="../src/statspanel.cpp" line="171" />
         <source>Traffic</source>
         <translation>Trafic</translation>
     </message>
     <message>
-        <location filename="../src/statspanel.cpp" line="78" />
-        <location filename="../src/statspanel.cpp" line="85" />
+        <location filename="../src/statspanel.cpp" line="79" />
+        <location filename="../src/statspanel.cpp" line="86" />
+        <location filename="../src/statspanel.cpp" line="172" />
         <source>VLAN</source>
         <translation>VLAN</translation>
     </message>
     <message>
-        <location filename="../src/statspanel.cpp" line="85" />
+        <location filename="../src/statspanel.cpp" line="86" />
         <source>Source</source>
         <translation>Source</translation>
     </message>
     <message>
-        <location filename="../src/statspanel.cpp" line="85" />
+        <location filename="../src/statspanel.cpp" line="86" />
         <source>Destination</source>
         <translation>Destination</translation>
     </message>
     <message>
-        <location filename="../src/statspanel.cpp" line="85" />
-        <location filename="../src/statspanel.cpp" line="93" />
+        <location filename="../src/statspanel.cpp" line="86" />
+        <location filename="../src/statspanel.cpp" line="94" />
         <source>Protocol</source>
         <translation>Protocole</translation>
     </message>
     <message>
-        <location filename="../src/statspanel.cpp" line="98" />
+        <location filename="../src/statspanel.cpp" line="100" />
+        <location filename="../src/statspanel.cpp" line="149" />
+        <source>&lt;p style='color:gray'&gt;Click a node to pin its details here.&lt;/p&gt;</source>
+        <translation>&lt;p style='color:gray'&gt;Cliquez un nœud pour épingler ses détails ici.&lt;/p&gt;</translation>
+    </message>
+    <message>
+        <location filename="../src/statspanel.cpp" line="104" />
         <source>Nodes</source>
         <translation>Nœuds</translation>
     </message>
     <message>
-        <location filename="../src/statspanel.cpp" line="99" />
+        <location filename="../src/statspanel.cpp" line="105" />
+        <location filename="../src/statspanel.cpp" line="222" />
         <source>Links</source>
         <translation>Liens</translation>
     </message>
     <message>
-        <location filename="../src/statspanel.cpp" line="100" />
+        <location filename="../src/statspanel.cpp" line="106" />
         <source>Protocols</source>
         <translation>Protocoles</translation>
+    </message>
+    <message>
+        <location filename="../src/statspanel.cpp" line="169" />
+        <source>Zone</source>
+        <translation>Zone</translation>
+    </message>
+    <message>
+        <location filename="../src/statspanel.cpp" line="185" />
+        <source>Also known as</source>
+        <translation>Aussi connu sous</translation>
     </message>
 </context>
 <context>

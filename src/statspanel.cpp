@@ -170,6 +170,10 @@ void StatsPanel::refresh(const GraphModel &model, const DisplayFilter &filter)
             row(tr("Packets"), QString::number(selected->packets));
             row(tr("Traffic"), humanBytes(selected->bytes));
             row(tr("VLAN"), vlans.isEmpty() ? QStringLiteral("—") : vlans);
+            html += QStringLiteral("</table>");
+
+            // One address per line: a comma-separated list of IPv6 addresses
+            // is unreadable.
             if (selected->aliases.size() > 1) {
                 QStringList others;
                 for (const QString &alias : selected->aliases) {
@@ -177,9 +181,15 @@ void StatsPanel::refresh(const GraphModel &model, const DisplayFilter &filter)
                         others.append(alias);
                 }
                 others.sort();
-                row(tr("Also known as"), others.join(QStringLiteral(", ")));
+                html += QStringLiteral("<h4>%1</h4>")
+                            .arg(tr("Also known as"));
+                html += QStringLiteral("<table cellspacing='4'>");
+                for (const QString &alias : std::as_const(others)) {
+                    html += QStringLiteral("<tr><td><code>%1</code></td></tr>")
+                                .arg(alias.toHtmlEscaped());
+                }
+                html += QStringLiteral("</table>");
             }
-            html += QStringLiteral("</table>");
 
             // Neighbours, heaviest first.
             struct Neighbour
