@@ -11,7 +11,7 @@ linux:
   image: fedora:latest
   before_script:
     - dnf install -y --setopt=install_weak_deps=False
-        gcc-c++ cmake ninja-build qt6-qtbase-devel libpcap-devel
+        gcc-c++ cmake ninja-build pkgconf-pkg-config qt6-qtbase-devel libpcap-devel
   script:
     - cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
     - cmake --build build
@@ -36,9 +36,9 @@ windows:
     - export PATH=/ucrt64/bin:$PATH
   script:
     - curl -sL -o npcap.zip https://npcap.com/dist/npcap-sdk-1.16.zip
-    - unzip -q npcap.zip -d npcap
+    - unzip -q npcap.zip -d /tmp/npcap
     - cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
-        -DNPCAP_SDK_DIR=C:/builds/npcap
+        -DNPCAP_SDK_DIR="$(cygpath -w /tmp/npcap)"
     - cmake --build build
     - ctest --test-dir build --output-on-failure
   artifacts:

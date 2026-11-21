@@ -62,6 +62,8 @@ Si libpcap n'est pas dans le chemin de pkg-config :
 ```bash
 export PKG_CONFIG_PATH=/chemin/vers/libpcap/lib64/pkgconfig
 cmake -S . -B build -G Ninja
+# ou, sans variable d'environnement :
+cmake -S . -B build -G Ninja -DPCAP_PREFIX=/chemin/vers/libpcap
 ```
 
 ## Capture sans root

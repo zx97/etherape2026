@@ -6,6 +6,7 @@
 #include "decoder.h"
 #include "displayfilter.h"
 #include "graphmodel.h"
+#include "helperpath.h"
 #include "ipreassembly.h"
 #include "jsonexport.h"
 #include "netbios.h"
@@ -17,6 +18,10 @@
 #include <QNetworkInterface>
 #include <QTemporaryDir>
 #include <QtTest>
+
+#ifndef Q_OS_WIN
+#include <unistd.h>
+#endif
 
 using namespace etherape;
 
@@ -132,6 +137,8 @@ private slots:
     void rejectsOverlappingFragments();
     void filterAcceptsEqualsAndAliases();
     void filterWarnsOnUnknownKey();
+    void helperLogIsPrivate();
+    void helperLogRefusesSymlink();
 };
 
 void CoreTests::decodesIpv4TcpWithApplicationProtocol()
@@ -581,6 +588,52 @@ void CoreTests::filterWarnsOnUnknownKey()
     QCOMPARE(filter.warnings().first(), QStringLiteral("bogus:value"));
     QVERIFY(DisplayFilter(QStringLiteral("proto:http")).warnings().isEmpty());
     QVERIFY(DisplayFilter(QStringLiteral("host=")).warnings().size() == 1);
+}
+
+void CoreTests::helperLogIsPrivate()
+{
+#ifndef Q_OS_WIN
+    const QString dir = etherape::helperLogDirectory();
+    QVERIFY2(!dir.isEmpty(), "no private helper log directory");
+
+    const QFileInfo info(dir);
+    QVERIFY(info.isDir());
+    QVERIFY(!info.isSymLink());
+    QVERIFY(info.ownerId() == ::getuid());
+
+    // A world-writable /dev/shm must not expose the helper diagnostics.
+    const auto perms = info.permissions();
+    QVERIFY(!perms.testFlag(QFileDevice::ReadGroup));
+    QVERIFY(!perms.testFlag(QFileDevice::WriteGroup));
+    QVERIFY(!perms.testFlag(QFileDevice::ExeGroup));
+    QVERIFY(!perms.testFlag(QFileDevice::ReadOther));
+    QVERIFY(!perms.testFlag(QFileDevice::WriteOther));
+    QVERIFY(!perms.testFlag(QFileDevice::ExeOther));
+#endif
+}
+
+void CoreTests::helperLogRefusesSymlink()
+{
+#ifndef Q_OS_WIN
+    const QString dir = etherape::helperLogDirectory();
+    QVERIFY(!dir.isEmpty());
+    const QString path = dir + QStringLiteral("/symlink-test.log");
+    QFile::remove(path);
+    QVERIFY(QFile::link(QStringLiteral("/etc/passwd"), path));
+
+    // Without O_NOFOLLOW this would truncate /etc/passwd.
+    QCOMPARE(etherape::openHelperLog(path), -1);
+    QFile::remove(path);
+
+    // A plain file is created with mode 0600.
+    const int fd = etherape::openHelperLog(path);
+    QVERIFY(fd >= 0);
+    const auto perms = QFileInfo(path).permissions();
+    QVERIFY(!perms.testFlag(QFileDevice::WriteGroup));
+    QVERIFY(!perms.testFlag(QFileDevice::ReadOther));
+    QCOMPARE(::close(fd), 0);
+    QFile::remove(path);
+#endif
 }
 
 QTEST_GUILESS_MAIN(CoreTests)

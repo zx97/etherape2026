@@ -43,13 +43,19 @@ if(WIN32)
     set(PCAP_TARGET pcap)
 else()
     find_package(PkgConfig REQUIRED)
-    # Build-only dependency prefix: when the system ships libpcap without its
-    # development headers, a private prefix extracted from the distribution
-    # RPMs keeps the build reproducible (see README, "Compilation").
-    if(NOT DEFINED ENV{PKG_CONFIG_PATH}
-       AND EXISTS "$ENV{HOME}/.local/etherape-deps/usr/lib64/pkgconfig/libpcap.pc")
-        set(ENV{PKG_CONFIG_PATH}
-            "$ENV{HOME}/.local/etherape-deps/usr/lib64/pkgconfig")
+    # Optional prefix holding libpcap.pc, for systems that ship the runtime
+    # library without its development headers (see README, "Compilation"):
+    #   cmake -S . -B build -DPCAP_PREFIX=/opt/libpcap
+    set(PCAP_PREFIX "" CACHE PATH
+        "Prefix containing libpcap.pc (in lib/pkgconfig or lib64/pkgconfig)")
+    if(PCAP_PREFIX)
+        set(_pcap_pc_prefix
+            "${PCAP_PREFIX}/lib64/pkgconfig:${PCAP_PREFIX}/lib/pkgconfig")
+        if(DEFINED ENV{PKG_CONFIG_PATH} AND NOT "$ENV{PKG_CONFIG_PATH}" STREQUAL "")
+            set(ENV{PKG_CONFIG_PATH} "${_pcap_pc_prefix}:$ENV{PKG_CONFIG_PATH}")
+        else()
+            set(ENV{PKG_CONFIG_PATH} "${_pcap_pc_prefix}")
+        endif()
     endif()
     pkg_check_modules(PCAP REQUIRED IMPORTED_TARGET libpcap)
     set(PCAP_TARGET PkgConfig::PCAP)
@@ -67,6 +73,8 @@ add_library(etherape_core STATIC
     src/zones.h
     src/ipreassembly.cpp
     src/ipreassembly.h
+    src/helperpath.cpp
+    src/helperpath.h
     src/displayfilter.cpp
     src/displayfilter.h
     src/graphmodel.cpp

@@ -10,6 +10,8 @@
 
 #include "captureworker.h"
 
+#include "helperpath.h"
+
 #include <QCoreApplication>
 #include <QDateTime>
 #include <QDir>
@@ -145,10 +147,13 @@ CaptureWorker::~CaptureWorker()
 void CaptureWorker::pruneHelperLogs()
 {
 #ifndef Q_OS_WIN
-    QDir dir(QStringLiteral("/dev/shm"));
+    const QString path = helperLogDirectory();
+    if (path.isEmpty())
+        return;
+    QDir dir(path);
     const QDateTime cutoff = QDateTime::currentDateTime().addDays(-1);
-    const QStringList stale = dir.entryList(
-        {QStringLiteral("etherape2026-helper-*.log")}, QDir::Files);
+    const QStringList stale =
+        dir.entryList({QStringLiteral("helper-*.log")}, QDir::Files);
     for (const QString &name : stale) {
         const QFileInfo info(dir.filePath(name));
         if (info.lastModified() < cutoff)
@@ -315,11 +320,16 @@ void CaptureWorker::openPrivileged(const QString &device,
         return;
     }
 
-    m_helperLogPath =
-        QStringLiteral("/dev/shm/etherape2026-helper-%1.log")
-            .arg(QCoreApplication::applicationPid());
-    const int logFd = ::open(m_helperLogPath.toLocal8Bit().constData(),
-                             O_CREAT | O_WRONLY | O_TRUNC, 0600);
+    // Diagnostics go to a per-user 0700 directory; see helperpath.h for why
+    // the name must not be predictable in a world-writable /dev/shm.
+    const QString logDir = etherape::helperLogDirectory();
+    if (!logDir.isEmpty())
+        m_helperLogPath =
+            logDir + QStringLiteral("/helper-%1.log")
+                         .arg(QCoreApplication::applicationPid());
+    const int logFd = m_helperLogPath.isEmpty()
+        ? -1
+        : etherape::openHelperLog(m_helperLogPath);
 
     const QByteArray exe =
         QCoreApplication::applicationFilePath().toLocal8Bit();
