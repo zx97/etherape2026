@@ -43,5 +43,5 @@ them, per-protocol colours and traffic statistics. Qt 6 port of EtherApe.
 %{_mandir}/man1/etherape2026.1*
 
 %changelog
-* Sat Nov 21 2026 - <manu@localhost> - 1.0.0-1
+* Sat Nov 21 2026 zx97 <manuel.flury@gmail.com> - 1.0.0-1
 - Initial package
