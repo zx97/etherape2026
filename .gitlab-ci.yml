@@ -55,7 +55,13 @@ package-linux:
       ln -sf linuxdeploy-x86_64.AppImage tools/linuxdeploy
       ln -sf linuxdeploy-plugin-qt-x86_64.AppImage tools/linuxdeploy-plugin-qt
       ln -sf appimagetool-x86_64.AppImage tools/appimagetool
+  script:
+    - |
+      set -euo pipefail
       export PATH="$PWD/tools:$PATH"
+      cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      cmake --build build -j"$CMAKE_BUILD_PARALLEL_LEVEL"
+      ctest --test-dir build --output-on-failure
       ./scripts/build-appimage.sh build
       ./scripts/package-linux.sh build dist
       mv etherape2026-*-x86_64.AppImage dist/
