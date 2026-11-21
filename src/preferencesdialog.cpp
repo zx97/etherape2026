@@ -77,6 +77,14 @@ PreferencesDialog::PreferencesDialog(const Values &values, QWidget *parent)
     m_dmzZones->setToolTip(tr("CIDR blocks rendered in the DMZ cloud."));
     m_vpnZones->setToolTip(tr("CIDR blocks rendered in the VPN cloud."));
 
+    m_dnsOnly = new QCheckBox(
+        tr("Resolve with DNS only (ignore /etc/hosts, NSS/LDAP, mDNS)"), this);
+    m_dnsOnly->setChecked(values.dnsOnly);
+    m_dnsOnly->setToolTip(
+        tr("QHostInfo goes through NSS, which may consult LDAP or SSSD and "
+           "return names your DNS does not have. This option asks the DNS "
+           "directly."));
+
     m_language = new QComboBox(this);
     m_language->addItem(tr("System default"), QString());
     m_language->addItem(QStringLiteral("Français (fr)"), QStringLiteral("fr"));
@@ -101,6 +109,7 @@ PreferencesDialog::PreferencesDialog(const Values &values, QWidget *parent)
     form->addRow(tr("Replay speed:"), m_speed);
     form->addRow(QString(), m_resolve);
     form->addRow(QString(), m_merge);
+    form->addRow(QString(), m_dnsOnly);
     form->addRow(QString(), m_polkit);
     form->addRow(tr("Language:"), m_language);
     form->addRow(tr("LAN zones:"), m_localZones);
@@ -133,6 +142,7 @@ PreferencesDialog::Values PreferencesDialog::values() const
     values.replaySpeed = m_speed->value();
     values.usePolkit = m_polkit->isChecked();
     values.mergeFamilies = m_merge->isChecked();
+    values.dnsOnly = m_dnsOnly->isChecked();
     values.language = m_language->currentData().toString();
     values.localZones = m_localZones->text();
     values.dmzZones = m_dmzZones->text();

@@ -25,6 +25,7 @@
 #include <cstdio>
 #include <QStringListModel>
 #include <QToolButton>
+#include <QDnsLookup>
 #include <QHostInfo>
 #include <QIcon>
 #include <QKeySequence>
@@ -398,6 +399,7 @@ void MainWindow::loadSettings()
         settings.value(QStringLiteral("capture/usePolkit"), false).toBool();
     m_mergeFamilies =
         settings.value(QStringLiteral("graph/mergeFamilies"), true).toBool();
+    m_dnsOnly = settings.value(QStringLiteral("names/dnsOnly"), false).toBool();
     m_language = settings.value(QStringLiteral("ui/language")).toString();
     m_model->setMergeFamilies(m_mergeFamilies);
     if (m_mergeAction) {
@@ -496,6 +498,7 @@ void MainWindow::saveSettings()
     settings.setValue(QStringLiteral("names/numeric"), m_numeric);
     settings.setValue(QStringLiteral("capture/usePolkit"), m_usePolkit);
     settings.setValue(QStringLiteral("graph/mergeFamilies"), m_mergeFamilies);
+    settings.setValue(QStringLiteral("names/dnsOnly"), m_dnsOnly);
     settings.setValue(QStringLiteral("zones/local"), m_localZones);
     settings.setValue(QStringLiteral("zones/dmz"), m_dmzZones);
     settings.setValue(QStringLiteral("zones/vpn"), m_vpnZones);
@@ -511,6 +514,7 @@ void MainWindow::showPreferences()
     values.replaySpeed = m_replaySpeed;
     values.usePolkit = m_usePolkit;
     values.mergeFamilies = m_mergeFamilies;
+    values.dnsOnly = m_dnsOnly;
     values.language = m_language;
     values.localZones = m_localZones;
     values.dmzZones = m_dmzZones;
@@ -531,6 +535,7 @@ void MainWindow::showPreferences()
     m_replaySpeed = updated.replaySpeed;
     m_usePolkit = updated.usePolkit;
     m_mergeFamilies = updated.mergeFamilies;
+    m_dnsOnly = updated.dnsOnly;
     if (updated.language != m_language) {
         m_language = updated.language;
         QSettings().setValue(QStringLiteral("ui/language"), m_language);
@@ -970,6 +975,31 @@ void MainWindow::maybeResolve(const QString &id, NodeKind kind)
         return;
 
     m_pendingNames.insert(id);
+
+    if (m_dnsOnly) {
+        // QDnsLookup asks the DNS directly: no NSS, no LDAP, no /etc/hosts.
+        auto *lookup = new QDnsLookup(QDnsLookup::PTR, id, this);
+        connect(lookup, &QDnsLookup::finished, this, [this, id, lookup] {
+            m_pendingNames.remove(id);
+            QString name;
+            if (lookup->error() == QDnsLookup::NoError
+                && !lookup->pointerRecords().isEmpty()) {
+                name = lookup->pointerRecords().first().value();
+            }
+            lookup->deleteLater();
+            if (name.isEmpty() || name == id) {
+                m_nameCache.insert(id, QString());
+                return;
+            }
+            if (name.endsWith(QLatin1Char('.')))
+                name.chop(1);
+            m_nameCache.insert(id, name);
+            m_model->setLabel(id, name);
+        });
+        lookup->lookup();
+        return;
+    }
+
     QHostInfo::lookupHost(id, this, [this, id](const QHostInfo &info) {
         m_pendingNames.remove(id);
         if (info.error() != QHostInfo::NoError) {

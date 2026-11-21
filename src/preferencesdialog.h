@@ -27,6 +27,7 @@ public:
         int replaySpeed = 100;
         bool usePolkit = false;
         bool mergeFamilies = true;
+        bool dnsOnly = false;
         QString language;
         QString localZones;
         QString dmzZones;
@@ -45,6 +46,7 @@ private:
     QSpinBox *m_speed = nullptr;
     QCheckBox *m_polkit = nullptr;
     QCheckBox *m_merge = nullptr;
+    QCheckBox *m_dnsOnly = nullptr;
     QComboBox *m_language = nullptr;
     QLineEdit *m_localZones = nullptr;
     QLineEdit *m_dmzZones = nullptr;

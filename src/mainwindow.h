@@ -128,6 +128,7 @@ private:
     bool m_resolveNames = false;
     bool m_usePolkit = false;
     bool m_mergeFamilies = true;
+    bool m_dnsOnly = false;
     QString m_language;
     QString m_pendingDevice;
     QString m_replayFile;
