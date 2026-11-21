@@ -7,6 +7,7 @@
 class QStandardItemModel;
 class QTreeView;
 class QTextBrowser;
+class QPushButton;
 class QTabWidget;
 
 namespace etherape {
@@ -32,6 +33,8 @@ private:
     QTabWidget *m_tabs = nullptr;
     TrafficChart *m_chart = nullptr;
     QTextBrowser *m_info = nullptr;
+    QPushButton *m_copy = nullptr;
+    QWidget *m_infoPage = nullptr;
     QString m_selectedId;
     QTreeView *m_nodesView = nullptr;
     QTreeView *m_linksView = nullptr;

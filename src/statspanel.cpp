@@ -14,6 +14,10 @@
 #include <QStandardItemModel>
 #include <QTabWidget>
 #include <QTextBrowser>
+#include <QPushButton>
+#include <QClipboard>
+#include <QApplication>
+#include <QGuiApplication>
 #include <QTreeView>
 #include <QVBoxLayout>
 
@@ -100,12 +104,31 @@ StatsPanel::StatsPanel(QWidget *parent) : QWidget(parent)
     m_info->setHtml(tr("<p style='color:gray'>Click a node to pin its "
                        "details here.</p>"));
 
+    // The panel refreshes every second; without an explicit button, Copy stays
+    // greyed out as soon as the selection is replaced.
+    m_copy = new QPushButton(tr("Copy"), m_tabs);
+    m_copy->setToolTip(tr("Copy the selection, or the whole panel if nothing "
+                          "is selected."));
+    connect(m_copy, &QPushButton::clicked, this, [this] {
+        const QString selected = m_info->textCursor().selectedText();
+        const QString text = selected.isEmpty() ? m_info->toPlainText()
+                                                : selected;
+        if (!text.isEmpty())
+            QGuiApplication::clipboard()->setText(text);
+    });
+
     m_chart = new TrafficChart(m_tabs);
     m_tabs->addTab(m_nodesView, tr("Nodes"));
     m_tabs->addTab(m_linksView, tr("Links"));
     m_tabs->addTab(m_protocolsView, tr("Protocols"));
     m_tabs->addTab(m_chart, tr("Traffic"));
-    m_tabs->addTab(m_info, tr("Node"));
+    auto *infoPage = new QWidget(m_tabs);
+    auto *infoLayout = new QVBoxLayout(infoPage);
+    infoLayout->setContentsMargins(0, 0, 0, 0);
+    infoLayout->addWidget(m_copy, 0, Qt::AlignRight);
+    infoLayout->addWidget(m_info);
+    m_tabs->addTab(infoPage, tr("Node"));
+    m_infoPage = infoPage;
 
     auto *layout = new QVBoxLayout(this);
     layout->setContentsMargins(0, 0, 0, 0);
@@ -116,8 +139,8 @@ void StatsPanel::setSelectedNode(const QString &id)
 {
     m_selectedId = id;
     // The user just clicked a node: show its details.
-    if (m_tabs && m_info)
-        m_tabs->setCurrentWidget(m_info);
+    if (m_tabs && m_infoPage)
+        m_tabs->setCurrentWidget(m_infoPage);
 }
 
 void StatsPanel::addTrafficSample(double bytesPerSecond)
@@ -230,7 +253,10 @@ void StatsPanel::refresh(const GraphModel &model, const DisplayFilter &filter)
                 }
                 html += QStringLiteral("</table>");
             }
-            m_info->setHtml(html);
+            // Do not destroy a selection the user is copying.
+            if (!m_info->textCursor().hasSelection()
+                && m_info->toPlainText() != html)
+                m_info->setHtml(html);
         }
     }
 
