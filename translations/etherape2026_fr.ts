@@ -98,7 +98,7 @@
     <message>
         <location filename="../src/main.cpp" line="135" />
         <source>Close the window after &lt;ms&gt; (testing aid).</source>
-        <translation type="unfinished" />
+        <translation>Fermer la fenêtre après &lt;ms&gt; (aide au test)</translation>
     </message>
     <message>
         <location filename="../src/main.cpp" line="136" />
@@ -106,12 +106,12 @@
         <location filename="../src/main.cpp" line="144" />
         <location filename="../src/main.cpp" line="152" />
         <source>ms</source>
-        <translation type="unfinished" />
+        <translation>ms</translation>
     </message>
     <message>
         <location filename="../src/main.cpp" line="139" />
         <source>Press Stop after &lt;ms&gt; (testing aid).</source>
-        <translation type="unfinished" />
+        <translation>Appuyer sur Stop après &lt;ms&gt; (aide au test)</translation>
     </message>
     <message>
         <location filename="../src/main.cpp" line="143" />
@@ -286,7 +286,7 @@
     <message>
         <location filename="../src/mainwindow.cpp" line="163" />
         <source>EtherApe 2026</source>
-        <translation type="unfinished" />
+        <translation>EtherApe 2026</translation>
     </message>
     <message>
         <location filename="../src/mainwindow.cpp" line="171" />
@@ -352,19 +352,19 @@
         <location filename="../src/mainwindow.cpp" line="257" />
         <location filename="../src/mainwindow.cpp" line="311" />
         <source>Link</source>
-        <translation type="unfinished" />
+        <translation>Lien</translation>
     </message>
     <message>
         <location filename="../src/mainwindow.cpp" line="257" />
         <location filename="../src/mainwindow.cpp" line="311" />
         <source>IP</source>
-        <translation type="unfinished" />
+        <translation>IP</translation>
     </message>
     <message>
         <location filename="../src/mainwindow.cpp" line="257" />
         <location filename="../src/mainwindow.cpp" line="311" />
         <source>TCP</source>
-        <translation type="unfinished" />
+        <translation>TCP</translation>
     </message>
     <message>
         <location filename="../src/mainwindow.cpp" line="273" />
@@ -717,7 +717,7 @@ sudo setcap cap_net_raw,cap_net_admin+eip %1</translation>
     <message>
         <location filename="../src/mainwindow.cpp" line="1220" />
         <source>&lt;h3&gt;EtherApe 2026 %1&lt;/h3&gt;&lt;p&gt;Graphical network traffic monitor, Qt 6 port of EtherApe.&lt;/p&gt;&lt;p&gt;Original EtherApe © 2001 Juan Toledo, Riccardo Ghetta and contributors.&lt;br&gt;This port: GPL-2.0-or-later.&lt;/p&gt;&lt;p&gt;Capture powered by libpcap.&lt;/p&gt;</source>
-        <translation type="unfinished" />
+        <translation>&lt;h3&gt;EtherApe 2026 %1&lt;/h3&gt;&lt;p&gt;Moniteur graphique de trafic réseau, port Qt 6 d'EtherApe.&lt;/p&gt;&lt;p&gt;Original: EtherApe © 2001 Juan Toledo, Riccardo Ghetta et contributeurs.&lt;br&gt;Ce port: GPL-2.0-or-later.&lt;/p&gt;&lt;p&gt;Capture par libpcap.&lt;/p&gt;</translation>
     </message>
 </context>
 <context>
@@ -951,17 +951,17 @@ sudo setcap cap_net_raw,cap_net_admin+eip %1</translation>
     <message>
         <location filename="../src/statspanel.cpp" line="196" />
         <source>DNS</source>
-        <translation type="unfinished" />
+        <translation>DNS</translation>
     </message>
     <message>
         <location filename="../src/statspanel.cpp" line="198" />
         <source>NetBIOS</source>
-        <translation type="unfinished" />
+        <translation>NetBIOS</translation>
     </message>
     <message>
         <location filename="../src/statspanel.cpp" line="199" />
         <source>/etc/ethers</source>
-        <translation type="unfinished" />
+        <translation>/etc/ethers</translation>
     </message>
     <message>
         <location filename="../src/statspanel.cpp" line="201" />
