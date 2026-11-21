@@ -873,9 +873,9 @@ void MainWindow::onPermissionDenied(const QString &device,
     const auto answer = QMessageBox::question(
         this, tr("Root privileges required"),
         tr("Capturing on \"%1\" was denied:\n%2\n\n"
-           "Elevate through polkit? The password is asked once per "
-           "application session: the privileged helper is then reused by "
-           "Start/Stop, and the GUI itself stays unprivileged.")
+           "Elevate through polkit? The password is asked for this capture, "
+           "and the privileged helper exits when it stops. The GUI itself "
+           "stays unprivileged.")
             .arg(device, message),
         QMessageBox::Yes | QMessageBox::No, QMessageBox::Yes);
 

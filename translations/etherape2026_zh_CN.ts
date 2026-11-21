@@ -10,7 +10,7 @@
     <message>
         <location filename="../src/main.cpp" line="100" />
         <source>Capture on &lt;device&gt;.</source>
-        <translation>在 &lt;device&gt; 上捕获。</translation>
+        <translation>在 &lt;设备&gt; 上捕获。</translation>
     </message>
     <message>
         <location filename="../src/main.cpp" line="100" />
@@ -20,7 +20,7 @@
     <message>
         <location filename="../src/main.cpp" line="103" />
         <source>Replay packets from &lt;file&gt;.</source>
-        <translation>重放 &lt;file&gt; 中的数据包。</translation>
+        <translation>重放 &lt;文件&gt; 中的数据包。</translation>
     </message>
     <message>
         <location filename="../src/main.cpp" line="103" />
@@ -33,7 +33,7 @@
     <message>
         <location filename="../src/main.cpp" line="106" />
         <source>Apply the BPF &lt;filter&gt;.</source>
-        <translation>应用 BPF &lt;filter&gt;。</translation>
+        <translation>应用 BPF &lt;过滤器&gt;。</translation>
     </message>
     <message>
         <location filename="../src/main.cpp" line="106" />
@@ -53,7 +53,7 @@
     <message>
         <location filename="../src/main.cpp" line="113" />
         <source>Select the node matching &lt;text&gt; at start-up.</source>
-        <translation>启动时选择与 &lt;text&gt; 匹配的节点。</translation>
+        <translation>启动时选择与 &lt;文本&gt; 匹配的节点。</translation>
     </message>
     <message>
         <location filename="../src/main.cpp" line="114" />
@@ -78,7 +78,7 @@
     <message>
         <location filename="../src/main.cpp" line="124" />
         <source>Keep at most &lt;count&gt; nodes.</source>
-        <translation>最多保留 &lt;count&gt; 个节点。</translation>
+        <translation>最多保留 &lt;数量&gt; 个节点。</translation>
     </message>
     <message>
         <location filename="../src/main.cpp" line="124" />
@@ -88,17 +88,17 @@
     <message>
         <location filename="../src/main.cpp" line="127" />
         <source>Export the graph as XML to &lt;file&gt; on exit.</source>
-        <translation>退出时将图导出为 XML 到 &lt;file&gt;。</translation>
+        <translation>退出时将图导出为 XML 到 &lt;文件&gt;。</translation>
     </message>
     <message>
         <location filename="../src/main.cpp" line="131" />
         <source>Load the node layout from &lt;file&gt;.</source>
-        <translation>从 &lt;file&gt; 加载节点布局。</translation>
+        <translation>从 &lt;文件&gt; 加载节点布局。</translation>
     </message>
     <message>
         <location filename="../src/main.cpp" line="135" />
         <source>Close the window after &lt;ms&gt; (testing aid).</source>
-        <translation type="unfinished" />
+        <translation>在 &lt;ms&gt; 后关闭窗口（测试辅助）。</translation>
     </message>
     <message>
         <location filename="../src/main.cpp" line="136" />
@@ -106,27 +106,27 @@
         <location filename="../src/main.cpp" line="144" />
         <location filename="../src/main.cpp" line="152" />
         <source>ms</source>
-        <translation type="unfinished" />
+        <translation>ms</translation>
     </message>
     <message>
         <location filename="../src/main.cpp" line="139" />
         <source>Press Stop after &lt;ms&gt; (testing aid).</source>
-        <translation type="unfinished" />
+        <translation>在 &lt;ms&gt; 后按下停止（测试辅助）。</translation>
     </message>
     <message>
         <location filename="../src/main.cpp" line="143" />
         <source>Stop then Start again after &lt;ms&gt; (testing aid).</source>
-        <translation type="unfinished" />
+        <translation>在 &lt;ms&gt; 后停止并重新开始（测试辅助）。</translation>
     </message>
     <message>
         <location filename="../src/main.cpp" line="147" />
         <source>Save a window snapshot to &lt;file&gt; and exit (testing aid).</source>
-        <translation type="unfinished" />
+        <translation>将窗口截图保存到 &lt;文件&gt; 并退出（测试辅助）。</translation>
     </message>
     <message>
         <location filename="../src/main.cpp" line="151" />
         <source>Wait &lt;ms&gt; before taking the snapshot.</source>
-        <translation type="unfinished" />
+        <translation>截图前等待 &lt;ms&gt;。</translation>
     </message>
     <message>
         <location filename="../src/main.cpp" line="155" />
@@ -136,7 +136,7 @@
     <message>
         <location filename="../src/main.cpp" line="156" />
         <source>percent</source>
-        <translation type="unfinished" />
+        <translation>百分比</translation>
     </message>
 </context>
 <context>
@@ -258,7 +258,10 @@
 %2 packets · %3
 %4
 %5</source>
-        <translation type="unfinished" />
+        <translation>%1
+%2 个数据包 · %3
+%4
+%5</translation>
     </message>
     <message>
         <location filename="../src/graphview.cpp" line="523" />
@@ -286,7 +289,7 @@
     <message>
         <location filename="../src/mainwindow.cpp" line="163" />
         <source>EtherApe 2026</source>
-        <translation type="unfinished" />
+        <translation>EtherApe 2026</translation>
     </message>
     <message>
         <location filename="../src/mainwindow.cpp" line="171" />
@@ -331,7 +334,7 @@
     <message>
         <location filename="../src/mainwindow.cpp" line="228" />
         <source>proto:http host:10.0 -vlan:100 zone:dmz</source>
-        <translation type="unfinished" />
+        <translation>proto:http host:10.0 -vlan:100 zone:dmz</translation>
     </message>
     <message>
         <location filename="../src/mainwindow.cpp" line="232" />
@@ -352,19 +355,19 @@
         <location filename="../src/mainwindow.cpp" line="257" />
         <location filename="../src/mainwindow.cpp" line="311" />
         <source>Link</source>
-        <translation type="unfinished" />
+        <translation>Link</translation>
     </message>
     <message>
         <location filename="../src/mainwindow.cpp" line="257" />
         <location filename="../src/mainwindow.cpp" line="311" />
         <source>IP</source>
-        <translation type="unfinished" />
+        <translation>IP</translation>
     </message>
     <message>
         <location filename="../src/mainwindow.cpp" line="257" />
         <location filename="../src/mainwindow.cpp" line="311" />
         <source>TCP</source>
-        <translation type="unfinished" />
+        <translation>TCP</translation>
     </message>
     <message>
         <location filename="../src/mainwindow.cpp" line="273" />
@@ -581,7 +584,10 @@ Use proto:, host:, vlan:, zone: (or = instead of :). Click ? for help.</source>
 %2
 
 Restart EtherApe 2026 elevated?</source>
-        <translation type="unfinished" />
+        <translation>在“%1”上捕获需要管理员权限：
+%2
+
+是否以提升的权限重新启动 EtherApe 2026？</translation>
     </message>
     <message>
         <location filename="../src/mainwindow.cpp" line="871" />
@@ -598,8 +604,11 @@ Restart EtherApe 2026 elevated?</source>
         <source>Capturing on "%1" was denied:
 %2
 
-Elevate through polkit? The password is asked once per application session: the privileged helper is then reused by Start/Stop, and the GUI itself stays unprivileged.</source>
-        <translation type="unfinished" />
+Elevate through polkit? The password is asked for this capture, and the privileged helper exits when it stops. The GUI itself stays unprivileged.</source>
+        <translation>在“%1”上捕获被拒绝：
+%2
+
+是否通过 polkit 提升权限？密码仅为本次捕获询问，特权辅助程序在停止时退出。界面本身保持无特权。</translation>
     </message>
     <message>
         <location filename="../src/mainwindow.cpp" line="908" />
@@ -711,7 +720,7 @@ sudo setcap cap_net_raw,cap_net_admin+eip %1</translation>
     <message>
         <location filename="../src/mainwindow.cpp" line="1220" />
         <source>&lt;h3&gt;EtherApe 2026 %1&lt;/h3&gt;&lt;p&gt;Graphical network traffic monitor, Qt 6 port of EtherApe.&lt;/p&gt;&lt;p&gt;Original EtherApe © 2001 Juan Toledo, Riccardo Ghetta and contributors.&lt;br&gt;This port: GPL-2.0-or-later.&lt;/p&gt;&lt;p&gt;Capture powered by libpcap.&lt;/p&gt;</source>
-        <translation type="unfinished" />
+        <translation>&lt;h3&gt;EtherApe 2026 %1&lt;/h3&gt;&lt;p&gt;图形化网络流量监视器，EtherApe 的 Qt 6 移植版。&lt;/p&gt;&lt;p&gt;原始 EtherApe © 2001 Juan Toledo、Riccardo Ghetta 及贡献者。&lt;br&gt;本移植版：GPL-2.0-or-later。&lt;/p&gt;&lt;p&gt;捕获由 libpcap 提供。&lt;/p&gt;</translation>
     </message>
 </context>
 <context>
@@ -778,8 +787,8 @@ sudo setcap cap_net_raw,cap_net_admin+eip %1</translation>
     </message>
     <message>
         <location filename="../src/preferencesdialog.cpp" line="66" />
-        <source>Runs a small helper through pkexec once per session; Start and Stop then reuse it without asking again. The GUI itself stays unprivileged.</source>
-        <translation type="unfinished" />
+        <source>Runs a small helper through pkexec for each capture that needs root; the password is asked every time. The GUI itself stays unprivileged.</source>
+        <translation>每次需要 root 的捕获都会通过 pkexec 启动一个小的辅助程序；每次都会询问密码。界面本身保持无特权。</translation>
     </message>
     <message>
         <location filename="../src/preferencesdialog.cpp" line="76" />
@@ -945,17 +954,17 @@ sudo setcap cap_net_raw,cap_net_admin+eip %1</translation>
     <message>
         <location filename="../src/statspanel.cpp" line="196" />
         <source>DNS</source>
-        <translation type="unfinished" />
+        <translation>DNS</translation>
     </message>
     <message>
         <location filename="../src/statspanel.cpp" line="198" />
         <source>NetBIOS</source>
-        <translation type="unfinished" />
+        <translation>NetBIOS</translation>
     </message>
     <message>
         <location filename="../src/statspanel.cpp" line="199" />
         <source>/etc/ethers</source>
-        <translation type="unfinished" />
+        <translation>/etc/ethers</translation>
     </message>
     <message>
         <location filename="../src/statspanel.cpp" line="201" />

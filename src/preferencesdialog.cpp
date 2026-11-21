@@ -63,8 +63,8 @@ PreferencesDialog::PreferencesDialog(const Values &values, QWidget *parent)
         tr("Ask for the root password (polkit) when capture is denied"), this);
     m_polkit->setChecked(values.usePolkit);
     m_polkit->setToolTip(
-        tr("Runs a small helper through pkexec once per session; Start and "
-           "Stop then reuse it without asking again. The GUI itself stays "
+        tr("Runs a small helper through pkexec for each capture that needs "
+           "root; the password is asked every time. The GUI itself stays "
            "unprivileged."));
 
     m_localZones = new QLineEdit(values.localZones, this);

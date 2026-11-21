@@ -10,7 +10,7 @@
     <message>
         <location filename="../src/main.cpp" line="100" />
         <source>Capture on &lt;device&gt;.</source>
-        <translation>Capturar en &lt;device&gt;.</translation>
+        <translation>Capturar en &lt;dispositivo&gt;.</translation>
     </message>
     <message>
         <location filename="../src/main.cpp" line="100" />
@@ -20,7 +20,7 @@
     <message>
         <location filename="../src/main.cpp" line="103" />
         <source>Replay packets from &lt;file&gt;.</source>
-        <translation>Reproducir paquetes de &lt;file&gt;.</translation>
+        <translation>Reproducir paquetes de &lt;archivo&gt;.</translation>
     </message>
     <message>
         <location filename="../src/main.cpp" line="103" />
@@ -33,7 +33,7 @@
     <message>
         <location filename="../src/main.cpp" line="106" />
         <source>Apply the BPF &lt;filter&gt;.</source>
-        <translation>Aplicar el &lt;filter&gt; BPF.</translation>
+        <translation>Aplicar el &lt;filtro&gt; BPF.</translation>
     </message>
     <message>
         <location filename="../src/main.cpp" line="106" />
@@ -53,7 +53,7 @@
     <message>
         <location filename="../src/main.cpp" line="113" />
         <source>Select the node matching &lt;text&gt; at start-up.</source>
-        <translation>Seleccionar al inicio el nodo que coincide con &lt;text&gt;.</translation>
+        <translation>Seleccionar al inicio el nodo que coincide con &lt;texto&gt;.</translation>
     </message>
     <message>
         <location filename="../src/main.cpp" line="114" />
@@ -78,7 +78,7 @@
     <message>
         <location filename="../src/main.cpp" line="124" />
         <source>Keep at most &lt;count&gt; nodes.</source>
-        <translation>Conservar como máximo &lt;count&gt; nodos.</translation>
+        <translation>Conservar como máximo &lt;número&gt; nodos.</translation>
     </message>
     <message>
         <location filename="../src/main.cpp" line="124" />
@@ -88,17 +88,17 @@
     <message>
         <location filename="../src/main.cpp" line="127" />
         <source>Export the graph as XML to &lt;file&gt; on exit.</source>
-        <translation>Exportar el grafo a XML en &lt;file&gt; al salir.</translation>
+        <translation>Exportar el grafo a XML en &lt;archivo&gt; al salir.</translation>
     </message>
     <message>
         <location filename="../src/main.cpp" line="131" />
         <source>Load the node layout from &lt;file&gt;.</source>
-        <translation>Cargar la disposición de nodos desde &lt;file&gt;.</translation>
+        <translation>Cargar la disposición de nodos desde &lt;archivo&gt;.</translation>
     </message>
     <message>
         <location filename="../src/main.cpp" line="135" />
         <source>Close the window after &lt;ms&gt; (testing aid).</source>
-        <translation type="unfinished" />
+        <translation>Cerrar la ventana después de &lt;ms&gt; (ayuda para pruebas).</translation>
     </message>
     <message>
         <location filename="../src/main.cpp" line="136" />
@@ -106,27 +106,27 @@
         <location filename="../src/main.cpp" line="144" />
         <location filename="../src/main.cpp" line="152" />
         <source>ms</source>
-        <translation type="unfinished" />
+        <translation>ms</translation>
     </message>
     <message>
         <location filename="../src/main.cpp" line="139" />
         <source>Press Stop after &lt;ms&gt; (testing aid).</source>
-        <translation type="unfinished" />
+        <translation>Pulsar Detener después de &lt;ms&gt; (ayuda para pruebas).</translation>
     </message>
     <message>
         <location filename="../src/main.cpp" line="143" />
         <source>Stop then Start again after &lt;ms&gt; (testing aid).</source>
-        <translation type="unfinished" />
+        <translation>Detener y volver a iniciar después de &lt;ms&gt; (ayuda para pruebas).</translation>
     </message>
     <message>
         <location filename="../src/main.cpp" line="147" />
         <source>Save a window snapshot to &lt;file&gt; and exit (testing aid).</source>
-        <translation type="unfinished" />
+        <translation>Guardar una instantánea de la ventana en &lt;archivo&gt; y salir (ayuda para pruebas).</translation>
     </message>
     <message>
         <location filename="../src/main.cpp" line="151" />
         <source>Wait &lt;ms&gt; before taking the snapshot.</source>
-        <translation type="unfinished" />
+        <translation>Esperar &lt;ms&gt; antes de tomar la instantánea.</translation>
     </message>
     <message>
         <location filename="../src/main.cpp" line="155" />
@@ -136,7 +136,7 @@
     <message>
         <location filename="../src/main.cpp" line="156" />
         <source>percent</source>
-        <translation type="unfinished" />
+        <translation>porcentaje</translation>
     </message>
 </context>
 <context>
@@ -212,7 +212,7 @@
     <message>
         <location filename="../src/conversationsdialog.cpp" line="71" />
         <source>Protocol mix</source>
-        <translation>Mezcla</translation>
+        <translation>Mezcla de protocolos</translation>
     </message>
     <message>
         <location filename="../src/conversationsdialog.cpp" line="71" />
@@ -258,7 +258,10 @@
 %2 packets · %3
 %4
 %5</source>
-        <translation type="unfinished" />
+        <translation>%1
+%2 paquetes · %3
+%4
+%5</translation>
     </message>
     <message>
         <location filename="../src/graphview.cpp" line="523" />
@@ -286,7 +289,7 @@
     <message>
         <location filename="../src/mainwindow.cpp" line="163" />
         <source>EtherApe 2026</source>
-        <translation type="unfinished" />
+        <translation>EtherApe 2026</translation>
     </message>
     <message>
         <location filename="../src/mainwindow.cpp" line="171" />
@@ -326,12 +329,12 @@
     <message>
         <location filename="../src/mainwindow.cpp" line="225" />
         <source> Show </source>
-        <translation> Filtro </translation>
+        <translation> Mostrar </translation>
     </message>
     <message>
         <location filename="../src/mainwindow.cpp" line="228" />
         <source>proto:http host:10.0 -vlan:100 zone:dmz</source>
-        <translation type="unfinished" />
+        <translation>proto:http host:10.0 -vlan:100 zone:dmz</translation>
     </message>
     <message>
         <location filename="../src/mainwindow.cpp" line="232" />
@@ -352,19 +355,19 @@
         <location filename="../src/mainwindow.cpp" line="257" />
         <location filename="../src/mainwindow.cpp" line="311" />
         <source>Link</source>
-        <translation type="unfinished" />
+        <translation>Link</translation>
     </message>
     <message>
         <location filename="../src/mainwindow.cpp" line="257" />
         <location filename="../src/mainwindow.cpp" line="311" />
         <source>IP</source>
-        <translation type="unfinished" />
+        <translation>IP</translation>
     </message>
     <message>
         <location filename="../src/mainwindow.cpp" line="257" />
         <location filename="../src/mainwindow.cpp" line="311" />
         <source>TCP</source>
-        <translation type="unfinished" />
+        <translation>TCP</translation>
     </message>
     <message>
         <location filename="../src/mainwindow.cpp" line="273" />
@@ -581,7 +584,10 @@ Use proto:, host:, vlan:, zone: (o = en lugar de :). Pulse ? para la ayuda.</tra
 %2
 
 Restart EtherApe 2026 elevated?</source>
-        <translation type="unfinished" />
+        <translation>La captura en «%1» requiere derechos de administrador:
+%2
+
+¿Reiniciar EtherApe 2026 con privilegios elevados?</translation>
     </message>
     <message>
         <location filename="../src/mainwindow.cpp" line="871" />
@@ -598,8 +604,11 @@ Restart EtherApe 2026 elevated?</source>
         <source>Capturing on "%1" was denied:
 %2
 
-Elevate through polkit? The password is asked once per application session: the privileged helper is then reused by Start/Stop, and the GUI itself stays unprivileged.</source>
-        <translation type="unfinished" />
+Elevate through polkit? The password is asked for this capture, and the privileged helper exits when it stops. The GUI itself stays unprivileged.</source>
+        <translation>Se denegó la captura en «%1»:
+%2
+
+¿Elevar mediante polkit? La contraseña se pide para esta captura y el asistente privilegiado termina al detenerla. La interfaz sigue sin privilegios.</translation>
     </message>
     <message>
         <location filename="../src/mainwindow.cpp" line="908" />
@@ -711,7 +720,7 @@ sudo setcap cap_net_raw,cap_net_admin+eip %1</translation>
     <message>
         <location filename="../src/mainwindow.cpp" line="1220" />
         <source>&lt;h3&gt;EtherApe 2026 %1&lt;/h3&gt;&lt;p&gt;Graphical network traffic monitor, Qt 6 port of EtherApe.&lt;/p&gt;&lt;p&gt;Original EtherApe © 2001 Juan Toledo, Riccardo Ghetta and contributors.&lt;br&gt;This port: GPL-2.0-or-later.&lt;/p&gt;&lt;p&gt;Capture powered by libpcap.&lt;/p&gt;</source>
-        <translation type="unfinished" />
+        <translation>&lt;h3&gt;EtherApe 2026 %1&lt;/h3&gt;&lt;p&gt;Monitor gráfico de tráfico de red, port de EtherApe a Qt 6.&lt;/p&gt;&lt;p&gt;EtherApe original © 2001 Juan Toledo, Riccardo Ghetta y colaboradores.&lt;br&gt;Este port: GPL-2.0-or-later.&lt;/p&gt;&lt;p&gt;Captura mediante libpcap.&lt;/p&gt;</translation>
     </message>
 </context>
 <context>
@@ -778,8 +787,8 @@ sudo setcap cap_net_raw,cap_net_admin+eip %1</translation>
     </message>
     <message>
         <location filename="../src/preferencesdialog.cpp" line="66" />
-        <source>Runs a small helper through pkexec once per session; Start and Stop then reuse it without asking again. The GUI itself stays unprivileged.</source>
-        <translation type="unfinished" />
+        <source>Runs a small helper through pkexec for each capture that needs root; the password is asked every time. The GUI itself stays unprivileged.</source>
+        <translation>Ejecuta un pequeño asistente mediante pkexec en cada captura que necesite root; la contraseña se pide cada vez. La interfaz sigue sin privilegios.</translation>
     </message>
     <message>
         <location filename="../src/preferencesdialog.cpp" line="76" />
@@ -945,17 +954,17 @@ sudo setcap cap_net_raw,cap_net_admin+eip %1</translation>
     <message>
         <location filename="../src/statspanel.cpp" line="196" />
         <source>DNS</source>
-        <translation type="unfinished" />
+        <translation>DNS</translation>
     </message>
     <message>
         <location filename="../src/statspanel.cpp" line="198" />
         <source>NetBIOS</source>
-        <translation type="unfinished" />
+        <translation>NetBIOS</translation>
     </message>
     <message>
         <location filename="../src/statspanel.cpp" line="199" />
         <source>/etc/ethers</source>
-        <translation type="unfinished" />
+        <translation>/etc/ethers</translation>
     </message>
     <message>
         <location filename="../src/statspanel.cpp" line="201" />

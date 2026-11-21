@@ -10,7 +10,7 @@
     <message>
         <location filename="../src/main.cpp" line="100" />
         <source>Capture on &lt;device&gt;.</source>
-        <translation>Capturer sur &lt;device&gt;.</translation>
+        <translation>Capturer sur &lt;périphérique&gt;.</translation>
     </message>
     <message>
         <location filename="../src/main.cpp" line="100" />
@@ -20,7 +20,7 @@
     <message>
         <location filename="../src/main.cpp" line="103" />
         <source>Replay packets from &lt;file&gt;.</source>
-        <translation>Rejouer les paquets de &lt;file&gt;.</translation>
+        <translation>Rejouer les paquets de &lt;fichier&gt;.</translation>
     </message>
     <message>
         <location filename="../src/main.cpp" line="103" />
@@ -33,7 +33,7 @@
     <message>
         <location filename="../src/main.cpp" line="106" />
         <source>Apply the BPF &lt;filter&gt;.</source>
-        <translation>Appliquer le &lt;filter&gt; BPF.</translation>
+        <translation>Appliquer le &lt;filtre&gt; BPF.</translation>
     </message>
     <message>
         <location filename="../src/main.cpp" line="106" />
@@ -53,7 +53,7 @@
     <message>
         <location filename="../src/main.cpp" line="113" />
         <source>Select the node matching &lt;text&gt; at start-up.</source>
-        <translation>Sélectionner au démarrage le nœud correspondant à &lt;text&gt;.</translation>
+        <translation>Sélectionner au démarrage le nœud correspondant à &lt;texte&gt;.</translation>
     </message>
     <message>
         <location filename="../src/main.cpp" line="114" />
@@ -78,7 +78,7 @@
     <message>
         <location filename="../src/main.cpp" line="124" />
         <source>Keep at most &lt;count&gt; nodes.</source>
-        <translation>Conserver au plus &lt;count&gt; nœuds.</translation>
+        <translation>Conserver au plus &lt;nombre&gt; nœuds.</translation>
     </message>
     <message>
         <location filename="../src/main.cpp" line="124" />
@@ -88,17 +88,17 @@
     <message>
         <location filename="../src/main.cpp" line="127" />
         <source>Export the graph as XML to &lt;file&gt; on exit.</source>
-        <translation>Exporter le graphe en XML vers &lt;file&gt; à la fermeture.</translation>
+        <translation>Exporter le graphe en XML vers &lt;fichier&gt; à la fermeture.</translation>
     </message>
     <message>
         <location filename="../src/main.cpp" line="131" />
         <source>Load the node layout from &lt;file&gt;.</source>
-        <translation>Charger la disposition des nœuds depuis &lt;file&gt;.</translation>
+        <translation>Charger la disposition des nœuds depuis &lt;fichier&gt;.</translation>
     </message>
     <message>
         <location filename="../src/main.cpp" line="135" />
         <source>Close the window after &lt;ms&gt; (testing aid).</source>
-        <translation>Fermer la fenêtre après &lt;ms&gt; (aide au test)</translation>
+        <translation>Fermer la fenêtre après &lt;ms&gt; (aide au test).</translation>
     </message>
     <message>
         <location filename="../src/main.cpp" line="136" />
@@ -111,32 +111,32 @@
     <message>
         <location filename="../src/main.cpp" line="139" />
         <source>Press Stop after &lt;ms&gt; (testing aid).</source>
-        <translation>Appuyer sur Stop après &lt;ms&gt; (aide au test)</translation>
+        <translation>Appuyer sur Arrêter après &lt;ms&gt; (aide au test).</translation>
     </message>
     <message>
         <location filename="../src/main.cpp" line="143" />
         <source>Stop then Start again after &lt;ms&gt; (testing aid).</source>
-        <translation type="unfinished" />
+        <translation>Arrêter puis redémarrer après &lt;ms&gt; (aide au test).</translation>
     </message>
     <message>
         <location filename="../src/main.cpp" line="147" />
         <source>Save a window snapshot to &lt;file&gt; and exit (testing aid).</source>
-        <translation type="unfinished" />
+        <translation>Enregistrer une image de la fenêtre dans &lt;fichier&gt; et quitter (aide au test).</translation>
     </message>
     <message>
         <location filename="../src/main.cpp" line="151" />
         <source>Wait &lt;ms&gt; before taking the snapshot.</source>
-        <translation type="unfinished" />
+        <translation>Attendre &lt;ms&gt; avant de prendre l'image.</translation>
     </message>
     <message>
         <location filename="../src/main.cpp" line="155" />
         <source>Replay speed in percent (0 = as fast as possible).</source>
-        <translation>Vitesse de relecture en pourcentage (0 = aussi vite que possible).</translation>
+        <translation>Vitesse de rejeu en pourcentage (0 = aussi vite que possible).</translation>
     </message>
     <message>
         <location filename="../src/main.cpp" line="156" />
         <source>percent</source>
-        <translation type="unfinished" />
+        <translation>pourcentage</translation>
     </message>
 </context>
 <context>
@@ -144,22 +144,22 @@
     <message>
         <location filename="../src/captureworker.cpp" line="403" />
         <source>The privileged helper could not start the capture.</source>
-        <translation>Le helper privilégié n'a pas pu démarrer la capture.</translation>
+        <translation>L'assistant privilégié n'a pas pu démarrer la capture.</translation>
     </message>
     <message>
         <location filename="../src/captureworker.cpp" line="404" />
         <source>The privileged helper could not start the capture: %1</source>
-        <translation>Le helper privilégié n'a pas pu démarrer la capture : %1</translation>
+        <translation>L'assistant privilégié n'a pas pu démarrer la capture : %1</translation>
     </message>
     <message>
         <location filename="../src/captureworker.cpp" line="473" />
         <source>Privileged helper sent an invalid pcap stream (first bytes: %1).</source>
-        <translation>Le helper privilégié a envoyé un flux pcap invalide (premiers octets : %1).</translation>
+        <translation>L'assistant privilégié a envoyé un flux pcap invalide (premiers octets : %1).</translation>
     </message>
     <message>
         <location filename="../src/captureworker.cpp" line="494" />
         <source>Privileged helper sent a corrupt packet record.</source>
-        <translation>Le helper privilégié a envoyé un enregistrement de paquet corrompu.</translation>
+        <translation>L'assistant privilégié a envoyé un enregistrement de paquet corrompu.</translation>
     </message>
 </context>
 <context>
@@ -212,7 +212,7 @@
     <message>
         <location filename="../src/conversationsdialog.cpp" line="71" />
         <source>Protocol mix</source>
-        <translation>Répartition</translation>
+        <translation>Répartition des protocoles</translation>
     </message>
     <message>
         <location filename="../src/conversationsdialog.cpp" line="71" />
@@ -258,7 +258,10 @@
 %2 packets · %3
 %4
 %5</source>
-        <translation type="unfinished" />
+        <translation>%1
+%2 paquets · %3
+%4
+%5</translation>
     </message>
     <message>
         <location filename="../src/graphview.cpp" line="523" />
@@ -326,12 +329,12 @@
     <message>
         <location filename="../src/mainwindow.cpp" line="225" />
         <source> Show </source>
-        <translation> Filtre </translation>
+        <translation> Affichage </translation>
     </message>
     <message>
         <location filename="../src/mainwindow.cpp" line="228" />
         <source>proto:http host:10.0 -vlan:100 zone:dmz</source>
-        <translation type="unfinished" />
+        <translation>proto:http host:10.0 -vlan:100 zone:dmz</translation>
     </message>
     <message>
         <location filename="../src/mainwindow.cpp" line="232" />
@@ -352,7 +355,7 @@
         <location filename="../src/mainwindow.cpp" line="257" />
         <location filename="../src/mainwindow.cpp" line="311" />
         <source>Link</source>
-        <translation>Lien</translation>
+        <translation>Link</translation>
     </message>
     <message>
         <location filename="../src/mainwindow.cpp" line="257" />
@@ -601,11 +604,11 @@ Redémarrer EtherApe 2026 avec élévation ?</translation>
         <source>Capturing on "%1" was denied:
 %2
 
-Elevate through polkit? The password is asked once per application session: the privileged helper is then reused by Start/Stop, and the GUI itself stays unprivileged.</source>
+Elevate through polkit? The password is asked for this capture, and the privileged helper exits when it stops. The GUI itself stays unprivileged.</source>
         <translation>La capture sur « %1 » a été refusée :
 %2
 
-Élever via polkit ? Le mot de passe est demandé une fois par session : le helper privilégié est ensuite réutilisé par Start/Stop, et l'interface reste non privilégiée.</translation>
+Élever via polkit ? Le mot de passe est demandé pour cette capture, et l'assistant privilégié se termine à l'arrêt. L'interface reste non privilégiée.</translation>
     </message>
     <message>
         <location filename="../src/mainwindow.cpp" line="908" />
@@ -765,7 +768,7 @@ sudo setcap cap_net_raw,cap_net_admin+eip %1</translation>
     <message>
         <location filename="../src/preferencesdialog.cpp" line="52" />
         <source>Replay speed for capture files.</source>
-        <translation>Vitesse de relecture des fichiers de capture.</translation>
+        <translation>Vitesse de rejeu des fichiers de capture.</translation>
     </message>
     <message>
         <location filename="../src/preferencesdialog.cpp" line="55" />
@@ -784,8 +787,8 @@ sudo setcap cap_net_raw,cap_net_admin+eip %1</translation>
     </message>
     <message>
         <location filename="../src/preferencesdialog.cpp" line="66" />
-        <source>Runs a small helper through pkexec once per session; Start and Stop then reuse it without asking again. The GUI itself stays unprivileged.</source>
-        <translation>Lance un petit helper via pkexec une fois par session ; Start et Stop le réutilisent ensuite sans redemander. L'interface reste non privilégiée.</translation>
+        <source>Runs a small helper through pkexec for each capture that needs root; the password is asked every time. The GUI itself stays unprivileged.</source>
+        <translation>Lance un petit assistant via pkexec à chaque capture qui exige root ; le mot de passe est demandé à chaque fois. L'interface reste non privilégiée.</translation>
     </message>
     <message>
         <location filename="../src/preferencesdialog.cpp" line="76" />

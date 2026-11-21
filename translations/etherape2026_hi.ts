@@ -106,7 +106,7 @@
         <location filename="../src/main.cpp" line="144" />
         <location filename="../src/main.cpp" line="152" />
         <source>ms</source>
-        <translation type="unfinished" />
+        <translation>ms</translation>
     </message>
     <message>
         <location filename="../src/main.cpp" line="139" />
@@ -286,7 +286,7 @@
     <message>
         <location filename="../src/mainwindow.cpp" line="163" />
         <source>EtherApe 2026</source>
-        <translation type="unfinished" />
+        <translation>EtherApe 2026</translation>
     </message>
     <message>
         <location filename="../src/mainwindow.cpp" line="171" />
@@ -331,7 +331,7 @@
     <message>
         <location filename="../src/mainwindow.cpp" line="228" />
         <source>proto:http host:10.0 -vlan:100 zone:dmz</source>
-        <translation type="unfinished" />
+        <translation>proto:http host:10.0 -vlan:100 zone:dmz</translation>
     </message>
     <message>
         <location filename="../src/mainwindow.cpp" line="232" />
@@ -352,19 +352,19 @@
         <location filename="../src/mainwindow.cpp" line="257" />
         <location filename="../src/mainwindow.cpp" line="311" />
         <source>Link</source>
-        <translation type="unfinished" />
+        <translation>Link</translation>
     </message>
     <message>
         <location filename="../src/mainwindow.cpp" line="257" />
         <location filename="../src/mainwindow.cpp" line="311" />
         <source>IP</source>
-        <translation type="unfinished" />
+        <translation>IP</translation>
     </message>
     <message>
         <location filename="../src/mainwindow.cpp" line="257" />
         <location filename="../src/mainwindow.cpp" line="311" />
         <source>TCP</source>
-        <translation type="unfinished" />
+        <translation>TCP</translation>
     </message>
     <message>
         <location filename="../src/mainwindow.cpp" line="273" />
@@ -596,7 +596,7 @@ Restart EtherApe 2026 elevated?</source>
         <source>Capturing on "%1" was denied:
 %2
 
-Elevate through polkit? The password is asked once per application session: the privileged helper is then reused by Start/Stop, and the GUI itself stays unprivileged.</source>
+Elevate through polkit? The password is asked for this capture, and the privileged helper exits when it stops. The GUI itself stays unprivileged.</source>
         <translation type="unfinished" />
     </message>
     <message>
@@ -774,7 +774,7 @@ sudo setcap cap_net_raw,cap_net_admin+eip %1</source>
     </message>
     <message>
         <location filename="../src/preferencesdialog.cpp" line="66" />
-        <source>Runs a small helper through pkexec once per session; Start and Stop then reuse it without asking again. The GUI itself stays unprivileged.</source>
+        <source>Runs a small helper through pkexec for each capture that needs root; the password is asked every time. The GUI itself stays unprivileged.</source>
         <translation type="unfinished" />
     </message>
     <message>
@@ -941,17 +941,17 @@ sudo setcap cap_net_raw,cap_net_admin+eip %1</source>
     <message>
         <location filename="../src/statspanel.cpp" line="196" />
         <source>DNS</source>
-        <translation type="unfinished" />
+        <translation>DNS</translation>
     </message>
     <message>
         <location filename="../src/statspanel.cpp" line="198" />
         <source>NetBIOS</source>
-        <translation type="unfinished" />
+        <translation>NetBIOS</translation>
     </message>
     <message>
         <location filename="../src/statspanel.cpp" line="199" />
         <source>/etc/ethers</source>
-        <translation type="unfinished" />
+        <translation>/etc/ethers</translation>
     </message>
     <message>
         <location filename="../src/statspanel.cpp" line="201" />

@@ -10,7 +10,7 @@
     <message>
         <location filename="../src/main.cpp" line="100" />
         <source>Capture on &lt;device&gt;.</source>
-        <translation>الالتقاط على &lt;device&gt;.</translation>
+        <translation>الالتقاط على &lt;الجهاز&gt;.</translation>
     </message>
     <message>
         <location filename="../src/main.cpp" line="100" />
@@ -20,7 +20,7 @@
     <message>
         <location filename="../src/main.cpp" line="103" />
         <source>Replay packets from &lt;file&gt;.</source>
-        <translation>إعادة حزم من &lt;file&gt;.</translation>
+        <translation>إعادة حزم من &lt;الملف&gt;.</translation>
     </message>
     <message>
         <location filename="../src/main.cpp" line="103" />
@@ -33,7 +33,7 @@
     <message>
         <location filename="../src/main.cpp" line="106" />
         <source>Apply the BPF &lt;filter&gt;.</source>
-        <translation>تطبيق &lt;filter&gt; BPF.</translation>
+        <translation>تطبيق &lt;المرشح&gt; BPF.</translation>
     </message>
     <message>
         <location filename="../src/main.cpp" line="106" />
@@ -53,7 +53,7 @@
     <message>
         <location filename="../src/main.cpp" line="113" />
         <source>Select the node matching &lt;text&gt; at start-up.</source>
-        <translation>تحديد العقدة المطابقة لـ &lt;text&gt; عند البدء.</translation>
+        <translation>تحديد العقدة المطابقة لـ &lt;نص&gt; عند البدء.</translation>
     </message>
     <message>
         <location filename="../src/main.cpp" line="114" />
@@ -78,7 +78,7 @@
     <message>
         <location filename="../src/main.cpp" line="124" />
         <source>Keep at most &lt;count&gt; nodes.</source>
-        <translation>الاحتفاظ بـ &lt;count&gt; عقدة كحد أقصى.</translation>
+        <translation>الاحتفاظ بـ &lt;العدد&gt; عقدة كحد أقصى.</translation>
     </message>
     <message>
         <location filename="../src/main.cpp" line="124" />
@@ -88,17 +88,17 @@
     <message>
         <location filename="../src/main.cpp" line="127" />
         <source>Export the graph as XML to &lt;file&gt; on exit.</source>
-        <translation>تصدير الرسم إلى XML في &lt;file&gt; عند الخروج.</translation>
+        <translation>تصدير الرسم إلى XML في &lt;الملف&gt; عند الخروج.</translation>
     </message>
     <message>
         <location filename="../src/main.cpp" line="131" />
         <source>Load the node layout from &lt;file&gt;.</source>
-        <translation>تحميل تخطيط العقد من &lt;file&gt;.</translation>
+        <translation>تحميل تخطيط العقد من &lt;الملف&gt;.</translation>
     </message>
     <message>
         <location filename="../src/main.cpp" line="135" />
         <source>Close the window after &lt;ms&gt; (testing aid).</source>
-        <translation type="unfinished" />
+        <translation>إغلاق النافذة بعد &lt;ms&gt; (مساعدة للاختبار).</translation>
     </message>
     <message>
         <location filename="../src/main.cpp" line="136" />
@@ -106,27 +106,27 @@
         <location filename="../src/main.cpp" line="144" />
         <location filename="../src/main.cpp" line="152" />
         <source>ms</source>
-        <translation type="unfinished" />
+        <translation>ms</translation>
     </message>
     <message>
         <location filename="../src/main.cpp" line="139" />
         <source>Press Stop after &lt;ms&gt; (testing aid).</source>
-        <translation type="unfinished" />
+        <translation>الضغط على إيقاف بعد &lt;ms&gt; (مساعدة للاختبار).</translation>
     </message>
     <message>
         <location filename="../src/main.cpp" line="143" />
         <source>Stop then Start again after &lt;ms&gt; (testing aid).</source>
-        <translation type="unfinished" />
+        <translation>الإيقاف ثم البدء مجددًا بعد &lt;ms&gt; (مساعدة للاختبار).</translation>
     </message>
     <message>
         <location filename="../src/main.cpp" line="147" />
         <source>Save a window snapshot to &lt;file&gt; and exit (testing aid).</source>
-        <translation type="unfinished" />
+        <translation>حفظ لقطة للنافذة في &lt;الملف&gt; والخروج (مساعدة للاختبار).</translation>
     </message>
     <message>
         <location filename="../src/main.cpp" line="151" />
         <source>Wait &lt;ms&gt; before taking the snapshot.</source>
-        <translation type="unfinished" />
+        <translation>الانتظار &lt;ms&gt; قبل أخذ اللقطة.</translation>
     </message>
     <message>
         <location filename="../src/main.cpp" line="155" />
@@ -136,7 +136,7 @@
     <message>
         <location filename="../src/main.cpp" line="156" />
         <source>percent</source>
-        <translation type="unfinished" />
+        <translation>النسبة</translation>
     </message>
 </context>
 <context>
@@ -212,7 +212,7 @@
     <message>
         <location filename="../src/conversationsdialog.cpp" line="71" />
         <source>Protocol mix</source>
-        <translation>التركيبة</translation>
+        <translation>تركيبة البروتوكولات</translation>
     </message>
     <message>
         <location filename="../src/conversationsdialog.cpp" line="71" />
@@ -258,7 +258,10 @@
 %2 packets · %3
 %4
 %5</source>
-        <translation type="unfinished" />
+        <translation>%1
+%2 حزمة · %3
+%4
+%5</translation>
     </message>
     <message>
         <location filename="../src/graphview.cpp" line="523" />
@@ -286,7 +289,7 @@
     <message>
         <location filename="../src/mainwindow.cpp" line="163" />
         <source>EtherApe 2026</source>
-        <translation type="unfinished" />
+        <translation>EtherApe 2026</translation>
     </message>
     <message>
         <location filename="../src/mainwindow.cpp" line="171" />
@@ -331,7 +334,7 @@
     <message>
         <location filename="../src/mainwindow.cpp" line="228" />
         <source>proto:http host:10.0 -vlan:100 zone:dmz</source>
-        <translation type="unfinished" />
+        <translation>proto:http host:10.0 -vlan:100 zone:dmz</translation>
     </message>
     <message>
         <location filename="../src/mainwindow.cpp" line="232" />
@@ -352,19 +355,19 @@
         <location filename="../src/mainwindow.cpp" line="257" />
         <location filename="../src/mainwindow.cpp" line="311" />
         <source>Link</source>
-        <translation type="unfinished" />
+        <translation>Link</translation>
     </message>
     <message>
         <location filename="../src/mainwindow.cpp" line="257" />
         <location filename="../src/mainwindow.cpp" line="311" />
         <source>IP</source>
-        <translation type="unfinished" />
+        <translation>IP</translation>
     </message>
     <message>
         <location filename="../src/mainwindow.cpp" line="257" />
         <location filename="../src/mainwindow.cpp" line="311" />
         <source>TCP</source>
-        <translation type="unfinished" />
+        <translation>TCP</translation>
     </message>
     <message>
         <location filename="../src/mainwindow.cpp" line="273" />
@@ -581,7 +584,10 @@ Use proto:, host:, vlan:, zone: (or = instead of :). Click ? for help.</source>
 %2
 
 Restart EtherApe 2026 elevated?</source>
-        <translation type="unfinished" />
+        <translation>يتطلب الالتقاط على "%1" حقوق المسؤول:
+%2
+
+هل تريد إعادة تشغيل EtherApe 2026 بصلاحيات مرتفعة؟</translation>
     </message>
     <message>
         <location filename="../src/mainwindow.cpp" line="871" />
@@ -598,8 +604,11 @@ Restart EtherApe 2026 elevated?</source>
         <source>Capturing on "%1" was denied:
 %2
 
-Elevate through polkit? The password is asked once per application session: the privileged helper is then reused by Start/Stop, and the GUI itself stays unprivileged.</source>
-        <translation type="unfinished" />
+Elevate through polkit? The password is asked for this capture, and the privileged helper exits when it stops. The GUI itself stays unprivileged.</source>
+        <translation>تم رفض الالتقاط على "%1":
+%2
+
+هل تريد رفع الصلاحيات عبر polkit؟ تُطلب كلمة المرور لهذا الالتقاط، وينتهي المساعد ذو الصلاحيات عند الإيقاف. تبقى الواجهة دون صلاحيات.</translation>
     </message>
     <message>
         <location filename="../src/mainwindow.cpp" line="908" />
@@ -711,7 +720,7 @@ sudo setcap cap_net_raw,cap_net_admin+eip %1</translation>
     <message>
         <location filename="../src/mainwindow.cpp" line="1220" />
         <source>&lt;h3&gt;EtherApe 2026 %1&lt;/h3&gt;&lt;p&gt;Graphical network traffic monitor, Qt 6 port of EtherApe.&lt;/p&gt;&lt;p&gt;Original EtherApe © 2001 Juan Toledo, Riccardo Ghetta and contributors.&lt;br&gt;This port: GPL-2.0-or-later.&lt;/p&gt;&lt;p&gt;Capture powered by libpcap.&lt;/p&gt;</source>
-        <translation type="unfinished" />
+        <translation>&lt;h3&gt;EtherApe 2026 %1&lt;/h3&gt;&lt;p&gt;مراقب رسومي لحركة الشبكة، نسخة EtherApe إلى Qt 6.&lt;/p&gt;&lt;p&gt;EtherApe الأصلي © 2001 Juan Toledo وRiccardo Ghetta والمساهمون.&lt;br&gt;هذه النسخة: GPL-2.0-or-later.&lt;/p&gt;&lt;p&gt;الالتقاط بواسطة libpcap.&lt;/p&gt;</translation>
     </message>
 </context>
 <context>
@@ -778,8 +787,8 @@ sudo setcap cap_net_raw,cap_net_admin+eip %1</translation>
     </message>
     <message>
         <location filename="../src/preferencesdialog.cpp" line="66" />
-        <source>Runs a small helper through pkexec once per session; Start and Stop then reuse it without asking again. The GUI itself stays unprivileged.</source>
-        <translation type="unfinished" />
+        <source>Runs a small helper through pkexec for each capture that needs root; the password is asked every time. The GUI itself stays unprivileged.</source>
+        <translation>يشغّل مساعدًا صغيرًا عبر pkexec لكل التقاط يتطلب root؛ تُطلب كلمة المرور كل مرة. تبقى الواجهة دون صلاحيات.</translation>
     </message>
     <message>
         <location filename="../src/preferencesdialog.cpp" line="76" />
@@ -945,17 +954,17 @@ sudo setcap cap_net_raw,cap_net_admin+eip %1</translation>
     <message>
         <location filename="../src/statspanel.cpp" line="196" />
         <source>DNS</source>
-        <translation type="unfinished" />
+        <translation>DNS</translation>
     </message>
     <message>
         <location filename="../src/statspanel.cpp" line="198" />
         <source>NetBIOS</source>
-        <translation type="unfinished" />
+        <translation>NetBIOS</translation>
     </message>
     <message>
         <location filename="../src/statspanel.cpp" line="199" />
         <source>/etc/ethers</source>
-        <translation type="unfinished" />
+        <translation>/etc/ethers</translation>
     </message>
     <message>
         <location filename="../src/statspanel.cpp" line="201" />
