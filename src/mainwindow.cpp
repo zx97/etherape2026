@@ -939,12 +939,14 @@ void MainWindow::onBatch(const QList<etherape::PacketInfo> &batch)
             if (packet.src.kind == NodeKind::Mac) {
                 const auto it = m_ethers.constFind(packet.src.id);
                 if (it != m_ethers.constEnd())
-                    m_model->setLabel(packet.src.id, *it);
+                    m_model->setLabel(packet.src.id, *it,
+                                      QStringLiteral("ethers"));
             }
             if (packet.dst.kind == NodeKind::Mac) {
                 const auto it = m_ethers.constFind(packet.dst.id);
                 if (it != m_ethers.constEnd())
-                    m_model->setLabel(packet.dst.id, *it);
+                    m_model->setLabel(packet.dst.id, *it,
+                                      QStringLiteral("ethers"));
             }
         }
         // Passive NetBIOS name service: names Windows hosts announce anyway.
@@ -954,7 +956,8 @@ void MainWindow::onBatch(const QList<etherape::PacketInfo> &batch)
                              packet.nbIp.toLocal8Bit().constData(),
                              packet.nbName.toLocal8Bit().constData());
             m_nameCache.insert(packet.nbIp, packet.nbName);
-            m_model->setLabel(packet.nbIp, packet.nbName);
+            m_model->setLabel(packet.nbIp, packet.nbName,
+                              QStringLiteral("netbios"));
         }
         if (!packet.src.id.isEmpty())
             maybeResolve(packet.src.id, packet.src.kind);
@@ -994,7 +997,7 @@ void MainWindow::maybeResolve(const QString &id, NodeKind kind)
             if (name.endsWith(QLatin1Char('.')))
                 name.chop(1);
             m_nameCache.insert(id, name);
-            m_model->setLabel(id, name);
+            m_model->setLabel(id, name, QStringLiteral("dns"));
         });
         lookup->lookup();
         return;

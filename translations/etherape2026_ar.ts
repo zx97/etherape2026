@@ -284,240 +284,240 @@
 <context>
     <name>etherape::MainWindow</name>
     <message>
-        <location filename="../src/mainwindow.cpp" line="161" />
+        <location filename="../src/mainwindow.cpp" line="163" />
         <source>EtherApe 2026</source>
         <translation type="unfinished" />
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="169" />
+        <location filename="../src/mainwindow.cpp" line="171" />
         <source>Capture</source>
         <translation>التقاط</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="176" />
+        <location filename="../src/mainwindow.cpp" line="178" />
         <source>Start</source>
         <translation>ابدأ</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="182" />
+        <location filename="../src/mainwindow.cpp" line="184" />
         <source>Stop</source>
         <translation>إيقاف</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="188" />
+        <location filename="../src/mainwindow.cpp" line="190" />
         <source>Open</source>
         <translation>فتح</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="193" />
+        <location filename="../src/mainwindow.cpp" line="195" />
         <source> Interface </source>
         <translation> الواجهة </translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="216" />
+        <location filename="../src/mainwindow.cpp" line="218" />
         <source> Filter </source>
         <translation> عامل التصفية </translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="218" />
+        <location filename="../src/mainwindow.cpp" line="220" />
         <source>BPF, e.g. tcp port 443</source>
         <translation>BPF، مثل tcp port 443</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="223" />
+        <location filename="../src/mainwindow.cpp" line="225" />
         <source> Show </source>
         <translation> عرض </translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="226" />
+        <location filename="../src/mainwindow.cpp" line="228" />
         <source>proto:http host:10.0 -vlan:100 zone:dmz</source>
         <translation type="unfinished" />
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="230" />
+        <location filename="../src/mainwindow.cpp" line="232" />
         <source>Display filter: hides nodes and links without touching the capture. Keys: proto, host, vlan, zone; prefix a term with '-' to exclude it.</source>
         <translation>مرشح العرض: يخفي العقد والروابط دون التأثير على الالتقاط. المفاتيح: proto وhost وvlan وzone؛ ضع '-' قبل المصطلح لاستبعاده.</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="247" />
+        <location filename="../src/mainwindow.cpp" line="249" />
         <source>Display filter syntax</source>
         <translation>صيغة مرشح العرض</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="253" />
+        <location filename="../src/mainwindow.cpp" line="255" />
         <source> Mode </source>
         <translation> الوضع </translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="255" />
-        <location filename="../src/mainwindow.cpp" line="309" />
+        <location filename="../src/mainwindow.cpp" line="257" />
+        <location filename="../src/mainwindow.cpp" line="311" />
         <source>Link</source>
         <translation type="unfinished" />
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="255" />
-        <location filename="../src/mainwindow.cpp" line="309" />
+        <location filename="../src/mainwindow.cpp" line="257" />
+        <location filename="../src/mainwindow.cpp" line="311" />
         <source>IP</source>
         <translation type="unfinished" />
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="255" />
-        <location filename="../src/mainwindow.cpp" line="309" />
+        <location filename="../src/mainwindow.cpp" line="257" />
+        <location filename="../src/mainwindow.cpp" line="311" />
         <source>TCP</source>
         <translation type="unfinished" />
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="271" />
+        <location filename="../src/mainwindow.cpp" line="273" />
         <source>&amp;File</source>
         <translation>&amp;ملف</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="274" />
+        <location filename="../src/mainwindow.cpp" line="276" />
         <source>Open Capture &amp;File…</source>
         <translation>فتح &amp;ملف الالتقاط…</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="278" />
+        <location filename="../src/mainwindow.cpp" line="280" />
         <source>&amp;Export Graph as XML…</source>
         <translation>&amp;تصدير الرسم إلى XML…</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="283" />
+        <location filename="../src/mainwindow.cpp" line="285" />
         <source>Save &amp;Layout…</source>
         <translation>حفظ &amp;التخطيط…</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="286" />
+        <location filename="../src/mainwindow.cpp" line="288" />
         <source>Load Layout…</source>
         <translation>تحميل التخطيط…</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="291" />
+        <location filename="../src/mainwindow.cpp" line="293" />
         <source>&amp;Quit</source>
         <translation>&amp;خروج</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="295" />
+        <location filename="../src/mainwindow.cpp" line="297" />
         <source>&amp;Capture</source>
         <translation>&amp;التقاط</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="301" />
+        <location filename="../src/mainwindow.cpp" line="303" />
         <source>&amp;Clear Graph</source>
         <translation>&amp;مسح الرسم</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="305" />
+        <location filename="../src/mainwindow.cpp" line="307" />
         <source>&amp;View</source>
         <translation>&amp;عرض</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="306" />
+        <location filename="../src/mainwindow.cpp" line="308" />
         <source>&amp;Mode</source>
         <translation>&amp;الوضع</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="323" />
+        <location filename="../src/mainwindow.cpp" line="325" />
         <source>&amp;Numeric Addresses</source>
         <translation>&amp;عناوين رقمية</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="330" />
+        <location filename="../src/mainwindow.cpp" line="332" />
         <source>Protocol &amp;Legend</source>
         <translation>&amp;مفتاح البروتوكولات</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="338" />
+        <location filename="../src/mainwindow.cpp" line="340" />
         <source>Zone &amp;Clouds</source>
         <translation>&amp;سحب المناطق</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="346" />
+        <location filename="../src/mainwindow.cpp" line="348" />
         <source>&amp;Conversations…</source>
         <translation>&amp;محادثات…</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="352" />
+        <location filename="../src/mainwindow.cpp" line="354" />
         <source>&amp;Resolve Names (DNS)</source>
         <translation>&amp;تحويل الأسماء (DNS)</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="357" />
+        <location filename="../src/mainwindow.cpp" line="359" />
         <source>&amp;Merge IPv4/IPv6 Hosts</source>
         <translation>&amp;دمج مضيفات IPv4/IPv6</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="362" />
+        <location filename="../src/mainwindow.cpp" line="364" />
         <source>&amp;Find Node…</source>
         <translation>&amp;بحث عن عقدة…</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="366" />
+        <location filename="../src/mainwindow.cpp" line="368" />
         <source>Reset &amp;Zoom</source>
         <translation>إعادة &amp;التكبير</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="370" />
+        <location filename="../src/mainwindow.cpp" line="372" />
         <source>&amp;Settings</source>
         <translation>&amp;إعدادات</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="371" />
+        <location filename="../src/mainwindow.cpp" line="373" />
         <source>&amp;Preferences…</source>
         <translation>&amp;تفضيلات…</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="376" />
+        <location filename="../src/mainwindow.cpp" line="378" />
         <source>&amp;Help</source>
         <translation>&amp;مساعدة</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="377" />
+        <location filename="../src/mainwindow.cpp" line="379" />
         <source>&amp;About EtherApe 2026</source>
         <translation>&amp;حول EtherApe 2026</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="379" />
+        <location filename="../src/mainwindow.cpp" line="381" />
         <source>About &amp;Qt</source>
         <translation>حول &amp;Qt</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="537" />
+        <location filename="../src/mainwindow.cpp" line="543" />
         <source>Language will change at the next start.</source>
         <translation>ستتغير اللغة عند التشغيل التالي.</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="575" />
+        <location filename="../src/mainwindow.cpp" line="581" />
         <source>Mode will apply to the next capture.</source>
         <translation>سيُطبَّق الوضع على الالتقاط التالي.</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="612" />
+        <location filename="../src/mainwindow.cpp" line="618" />
         <source>Reverse DNS enabled for new nodes.</source>
         <translation>تم تفعيل DNS العكسي للعقد الجديدة.</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="613" />
+        <location filename="../src/mainwindow.cpp" line="619" />
         <source>Reverse DNS disabled.</source>
         <translation>تم تعطيل DNS العكسي.</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="627" />
+        <location filename="../src/mainwindow.cpp" line="633" />
         <source>IPv4/IPv6 addresses of the same host are merged.</source>
         <translation>تم دمج عناوين IPv4/IPv6 للمضيف نفسه.</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="628" />
+        <location filename="../src/mainwindow.cpp" line="634" />
         <source>IPv4/IPv6 addresses are kept as separate nodes.</source>
         <translation>تبقى عناوين IPv4/IPv6 عقدًا منفصلة.</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="646" />
+        <location filename="../src/mainwindow.cpp" line="652" />
         <source>Display filter: proto, host, vlan, zone; '-' excludes.</source>
         <translation>المرشح: proto وhost وvlan وzone؛ '-' للاستبعاد.</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="651" />
+        <location filename="../src/mainwindow.cpp" line="657" />
         <source>Not understood: %1
 
 Use proto:, host:, vlan:, zone: (or = instead of :). Click ? for help.</source>
@@ -526,57 +526,57 @@ Use proto:, host:, vlan:, zone: (or = instead of :). Click ? for help.</source>
 استخدم proto: أو host: أو vlan: أو zone: (أو = بدل :). انقر على ? للمساعدة.</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="661" />
+        <location filename="../src/mainwindow.cpp" line="667" />
         <source>&lt;b&gt;Display filter&lt;/b&gt;&lt;br&gt;&lt;br&gt;Hides nodes and links; the capture keeps running and counters keep accumulating.&lt;br&gt;&lt;br&gt;</source>
         <translation>&lt;b&gt;مرشح العرض&lt;/b&gt;&lt;br&gt;&lt;br&gt;يخفي العقد والروابط؛ يستمر الالتقاط وتتراكم العدادات.&lt;br&gt;&lt;br&gt;</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="664" />
+        <location filename="../src/mainwindow.cpp" line="670" />
         <source>Keys (both &lt;code&gt;key:value&lt;/code&gt; and &lt;code&gt;key=value&lt;/code&gt; work):&lt;br&gt;&lt;ul&gt;</source>
         <translation>المفاتيح (يعمل &lt;code&gt;مفتاح:قيمة&lt;/code&gt; و&lt;code&gt;مفتاح=قيمة&lt;/code&gt;):&lt;br&gt;&lt;ul&gt;</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="668" />
+        <location filename="../src/mainwindow.cpp" line="674" />
         <source>&lt;/ul&gt;Several terms are combined with AND; prefix one with &lt;code&gt;-&lt;/code&gt; to exclude it.&lt;br&gt;&lt;br&gt;Examples: &lt;code&gt;hostname=manux&lt;/code&gt;, &lt;code&gt;proto:http -vlan:100&lt;/code&gt;, &lt;code&gt;zone:dmz&lt;/code&gt;.</source>
         <translation>&lt;/ul&gt;تُدمج المصطلحات بـ«و»؛ ضع &lt;code&gt;-&lt;/code&gt; قبل مصطلح لاستبعاده.&lt;br&gt;&lt;br&gt;أمثلة: &lt;code&gt;hostname=manux&lt;/code&gt; و&lt;code&gt;proto:http -vlan:100&lt;/code&gt; و&lt;code&gt;zone:dmz&lt;/code&gt;.</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="673" />
+        <location filename="../src/mainwindow.cpp" line="679" />
         <source>Display filter</source>
         <translation>مرشح العرض</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="706" />
+        <location filename="../src/mainwindow.cpp" line="712" />
         <source>Find node</source>
         <translation>البحث عن عقدة</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="707" />
+        <location filename="../src/mainwindow.cpp" line="713" />
         <source>Node name, address or protocol (current display filter applies):</source>
         <translation>اسم العقدة أو عنوانها أو بروتوكولها (يُطبَّق مرشح العرض الحالي):</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="720" />
+        <location filename="../src/mainwindow.cpp" line="726" />
         <source>Found %1</source>
         <translation>تم العثور على %1</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="723" />
+        <location filename="../src/mainwindow.cpp" line="729" />
         <source>No node matches "%1".</source>
         <translation>لا توجد عقدة تطابق "%1".</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="809" />
+        <location filename="../src/mainwindow.cpp" line="815" />
         <source>No capture interface available.</source>
         <translation>لا توجد واجهة التقاط متاحة.</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="837" />
+        <location filename="../src/mainwindow.cpp" line="843" />
         <source>Administrator rights required</source>
         <translation>مطلوب حقوق المسؤول</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="838" />
+        <location filename="../src/mainwindow.cpp" line="844" />
         <source>Capturing on "%1" requires administrator rights:
 %2
 
@@ -584,17 +584,17 @@ Restart EtherApe 2026 elevated?</source>
         <translation type="unfinished" />
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="858" />
+        <location filename="../src/mainwindow.cpp" line="864" />
         <source>Elevation was cancelled.</source>
         <translation>تم إلغاء رفع الصلاحيات.</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="861" />
+        <location filename="../src/mainwindow.cpp" line="867" />
         <source>Root privileges required</source>
         <translation>مطلوب صلاحيات root</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="862" />
+        <location filename="../src/mainwindow.cpp" line="868" />
         <source>Capturing on "%1" was denied:
 %2
 
@@ -602,39 +602,39 @@ Elevate through polkit? The password is asked once per application session: the 
         <translation type="unfinished" />
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="895" />
+        <location filename="../src/mainwindow.cpp" line="901" />
         <source>Open capture file</source>
         <translation>فتح ملف التقاط</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="896" />
+        <location filename="../src/mainwindow.cpp" line="902" />
         <source>Capture files (*.pcap *.pcapng *.cap);;All files (*)</source>
         <translation>ملفات الالتقاط (*.pcap *.pcapng *.cap);;كل الملفات (*)</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1004" />
-        <location filename="../src/mainwindow.cpp" line="1177" />
+        <location filename="../src/mainwindow.cpp" line="1055" />
+        <location filename="../src/mainwindow.cpp" line="1228" />
         <source>Final export failed: %1</source>
         <translation>فشل التصدير النهائي: %1</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1007" />
-        <location filename="../src/mainwindow.cpp" line="1102" />
+        <location filename="../src/mainwindow.cpp" line="1058" />
+        <location filename="../src/mainwindow.cpp" line="1153" />
         <source>Exported to %1</source>
         <translation>تم التصدير إلى %1</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1022" />
+        <location filename="../src/mainwindow.cpp" line="1073" />
         <source>Capture error: %1</source>
         <translation>خطأ في الالتقاط: %1</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1027" />
+        <location filename="../src/mainwindow.cpp" line="1078" />
         <source>Capture denied</source>
         <translation>تم رفض الالتقاط</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1028" />
+        <location filename="../src/mainwindow.cpp" line="1079" />
         <source>libpcap needs CAP_NET_RAW. Either run as root or grant the capability once:
 
 sudo setcap cap_net_raw,cap_net_admin+eip %1</source>
@@ -643,73 +643,73 @@ sudo setcap cap_net_raw,cap_net_admin+eip %1</source>
 sudo setcap cap_net_raw,cap_net_admin+eip %1</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1061" />
+        <location filename="../src/mainwindow.cpp" line="1112" />
         <source>idle</source>
         <translation>خامل</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1064" />
+        <location filename="../src/mainwindow.cpp" line="1115" />
         <source>%1 packets · %2</source>
         <translation>%1 حزم · %2</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1065" />
+        <location filename="../src/mainwindow.cpp" line="1116" />
         <source>%1 nodes · %2 links</source>
         <translation>%1 عقد · %2 روابط</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1089" />
+        <location filename="../src/mainwindow.cpp" line="1140" />
         <source>Cannot load layout: %1</source>
         <translation>تعذّر تحميل التخطيط: %1</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1095" />
+        <location filename="../src/mainwindow.cpp" line="1146" />
         <source>Export graph</source>
         <translation>تصدير الرسم</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1096" />
+        <location filename="../src/mainwindow.cpp" line="1147" />
         <source>XML files (*.xml);;JSON files (*.json);;All files (*)</source>
         <translation>ملفات XML (*.xml);;ملفات JSON (*.json);;كل الملفات (*)</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1104" />
+        <location filename="../src/mainwindow.cpp" line="1155" />
         <source>Export failed</source>
         <translation>فشل التصدير</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1117" />
+        <location filename="../src/mainwindow.cpp" line="1168" />
         <source>Save node layout</source>
         <translation>حفظ تخطيط العقد</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1118" />
-        <location filename="../src/mainwindow.cpp" line="1133" />
+        <location filename="../src/mainwindow.cpp" line="1169" />
+        <location filename="../src/mainwindow.cpp" line="1184" />
         <source>JSON files (*.json);;All files (*)</source>
         <translation>ملفات JSON (*.json);;كل الملفات (*)</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1124" />
+        <location filename="../src/mainwindow.cpp" line="1175" />
         <source>Layout saved to %1</source>
         <translation>تم حفظ التخطيط في %1</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1126" />
+        <location filename="../src/mainwindow.cpp" line="1177" />
         <source>Save failed</source>
         <translation>فشل الحفظ</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1132" />
+        <location filename="../src/mainwindow.cpp" line="1183" />
         <source>Load node layout</source>
         <translation>تحميل تخطيط العقد</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1161" />
+        <location filename="../src/mainwindow.cpp" line="1212" />
         <source>About EtherApe 2026</source>
         <translation>حول EtherApe 2026</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1162" />
+        <location filename="../src/mainwindow.cpp" line="1213" />
         <source>&lt;h3&gt;EtherApe 2026 %1&lt;/h3&gt;&lt;p&gt;Graphical network traffic monitor, Qt 6 port of EtherApe.&lt;/p&gt;&lt;p&gt;Original EtherApe © 2001 Juan Toledo, Riccardo Ghetta and contributors.&lt;br&gt;This port: GPL-2.0-or-later.&lt;/p&gt;&lt;p&gt;Capture powered by libpcap.&lt;/p&gt;</source>
         <translation type="unfinished" />
     </message>
@@ -798,51 +798,61 @@ sudo setcap cap_net_raw,cap_net_admin+eip %1</translation>
     </message>
     <message>
         <location filename="../src/preferencesdialog.cpp" line="81" />
+        <source>Resolve with DNS only (ignore /etc/hosts, NSS/LDAP, mDNS)</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <location filename="../src/preferencesdialog.cpp" line="84" />
+        <source>QHostInfo goes through NSS, which may consult LDAP or SSSD and return names your DNS does not have. This option asks the DNS directly.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <location filename="../src/preferencesdialog.cpp" line="89" />
         <source>System default</source>
         <translation>لغة النظام</translation>
     </message>
     <message>
-        <location filename="../src/preferencesdialog.cpp" line="94" />
+        <location filename="../src/preferencesdialog.cpp" line="102" />
         <source>Technical terms (VLAN, MAC, BPF, DNS, TCP/IP...) stay in English. The change applies at the next start.</source>
         <translation>تبقى المصطلحات التقنية (VLAN وMAC وBPF وDNS وTCP/IP…) بالإنجليزية. يُطبَّق التغيير عند التشغيل التالي.</translation>
     </message>
     <message>
-        <location filename="../src/preferencesdialog.cpp" line="98" />
+        <location filename="../src/preferencesdialog.cpp" line="106" />
         <source>Node limit:</source>
         <translation>حد العقد:</translation>
     </message>
     <message>
-        <location filename="../src/preferencesdialog.cpp" line="99" />
+        <location filename="../src/preferencesdialog.cpp" line="107" />
         <source>Link decay:</source>
         <translation>اضمحلال الروابط:</translation>
     </message>
     <message>
-        <location filename="../src/preferencesdialog.cpp" line="100" />
+        <location filename="../src/preferencesdialog.cpp" line="108" />
         <source>Labels:</source>
         <translation>التسميات:</translation>
     </message>
     <message>
-        <location filename="../src/preferencesdialog.cpp" line="101" />
+        <location filename="../src/preferencesdialog.cpp" line="109" />
         <source>Replay speed:</source>
         <translation>سرعة الإعادة:</translation>
     </message>
     <message>
-        <location filename="../src/preferencesdialog.cpp" line="105" />
+        <location filename="../src/preferencesdialog.cpp" line="114" />
         <source>Language:</source>
         <translation>اللغة:</translation>
     </message>
     <message>
-        <location filename="../src/preferencesdialog.cpp" line="106" />
+        <location filename="../src/preferencesdialog.cpp" line="115" />
         <source>LAN zones:</source>
         <translation>مناطق LAN:</translation>
     </message>
     <message>
-        <location filename="../src/preferencesdialog.cpp" line="107" />
+        <location filename="../src/preferencesdialog.cpp" line="116" />
         <source>DMZ zones:</source>
         <translation>مناطق DMZ:</translation>
     </message>
     <message>
-        <location filename="../src/preferencesdialog.cpp" line="108" />
+        <location filename="../src/preferencesdialog.cpp" line="117" />
         <source>VPN zones:</source>
         <translation>مناطق VPN:</translation>
     </message>
@@ -850,80 +860,110 @@ sudo setcap cap_net_raw,cap_net_admin+eip %1</translation>
 <context>
     <name>etherape::StatsPanel</name>
     <message>
-        <location filename="../src/statspanel.cpp" line="79" />
-        <location filename="../src/statspanel.cpp" line="108" />
+        <location filename="../src/statspanel.cpp" line="83" />
+        <location filename="../src/statspanel.cpp" line="130" />
         <source>Node</source>
         <translation>عقدة</translation>
     </message>
     <message>
-        <location filename="../src/statspanel.cpp" line="79" />
-        <location filename="../src/statspanel.cpp" line="87" />
-        <location filename="../src/statspanel.cpp" line="94" />
-        <location filename="../src/statspanel.cpp" line="170" />
+        <location filename="../src/statspanel.cpp" line="83" />
+        <location filename="../src/statspanel.cpp" line="91" />
+        <location filename="../src/statspanel.cpp" line="98" />
+        <location filename="../src/statspanel.cpp" line="202" />
         <source>Packets</source>
         <translation>حزم</translation>
     </message>
     <message>
-        <location filename="../src/statspanel.cpp" line="79" />
-        <location filename="../src/statspanel.cpp" line="87" />
-        <location filename="../src/statspanel.cpp" line="94" />
-        <location filename="../src/statspanel.cpp" line="107" />
-        <location filename="../src/statspanel.cpp" line="171" />
+        <location filename="../src/statspanel.cpp" line="83" />
+        <location filename="../src/statspanel.cpp" line="91" />
+        <location filename="../src/statspanel.cpp" line="98" />
+        <location filename="../src/statspanel.cpp" line="124" />
+        <location filename="../src/statspanel.cpp" line="203" />
         <source>Traffic</source>
         <translation>حركة</translation>
     </message>
     <message>
-        <location filename="../src/statspanel.cpp" line="79" />
-        <location filename="../src/statspanel.cpp" line="86" />
-        <location filename="../src/statspanel.cpp" line="172" />
+        <location filename="../src/statspanel.cpp" line="83" />
+        <location filename="../src/statspanel.cpp" line="90" />
+        <location filename="../src/statspanel.cpp" line="204" />
         <source>VLAN</source>
         <translation>VLAN</translation>
     </message>
     <message>
-        <location filename="../src/statspanel.cpp" line="86" />
+        <location filename="../src/statspanel.cpp" line="90" />
         <source>Source</source>
         <translation>المصدر</translation>
     </message>
     <message>
-        <location filename="../src/statspanel.cpp" line="86" />
+        <location filename="../src/statspanel.cpp" line="90" />
         <source>Destination</source>
         <translation>الوجهة</translation>
     </message>
     <message>
-        <location filename="../src/statspanel.cpp" line="86" />
-        <location filename="../src/statspanel.cpp" line="94" />
+        <location filename="../src/statspanel.cpp" line="90" />
+        <location filename="../src/statspanel.cpp" line="98" />
         <source>Protocol</source>
         <translation>البروتوكول</translation>
     </message>
     <message>
-        <location filename="../src/statspanel.cpp" line="100" />
-        <location filename="../src/statspanel.cpp" line="149" />
+        <location filename="../src/statspanel.cpp" line="104" />
+        <location filename="../src/statspanel.cpp" line="172" />
         <source>&lt;p style='color:gray'&gt;Click a node to pin its details here.&lt;/p&gt;</source>
         <translation>&lt;p style='color:gray'&gt;انقر على عقدة لتثبيت تفاصيلها هنا.&lt;/p&gt;</translation>
     </message>
     <message>
-        <location filename="../src/statspanel.cpp" line="104" />
+        <location filename="../src/statspanel.cpp" line="109" />
+        <source>Copy</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <location filename="../src/statspanel.cpp" line="110" />
+        <source>Copy the selection, or the whole panel if nothing is selected.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <location filename="../src/statspanel.cpp" line="121" />
         <source>Nodes</source>
         <translation>عقد</translation>
     </message>
     <message>
-        <location filename="../src/statspanel.cpp" line="105" />
-        <location filename="../src/statspanel.cpp" line="222" />
+        <location filename="../src/statspanel.cpp" line="122" />
+        <location filename="../src/statspanel.cpp" line="254" />
         <source>Links</source>
         <translation>روابط</translation>
     </message>
     <message>
-        <location filename="../src/statspanel.cpp" line="106" />
+        <location filename="../src/statspanel.cpp" line="123" />
         <source>Protocols</source>
         <translation>بروتوكولات</translation>
     </message>
     <message>
-        <location filename="../src/statspanel.cpp" line="169" />
+        <location filename="../src/statspanel.cpp" line="194" />
+        <source>Name from</source>
+        <translation>مصدر الاسم</translation>
+    </message>
+    <message>
+        <location filename="../src/statspanel.cpp" line="196" />
+        <source>DNS</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <location filename="../src/statspanel.cpp" line="198" />
+        <source>NetBIOS</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <location filename="../src/statspanel.cpp" line="199" />
+        <source>/etc/ethers</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <location filename="../src/statspanel.cpp" line="201" />
         <source>Zone</source>
         <translation>المنطقة</translation>
     </message>
     <message>
-        <location filename="../src/statspanel.cpp" line="185" />
+        <location filename="../src/statspanel.cpp" line="217" />
         <source>Also known as</source>
         <translation>يُعرف أيضًا بـ</translation>
     </message>

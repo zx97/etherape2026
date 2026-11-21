@@ -413,7 +413,8 @@ QVector<GraphModel::Link> GraphModel::links() const
     return out;
 }
 
-void GraphModel::setLabel(const QString &id, const QString &label)
+void GraphModel::setLabel(const QString &id, const QString &label,
+                          const QString &source)
 {
     auto it = m_index.find(id);
     if (it == m_index.end() || label.isEmpty())
@@ -422,6 +423,7 @@ void GraphModel::setLabel(const QString &id, const QString &label)
     if (node.label == label)
         return;
     node.label = label;
+    node.labelSource = source;
     // The same host reached through several addresses (IPv4, IPv6, a second
     // interface) must be one vertex: merge whenever a name resolves.
     if (m_mergeFamilies)

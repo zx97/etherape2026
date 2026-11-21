@@ -26,6 +26,7 @@ public:
     {
         QString id;
         QString label;
+        QString labelSource;  ///< "dns", "netbios", "ethers" or empty
         NodeKind kind = NodeKind::Mac;
         double x = 0.5;
         double y = 0.5;
@@ -87,7 +88,8 @@ public:
     quint64 totalBytes() const { return m_totalBytes; }
     qint64 startedAtMs() const { return m_startedAtMs; }
 
-    void setLabel(const QString &id, const QString &label);
+    void setLabel(const QString &id, const QString &label,
+                  const QString &source = QStringLiteral("dns"));
     void setZoneClassifier(const ZoneClassifier &classifier);
     const ZoneClassifier &zoneClassifier() const { return m_zones; }
     void setNodePosition(const QString &id, double x, double y);

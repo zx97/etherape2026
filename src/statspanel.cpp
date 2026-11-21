@@ -189,6 +189,15 @@ void StatsPanel::refresh(const GraphModel &model, const DisplayFilter &filter)
                 html += QStringLiteral("<tr><td><b>%1</b></td><td>%2</td></tr>")
                             .arg(key.toHtmlEscaped(), value.toHtmlEscaped());
             };
+            if (!selected->labelSource.isEmpty()
+                && selected->label != selected->id) {
+                row(tr("Name from"),
+                    selected->labelSource == QLatin1String("dns")
+                        ? tr("DNS")
+                        : selected->labelSource == QLatin1String("netbios")
+                              ? tr("NetBIOS")
+                              : tr("/etc/ethers"));
+            }
             row(tr("Zone"), ZoneClassifier::name(selected->zone));
             row(tr("Packets"), QString::number(selected->packets));
             row(tr("Traffic"), humanBytes(selected->bytes));
