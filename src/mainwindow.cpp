@@ -582,8 +582,11 @@ void MainWindow::setNumeric(bool numeric)
     // "numeric" only controls the display: the resolve preference is kept
     // as-is (maybeResolve already ignores it while numeric is on). Tying the
     // two together used to reset the saved preference at every start.
-    if (m_numericAction->isChecked() != numeric)
+    if (m_numericAction->isChecked() != numeric) {
+        const QSignalBlocker blocker(m_numericAction);
         m_numericAction->setChecked(numeric);
+    }
+    saveSettings();  // this was the only toggle that was never persisted
     updateStatus();
 }
 
