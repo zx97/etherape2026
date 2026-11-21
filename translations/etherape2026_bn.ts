@@ -144,7 +144,7 @@
     <message>
         <location filename="../src/captureworker.cpp" line="403" />
         <source>The privileged helper could not start the capture.</source>
-        <translation type="unfinished" />
+        <translation>বিশেষাধিকারপ্রাপ্ত সহায়ক ক্যাপচার শুরু করতে পারেনি।</translation>
     </message>
     <message>
         <location filename="../src/captureworker.cpp" line="404" />
@@ -341,7 +341,7 @@
     <message>
         <location filename="../src/mainwindow.cpp" line="249" />
         <source>Display filter syntax</source>
-        <translation type="unfinished" />
+        <translation>ডিসপ্লে ফিল্টার সিনট্যাক্স</translation>
     </message>
     <message>
         <location filename="../src/mainwindow.cpp" line="255" />
@@ -484,7 +484,7 @@
     <message>
         <location filename="../src/mainwindow.cpp" line="547" />
         <source>Language will change at the next start.</source>
-        <translation type="unfinished" />
+        <translation>ভাষা পরের বার চালু হলে পরিবর্তিত হবে।</translation>
     </message>
     <message>
         <location filename="../src/mainwindow.cpp" line="585" />
@@ -541,12 +541,12 @@ Use proto:, host:, vlan:, zone: (or = instead of :). Click ? for help.</source>
     <message>
         <location filename="../src/mainwindow.cpp" line="683" />
         <source>Display filter</source>
-        <translation type="unfinished" />
+        <translation>ডিসপ্লে ফিল্টার</translation>
     </message>
     <message>
         <location filename="../src/mainwindow.cpp" line="716" />
         <source>Find node</source>
-        <translation type="unfinished" />
+        <translation>নোড খুঁজুন</translation>
     </message>
     <message>
         <location filename="../src/mainwindow.cpp" line="717" />
@@ -556,7 +556,7 @@ Use proto:, host:, vlan:, zone: (or = instead of :). Click ? for help.</source>
     <message>
         <location filename="../src/mainwindow.cpp" line="730" />
         <source>Found %1</source>
-        <translation type="unfinished" />
+        <translation>%1 পাওয়া গেছে</translation>
     </message>
     <message>
         <location filename="../src/mainwindow.cpp" line="733" />
@@ -602,12 +602,12 @@ Elevate through polkit? The password is asked once per application session: the 
     <message>
         <location filename="../src/mainwindow.cpp" line="905" />
         <source>Open capture file</source>
-        <translation type="unfinished" />
+        <translation>ক্যাপচার ফাইল খুলুন</translation>
     </message>
     <message>
         <location filename="../src/mainwindow.cpp" line="906" />
         <source>Capture files (*.pcap *.pcapng *.cap);;All files (*)</source>
-        <translation type="unfinished" />
+        <translation>ক্যাপচার ফাইল (*.pcap *.pcapng *.cap);;সব ফাইল (*)</translation>
     </message>
     <message>
         <location filename="../src/mainwindow.cpp" line="1059" />
@@ -661,12 +661,12 @@ sudo setcap cap_net_raw,cap_net_admin+eip %1</source>
     <message>
         <location filename="../src/mainwindow.cpp" line="1150" />
         <source>Export graph</source>
-        <translation type="unfinished" />
+        <translation>গ্রাফ রপ্তানি করুন</translation>
     </message>
     <message>
         <location filename="../src/mainwindow.cpp" line="1151" />
         <source>XML files (*.xml);;JSON files (*.json);;All files (*)</source>
-        <translation type="unfinished" />
+        <translation>XML ফাইল (*.xml);;JSON ফাইল (*.json);;সব ফাইল (*)</translation>
     </message>
     <message>
         <location filename="../src/mainwindow.cpp" line="1159" />
@@ -676,13 +676,13 @@ sudo setcap cap_net_raw,cap_net_admin+eip %1</source>
     <message>
         <location filename="../src/mainwindow.cpp" line="1172" />
         <source>Save node layout</source>
-        <translation type="unfinished" />
+        <translation>নোড লেআউট সংরক্ষণ করুন</translation>
     </message>
     <message>
         <location filename="../src/mainwindow.cpp" line="1173" />
         <location filename="../src/mainwindow.cpp" line="1188" />
         <source>JSON files (*.json);;All files (*)</source>
-        <translation type="unfinished" />
+        <translation>JSON ফাইল (*.json);;সব ফাইল (*)</translation>
     </message>
     <message>
         <location filename="../src/mainwindow.cpp" line="1179" />
@@ -697,7 +697,7 @@ sudo setcap cap_net_raw,cap_net_admin+eip %1</source>
     <message>
         <location filename="../src/mainwindow.cpp" line="1187" />
         <source>Load node layout</source>
-        <translation type="unfinished" />
+        <translation>নোড লেআউট লোড করুন</translation>
     </message>
     <message>
         <location filename="../src/mainwindow.cpp" line="1216" />
@@ -720,7 +720,7 @@ sudo setcap cap_net_raw,cap_net_admin+eip %1</source>
     <message>
         <location filename="../src/preferencesdialog.cpp" line="25" />
         <source>Maximum number of nodes kept in the graph at any time.</source>
-        <translation type="unfinished" />
+        <translation>গ্রাফে রাখা নোডের সর্বোচ্চ সংখ্যা।</translation>
     </message>
     <message>
         <location filename="../src/preferencesdialog.cpp" line="30" />
@@ -730,7 +730,7 @@ sudo setcap cap_net_raw,cap_net_admin+eip %1</source>
     <message>
         <location filename="../src/preferencesdialog.cpp" line="33" />
         <source>How long a link stays visible after the last packet.</source>
-        <translation type="unfinished" />
+        <translation>শেষ প্যাকেটের পরে লিংক কতক্ষণ দৃশ্যমান থাকে।</translation>
     </message>
     <message>
         <location filename="../src/preferencesdialog.cpp" line="35" />
@@ -755,7 +755,7 @@ sudo setcap cap_net_raw,cap_net_admin+eip %1</source>
     <message>
         <location filename="../src/preferencesdialog.cpp" line="52" />
         <source>Replay speed for capture files.</source>
-        <translation type="unfinished" />
+        <translation>ক্যাপচার ফাইলের রিপ্লে গতি।</translation>
     </message>
     <message>
         <location filename="../src/preferencesdialog.cpp" line="55" />
@@ -765,7 +765,7 @@ sudo setcap cap_net_raw,cap_net_admin+eip %1</source>
     <message>
         <location filename="../src/preferencesdialog.cpp" line="58" />
         <source>Two addresses answered by the same PTR (or /etc/hosts name) become one node. Merging by MAC was removed: behind a router every host carries the gateway's MAC, which merged unrelated machines.</source>
-        <translation type="unfinished" />
+        <translation>একই PTR (বা /etc/hosts নাম) থেকে পাওয়া দুটি ঠিকানা একটি নোড হয়। MAC অনুযায়ী একত্রীকরণ বাদ দেওয়া হয়েছে: রাউটারের পিছনে প্রতিটি হোস্ট গেটওয়ের MAC বহন করে, যা অসম্পর্কিত মেশিন একত্র করত।</translation>
     </message>
     <message>
         <location filename="../src/preferencesdialog.cpp" line="63" />
@@ -795,7 +795,7 @@ sudo setcap cap_net_raw,cap_net_admin+eip %1</source>
     <message>
         <location filename="../src/preferencesdialog.cpp" line="81" />
         <source>Resolve with DNS only (ignore /etc/hosts, NSS/LDAP, mDNS)</source>
-        <translation type="unfinished" />
+        <translation>শুধু DNS দিয়ে সমাধান করুন (/etc/hosts, NSS/LDAP, mDNS উপেক্ষা করুন)</translation>
     </message>
     <message>
         <location filename="../src/preferencesdialog.cpp" line="84" />
@@ -915,7 +915,7 @@ sudo setcap cap_net_raw,cap_net_admin+eip %1</source>
     <message>
         <location filename="../src/statspanel.cpp" line="110" />
         <source>Copy the selection, or the whole panel if nothing is selected.</source>
-        <translation type="unfinished" />
+        <translation>নির্বাচন কপি করুন, কিছু নির্বাচিত না থাকলে পুরো প্যানেল।</translation>
     </message>
     <message>
         <location filename="../src/statspanel.cpp" line="121" />

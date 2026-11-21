@@ -1,0 +1,45 @@
+# SPDX-License-Identifier: GPL-2.0-or-later
+#
+# Flatpak manifest. Build from the repository root:
+#
+#   flatpak-builder --user --install --force-clean build-flatpak \
+#       packaging/flatpak/org.etherape.EtherApe2026.yml
+#
+# Note on privileges: a sandboxed Flatpak cannot open an AF_PACKET socket with
+# CAP_NET_RAW. Live capture therefore does not work inside the sandbox; use the
+# AppImage or the distribution package for that. Replay, the UI, the graph and
+# the exports work fine.
+app-id: org.etherape.EtherApe2026
+runtime: org.kde.Platform
+runtime-version: "6.8"
+sdk: org.kde.Sdk
+command: etherape2026
+
+finish-args:
+  - --share=network
+  - --socket=wayland
+  - --socket=fallback-x11
+  - --device=dri
+  - --filesystem=host:ro
+
+modules:
+  - name: libpcap
+    buildsystem: autotools
+    rm-configure: true
+    build-commands:
+      - ./configure --prefix=/app --disable-shared --disable-usb --without-libnl
+      - make -j"$FLATPAK_BUILDER_N_JOBS"
+      - make install
+    sources:
+      - type: archive
+        url: https://www.tcpdump.org/release/libpcap-1.10.5.tar.gz
+        sha256: 84fa6da4d5b29362bc99c7f71f1c77ef6c2d1d1b1a02f9c9dcb8d0c69f63da8f
+
+  - name: etherape2026
+    buildsystem: cmake-ninja
+    config-opts:
+      - -DCMAKE_BUILD_TYPE=Release
+      - -DBUILD_TESTING=OFF
+    sources:
+      - type: dir
+        path: ../..
