@@ -6,6 +6,6 @@ Comment=Graphical network traffic monitor (Qt 6)
 Exec=etherape2026
 Icon=etherape2026
 Terminal=false
-Categories=Network;Monitor;System;
+Categories=Network;Monitor;
 Keywords=network;traffic;sniffer;monitor;graph;pcap;
 StartupNotify=true

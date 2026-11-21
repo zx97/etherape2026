@@ -38,7 +38,7 @@ complète et le tableau des remplacements.
 | Dissection applicative (HTTP, TLS, DNS, SSH…) | ✅ |
 | VLAN affichés (panneau, tooltip, conversations, XML/JSON) | ✅ |
 | Nuages de zones LAN / DMZ / VPN / Internet | ✅ |
-| Tests unitaires (`ctest`) + CI GitLab | ✅ |
+| Tests unitaires (`ctest`) + CI GitHub et GitLab | ✅ |
 | 10 langues (fr, es, pt_BR, ru, zh_CN, ar, hi, bn, ur + en) | ✅ |
 | Filtre d'affichage (`--show`, barre « Show », autocomplétion + aide) | ✅ |
 | Recherche de nœud (`Ctrl+F`) | ✅ |
