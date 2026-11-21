@@ -108,6 +108,10 @@ int main(int argc, char *argv[])
         {QStringLiteral("m"), QStringLiteral("mode")},
         QObject::tr("Operation mode: link, ip or tcp."), QObject::tr("mode"),
         QStringLiteral("ip"));
+    QCommandLineOption selectOption(
+        QStringLiteral("select"),
+        QObject::tr("Select the node matching <text> at start-up."),
+        QObject::tr("text"));
     QCommandLineOption showOption(
         QStringLiteral("show"),
         QObject::tr("Display filter, e.g. \"proto:http host:10.0 -vlan:100\"."),
@@ -153,7 +157,7 @@ int main(int argc, char *argv[])
 
     parser.addOptions({interfaceOption, replayOption, filterOption, modeOption,
                        numericOption, nodeLimitOption, speedOption,
-                       showOption, finalExportOption, positionOption, screenshotOption,
+                       showOption, selectOption, finalExportOption, positionOption, screenshotOption,
                        screenshotDelayOption, exitAfterOption, stopAfterOption,
                        cycleOption});
     parser.process(app);
@@ -172,6 +176,8 @@ int main(int argc, char *argv[])
         window.setFilter(parser.value(filterOption));
     if (parser.isSet(showOption))
         window.setDisplayFilterExpression(parser.value(showOption));
+    if (parser.isSet(selectOption))
+        window.selectNode(parser.value(selectOption));
     if (parser.isSet(modeOption)) {
         bool ok = false;
         const etherape::Mode mode = parseMode(parser.value(modeOption), &ok);

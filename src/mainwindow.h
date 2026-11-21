@@ -42,6 +42,7 @@ public:
     void setNodeLimit(int limit);
     void setFilter(const QString &filter);
     void setDisplayFilterExpression(const QString &expression);
+    void selectNode(const QString &id);
     void startLiveCapture(const QString &device);
     void startReplay(const QString &file, int speedPercent);
     void setFinalExport(const QString &path);

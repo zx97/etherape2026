@@ -6,6 +6,7 @@
 
 class QStandardItemModel;
 class QTreeView;
+class QTextBrowser;
 class QTabWidget;
 
 namespace etherape {
@@ -22,12 +23,16 @@ public:
     explicit StatsPanel(QWidget *parent = nullptr);
 
     void refresh(const GraphModel &model, const DisplayFilter &filter);
+    void setSelectedNode(const QString &id);
+    QString selectedNode() const { return m_selectedId; }
     void addTrafficSample(double bytesPerSecond);
     void clearTraffic();
 
 private:
     QTabWidget *m_tabs = nullptr;
     TrafficChart *m_chart = nullptr;
+    QTextBrowser *m_info = nullptr;
+    QString m_selectedId;
     QTreeView *m_nodesView = nullptr;
     QTreeView *m_linksView = nullptr;
     QTreeView *m_protocolsView = nullptr;

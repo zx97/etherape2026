@@ -13,6 +13,7 @@
 #include <QPixmap>
 #include <QStandardItemModel>
 #include <QTabWidget>
+#include <QTextBrowser>
 #include <QTreeView>
 #include <QVBoxLayout>
 
@@ -94,15 +95,29 @@ StatsPanel::StatsPanel(QWidget *parent) : QWidget(parent)
     m_protocolsView->setModel(m_protocolsModel);
     configureView(m_protocolsView);
 
+    m_info = new QTextBrowser(m_tabs);
+    m_info->setOpenExternalLinks(false);
+    m_info->setHtml(tr("<p style='color:gray'>Click a node to pin its "
+                       "details here.</p>"));
+
     m_chart = new TrafficChart(m_tabs);
     m_tabs->addTab(m_nodesView, tr("Nodes"));
     m_tabs->addTab(m_linksView, tr("Links"));
     m_tabs->addTab(m_protocolsView, tr("Protocols"));
     m_tabs->addTab(m_chart, tr("Traffic"));
+    m_tabs->addTab(m_info, tr("Node"));
 
     auto *layout = new QVBoxLayout(this);
     layout->setContentsMargins(0, 0, 0, 0);
     layout->addWidget(m_tabs);
+}
+
+void StatsPanel::setSelectedNode(const QString &id)
+{
+    m_selectedId = id;
+    // The user just clicked a node: show its details.
+    if (m_tabs && m_info)
+        m_tabs->setCurrentWidget(m_info);
 }
 
 void StatsPanel::addTrafficSample(double bytesPerSecond)
@@ -119,6 +134,96 @@ void StatsPanel::clearTraffic()
 
 void StatsPanel::refresh(const GraphModel &model, const DisplayFilter &filter)
 {
+    // Selection panel: rebuilt on every refresh so it follows the traffic
+    // while staying readable (the hover tooltip disappears as the graph moves).
+    if (m_info) {
+        const auto &nodes = model.nodes();
+        const GraphModel::Node *selected = nullptr;
+        for (const auto &node : nodes) {
+            if (node.id == m_selectedId) {
+                selected = &node;
+                break;
+            }
+        }
+        if (!selected) {
+            m_info->setHtml(tr("<p style='color:gray'>Click a node to pin its "
+                               "details here.</p>"));
+        } else {
+            QString vlans;
+            QList<quint16> ids = selected->vlans.values();
+            std::sort(ids.begin(), ids.end());
+            for (quint16 id : std::as_const(ids))
+                vlans += (vlans.isEmpty() ? QString() : QStringLiteral(", "))
+                    + QString::number(id);
+
+            QString html = QStringLiteral("<h3>%1</h3>").arg(
+                (selected->label.isEmpty() ? selected->id : selected->label)
+                    .toHtmlEscaped());
+            html += QStringLiteral("<p><code>%1</code></p>")
+                        .arg(selected->id.toHtmlEscaped());
+            html += QStringLiteral("<table cellspacing='4'>");
+            auto row = [&html](const QString &key, const QString &value) {
+                html += QStringLiteral("<tr><td><b>%1</b></td><td>%2</td></tr>")
+                            .arg(key.toHtmlEscaped(), value.toHtmlEscaped());
+            };
+            row(tr("Zone"), ZoneClassifier::name(selected->zone));
+            row(tr("Packets"), QString::number(selected->packets));
+            row(tr("Traffic"), humanBytes(selected->bytes));
+            row(tr("VLAN"), vlans.isEmpty() ? QStringLiteral("—") : vlans);
+            if (selected->aliases.size() > 1) {
+                QStringList others;
+                for (const QString &alias : selected->aliases) {
+                    if (alias != selected->id)
+                        others.append(alias);
+                }
+                others.sort();
+                row(tr("Also known as"), others.join(QStringLiteral(", ")));
+            }
+            html += QStringLiteral("</table>");
+
+            // Neighbours, heaviest first.
+            struct Neighbour
+            {
+                QString name;
+                QString protocol;
+                quint64 bytes;
+            };
+            QVector<Neighbour> peers;
+            for (const auto &link : model.links()) {
+                if (link.a < 0 || link.b < 0 || link.a >= nodes.size()
+                    || link.b >= nodes.size())
+                    continue;
+                int peer = -1;
+                if (nodes[link.a].id == selected->id)
+                    peer = link.b;
+                else if (nodes[link.b].id == selected->id)
+                    peer = link.a;
+                if (peer < 0)
+                    continue;
+                const auto &other = nodes[peer];
+                peers.append({other.label.isEmpty() ? other.id : other.label,
+                              link.protocol, link.bytes});
+            }
+            std::sort(peers.begin(), peers.end(),
+                      [](const Neighbour &lhs, const Neighbour &rhs) {
+                          return lhs.bytes > rhs.bytes;
+                      });
+            if (!peers.isEmpty()) {
+                html += QStringLiteral("<h4>%1</h4>").arg(tr("Links"));
+                html += QStringLiteral("<table cellspacing='4'>");
+                for (int i = 0; i < peers.size() && i < 12; ++i) {
+                    html += QStringLiteral(
+                                "<tr><td>%1</td><td>%2</td><td>%3</td></tr>")
+                                .arg(peers[i].name.toHtmlEscaped(),
+                                     peers[i].protocol.toHtmlEscaped(),
+                                     humanBytes(peers[i].bytes));
+                }
+                html += QStringLiteral("</table>");
+            }
+            m_info->setHtml(html);
+        }
+    }
+
     // Nodes. When the filter targets protocols, only endpoints of a visible
     // link are listed, matching what the graph draws.
     QSet<QString> linked;

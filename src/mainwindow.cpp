@@ -100,6 +100,10 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
     m_captureThread = new QThread(this);
     m_worker = new CaptureWorker;
     m_worker->moveToThread(m_captureThread);
+    connect(m_graph, &GraphView::nodeClicked, this, [this](const QString &id) {
+        m_stats->setSelectedNode(id);
+        m_stats->refresh(*m_model, m_displayFilter);
+    });
     connect(m_worker, &CaptureWorker::batchReady, this, &MainWindow::onBatch);
     connect(m_worker, &CaptureWorker::captureStarted, this,
             &MainWindow::onCaptureStarted);
@@ -755,6 +759,14 @@ void MainWindow::setNodeLimit(int limit)
 void MainWindow::setFilter(const QString &filter)
 {
     m_filterEdit->setText(filter);
+}
+
+void MainWindow::selectNode(const QString &id)
+{
+    m_graph->selectNode(id);
+    m_graph->centerOnNode(id);
+    m_stats->setSelectedNode(id);
+    m_stats->refresh(*m_model, m_displayFilter);
 }
 
 void MainWindow::setDisplayFilterExpression(const QString &expression)
