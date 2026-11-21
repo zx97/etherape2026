@@ -199,3 +199,9 @@ code C historique et n'a pas vocation à le remplacer en amont.
 Voir [`NOTICE.md`](NOTICE.md) pour la traçabilité (ce qui a été relu dans les
 sources C avant réécriture) et [`docs/PORTING.md`](docs/PORTING.md) pour les
 raisons du portage et les fonctionnalités non reprises.
+
+## Contact
+
+Questions et rapports de bogues : **issues GitHub ou GitLab** du dépôt. Aucune
+adresse électronique personnelle n'est publiée ; l'auteur reste joignable via
+son profil sur les deux forges.
