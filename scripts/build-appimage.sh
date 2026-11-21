@@ -31,11 +31,17 @@ QMAKE="$(command -v qmake6 || command -v qmake)"
 export QMAKE
 
 stage="$(mktemp -d -p /dev/shm appimage.XXXXXX)"
+# appimagetool refuses a 0700 AppDir: the AppImage is meant to be run by others.
+chmod 0755 "$stage"
 trap 'rm -rf "$stage"' EXIT
 install -Dm755 "$build/bin/etherape2026" "$stage/usr/bin/etherape2026"
 install -Dm644 data/etherape2026.desktop "$stage/usr/share/applications/etherape2026.desktop"
 install -Dm644 data/etherape.png "$stage/usr/share/icons/hicolor/48x48/apps/etherape2026.png"
 install -Dm644 etherape2026.1 "$stage/usr/share/man/man1/etherape2026.1"
+
+# linuxdeploy bundles its own binutils, which predates the .relr.dyn section
+# emitted by recent toolchains; stripping would fail on every Qt library.
+export NO_STRIP="${NO_STRIP:-1}"
 
 VERSION="$(sed -n 's/^project(etherape2026 VERSION \([0-9.]*\).*/\1/p' CMakeLists.txt)"
 export VERSION

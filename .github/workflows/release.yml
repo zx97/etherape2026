@@ -1,0 +1,194 @@
+name: release
+
+# One tag (v1.0.0) produces:
+#   - etherape2026-<version>-x86_64.AppImage   (Linux, Qt bundled, run anywhere)
+#   - etherape2026-<version>-linux-x86_64.tar.gz (binary + install.sh)
+#   - EtherApe2026-Setup-<version>.exe        (Windows installer, NSIS)
+#   - SHA256SUMS
+# and attaches all four to a GitHub release whose notes come from CHANGELOG.md.
+#
+# Re-running by hand with publish: false rebuilds the artifacts without
+# touching the release, which is how a failed packaging step is investigated.
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to build, without the leading v (default: CMakeLists)"
+        required: false
+        type: string
+      publish:
+        description: "Create/update the release"
+        required: false
+        default: true
+        type: boolean
+
+permissions:
+  contents: write
+
+env:
+  # linuxdeploy and appimagetool are themselves AppImages; unpack them instead
+  # of requiring FUSE on the runner.
+  APPIMAGE_EXTRACT_AND_RUN: "1"
+
+jobs:
+  version:
+    runs-on: ubuntu-24.04
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+      publish: ${{ steps.v.outputs.publish }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: v
+        run: |
+          set -euo pipefail
+          PROJECT_VERSION="$(sed -n 's/^project(etherape2026 VERSION \([0-9.]*\).*/\1/p' CMakeLists.txt)"
+          if [ -z "$PROJECT_VERSION" ]; then
+            echo "::error::cannot read the version from CMakeLists.txt" >&2
+            exit 1
+          fi
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            V="${{ inputs.version }}"
+            [ -n "$V" ] || V="$PROJECT_VERSION"
+            echo "publish=${{ inputs.publish }}" >> "$GITHUB_OUTPUT"
+          else
+            V="${GITHUB_REF_NAME#v}"
+            echo "publish=true" >> "$GITHUB_OUTPUT"
+          fi
+          if [ "$V" != "$PROJECT_VERSION" ]; then
+            echo "::error::tag/input version $V does not match CMakeLists $PROJECT_VERSION" >&2
+            exit 1
+          fi
+          echo "version=$V" >> "$GITHUB_OUTPUT"
+
+  linux:
+    needs: version
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential cmake ninja-build pkg-config \
+            qt6-base-dev libpcap-dev file
+      - name: AppImage tools
+        run: |
+          set -euo pipefail
+          mkdir -p tools
+          base=https://github.com
+          curl -fsSL -o tools/linuxdeploy-x86_64.AppImage \
+            "$base/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage"
+          curl -fsSL -o tools/linuxdeploy-plugin-qt-x86_64.AppImage \
+            "$base/linuxdeploy/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-x86_64.AppImage"
+          curl -fsSL -o tools/appimagetool-x86_64.AppImage \
+            "$base/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage"
+          chmod +x tools/*.AppImage
+          ln -sf linuxdeploy-x86_64.AppImage tools/linuxdeploy
+          ln -sf linuxdeploy-plugin-qt-x86_64.AppImage tools/linuxdeploy-plugin-qt
+          ln -sf appimagetool-x86_64.AppImage tools/appimagetool
+          echo "$PWD/tools" >> "$GITHUB_PATH"
+      - name: Build and test
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build -j"$(nproc)"
+          ctest --test-dir build --output-on-failure
+      - name: AppImage
+        run: ./scripts/build-appimage.sh build
+      - name: Portable archive
+        run: |
+          set -euo pipefail
+          ./scripts/package-linux.sh build dist
+          mv "etherape2026-${{ needs.version.outputs.version }}-x86_64.AppImage" dist/
+          # A release asset must start on a machine without Qt installed: the
+          # AppImage bundles it, the tarball expects the distribution packages.
+          file "dist/etherape2026-${{ needs.version.outputs.version }}-x86_64.AppImage"
+          tar -tzf dist/*.tar.gz >/dev/null
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux
+          path: dist/*
+          if-no-files-found: error
+
+  windows:
+    needs: version
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: UCRT64
+          update: false
+          install: >-
+            mingw-w64-ucrt-x86_64-gcc
+            mingw-w64-ucrt-x86_64-qt6-base
+            mingw-w64-ucrt-x86_64-cmake
+            mingw-w64-ucrt-x86_64-ninja
+            mingw-w64-ucrt-x86_64-nsis
+      - name: Npcap SDK
+        shell: pwsh
+        run: |
+          Invoke-WebRequest -UseBasicParsing `
+            https://npcap.com/dist/npcap-sdk-1.16.zip -OutFile npcap-sdk.zip
+          Expand-Archive npcap-sdk.zip -DestinationPath npcap-sdk
+      - name: Build and test
+        shell: msys2 {0}
+        env:
+          NPCAP_SDK_DIR: ${{ github.workspace }}/npcap-sdk
+        run: |
+          ./scripts/build-windows.sh build
+          ctest --test-dir build --output-on-failure
+      - name: Installer
+        shell: msys2 {0}
+        env:
+          NPCAP_SDK_DIR: ${{ github.workspace }}/npcap-sdk
+        run: ./scripts/build-installer-windows.sh build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows
+          path: EtherApe2026-Setup-*.exe
+          if-no-files-found: error
+
+  publish:
+    needs: [version, linux, windows]
+    if: ${{ needs.version.outputs.publish == 'true' }}
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - name: Checksums
+        run: cd dist && sha256sum ./* > SHA256SUMS && cat SHA256SUMS
+      - name: Create or update the release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          TAG="v${{ needs.version.outputs.version }}"
+          if ! gh release view "$TAG" >/dev/null 2>&1; then
+            python3 scripts/changelog-section.py \
+              "${{ needs.version.outputs.version }}" > notes.md
+            {
+              cat notes.md
+              echo
+              echo "### Assets"
+              echo
+              echo "- \`etherape2026-${{ needs.version.outputs.version }}-x86_64.AppImage\`"
+              echo "  — Linux, Qt 6 bundled, no installation needed."
+              echo "  Needs \`libfuse2\`, or run with \`--appimage-extract-and-run\`."
+              echo "- \`etherape2026-${{ needs.version.outputs.version }}-linux-x86_64.tar.gz\`"
+              echo "  — binary + \`install.sh\`, uses the distribution Qt and libpcap."
+              echo "- \`EtherApe2026-Setup-${{ needs.version.outputs.version }}.exe\`"
+              echo "  — Windows installer; **Npcap must be installed separately**"
+              echo "  (https://npcap.com) for live capture."
+              echo "- \`SHA256SUMS\` — SHA-256 of every asset."
+            } > release-notes.md
+            gh release create "$TAG" \
+              --title "EtherApe 2026 ${{ needs.version.outputs.version }}" \
+              --notes-file release-notes.md
+          fi
+          gh release upload "$TAG" dist/* --clobber

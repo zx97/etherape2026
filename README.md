@@ -47,6 +47,24 @@ complète et le tableau des remplacements.
 | `/etc/ethers` (MAC → nom) | ✅ |
 | Préférences persistantes (QSettings) | ✅ |
 
+## Installation rapide
+
+Les releases fournissent des binaires prêts à l'emploi (construits par la CI à
+chaque tag) :
+
+| Fichier | Plateforme | Prérequis |
+|---|---|---|
+| `etherape2026-1.0.0-x86_64.AppImage` | Linux | **rien** (Qt 6 embarqué) ; `libfuse2`, ou `--appimage-extract-and-run` |
+| `etherape2026-1.0.0-linux-x86_64.tar.gz` | Linux | Qt 6 + libpcap de la distribution ; `./install.sh` |
+| `EtherApe2026-Setup-1.0.0.exe` | Windows | **Npcap** (https://npcap.com) pour la capture live |
+| `SHA256SUMS` | — | vérifier les fichiers téléchargés |
+
+```bash
+chmod +x etherape2026-*-x86_64.AppImage
+./etherape2026-*-x86_64.AppImage            # capture live : mot de passe polkit
+./etherape2026-*-x86_64.AppImage -r capture.pcap   # replay sans privilège
+```
+
 ## Compilation
 
 Dépendances : Qt 6 (Core, Gui, Widgets, Network), libpcap, CMake ≥ 3.21, Ninja.

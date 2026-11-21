@@ -15,7 +15,9 @@
 
 !define APPNAME "EtherApe 2026"
 !define APPEXE "etherape2026.exe"
-!define VERSION "1.0.0"
+!ifndef VERSION
+  !define VERSION "1.0.0"
+!endif
 !define PUBLISHER "EtherApe"
 !define UNKEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\EtherApe2026"
 

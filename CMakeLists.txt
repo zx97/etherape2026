@@ -89,10 +89,13 @@ target_link_libraries(etherape_core PUBLIC Qt6::Core Qt6::Gui Qt6::Network ${PCA
 
 if(WIN32)
     enable_language(RC)
-    set(ET_WIN_RC data/windows.rc)
-    # windres must find etherape.ico next to windows.rc
-    set_source_files_properties(data/windows.rc PROPERTIES
-        COMPILE_FLAGS "-I${CMAKE_CURRENT_SOURCE_DIR}/data")
+    # The version block is generated so it always matches PROJECT_VERSION.
+    configure_file(data/windows.rc.in
+                   "${CMAKE_CURRENT_BINARY_DIR}/windows.rc" @ONLY)
+    set(ET_WIN_RC "${CMAKE_CURRENT_BINARY_DIR}/windows.rc")
+    # windres must find etherape.ico, which stays in the source tree.
+    set_source_files_properties("${CMAKE_CURRENT_BINARY_DIR}/windows.rc"
+        PROPERTIES COMPILE_FLAGS "-I${CMAKE_CURRENT_SOURCE_DIR}/data")
 else()
     set(ET_WIN_RC "")
 endif()

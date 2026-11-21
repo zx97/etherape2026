@@ -1,10 +1,21 @@
-# EtherApe 2026 - build and test on Linux, cross-checked on Windows.
+# EtherApe 2026 - build, test, and release binaries.
+#
+# The Linux job always builds and tests. On a tag it also produces the release
+# artifacts: an AppImage (Qt bundled) and a portable tarball. The Windows job
+# builds the NSIS installer. The release job attaches the Linux artifacts to a
+# GitLab release; the same tag triggers .github/workflows/release.yml on
+# GitHub, which additionally attaches the Windows installer.
+
 stages:
   - build
   - test
+  - release
 
 variables:
   CMAKE_BUILD_PARALLEL_LEVEL: "4"
+  # linuxdeploy and appimagetool are AppImages themselves: unpack instead of
+  # requiring FUSE in the container.
+  APPIMAGE_EXTRACT_AND_RUN: "1"
 
 linux:
   stage: build
@@ -21,28 +32,89 @@ linux:
     paths:
       - build/bin/etherape2026
 
+package-linux:
+  stage: test
+  image: ubuntu:24.04
+  rules:
+    - if: $CI_COMMIT_TAG
+  before_script:
+    - apt-get update
+    - apt-get install -y --no-install-recommends
+        build-essential cmake ninja-build pkg-config qt6-base-dev libpcap-dev
+        curl file ca-certificates
+    - mkdir -p tools
+    - |
+      base=https://github.com
+      curl -fsSL -o tools/linuxdeploy-x86_64.AppImage \
+        "$base/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage"
+      curl -fsSL -o tools/linuxdeploy-plugin-qt-x86_64.AppImage \
+        "$base/linuxdeploy/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-x86_64.AppImage"
+      curl -fsSL -o tools/appimagetool-x86_64.AppImage \
+        "$base/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage"
+      chmod +x tools/*.AppImage
+      ln -sf linuxdeploy-x86_64.AppImage tools/linuxdeploy
+      ln -sf linuxdeploy-plugin-qt-x86_64.AppImage tools/linuxdeploy-plugin-qt
+      ln -sf appimagetool-x86_64.AppImage tools/appimagetool
+      export PATH="$PWD/tools:$PATH"
+      ./scripts/build-appimage.sh build
+      ./scripts/package-linux.sh build dist
+      mv etherape2026-*-x86_64.AppImage dist/
+      cd dist && sha256sum ./* > SHA256SUMS && cat SHA256SUMS
+  artifacts:
+    paths:
+      - dist/*
+    expire_in: never
+
+release:
+  stage: release
+  image: registry.gitlab.com/gitlab-org/release-cli:latest
+  rules:
+    - if: $CI_COMMIT_TAG
+  needs:
+    - job: package-linux
+      artifacts: true
+  script:
+    - echo "release $CI_COMMIT_TAG"
+  release:
+    tag_name: "$CI_COMMIT_TAG"
+    name: "EtherApe 2026 $CI_COMMIT_TAG"
+    description: |
+      Linux: `etherape2026-*-x86_64.AppImage` (Qt 6 bundled, no installation
+      needed; requires `libfuse2` or `--appimage-extract-and-run`) and a
+      portable tarball with `install.sh`. `SHA256SUMS` covers both.
+
+      Windows: see the GitHub release, which attaches the NSIS installer
+      (`EtherApe2026-Setup-*.exe`). Npcap must be installed separately for
+      live capture.
+    assets:
+      links:
+        - name: "Download the artifacts (AppImage, tarball, SHA256SUMS)"
+          url: "$CI_PROJECT_URL/-/jobs/artifacts/$CI_COMMIT_TAG/browse/dist?job=package-linux"
+
 # MSYS2/UCRT64 toolchain, mirroring the documented Windows procedure.
 windows:
   stage: build
   image: msys2/msys2-ci-base:latest
   variables:
     MSYSTEM: UCRT64
+    NPCAP_SDK_DIR: /tmp/npcap
   before_script:
     - pacman -S --noconfirm --needed
         mingw-w64-ucrt-x86_64-gcc
         mingw-w64-ucrt-x86_64-qt6-base
         mingw-w64-ucrt-x86_64-cmake
         mingw-w64-ucrt-x86_64-ninja
+        mingw-w64-ucrt-x86_64-nsis
     - export PATH=/ucrt64/bin:$PATH
   script:
     - curl -sL -o npcap.zip https://npcap.com/dist/npcap-sdk-1.16.zip
     - unzip -q npcap.zip -d /tmp/npcap
-    - cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
-        -DNPCAP_SDK_DIR="$(cygpath -w /tmp/npcap)"
-    - cmake --build build
+    - ./scripts/build-windows.sh build
     - ctest --test-dir build --output-on-failure
+    - ./scripts/build-installer-windows.sh build
   artifacts:
     when: always
     paths:
       - build/bin/etherape2026.exe
+      - EtherApe2026-Setup-*.exe
   allow_failure: true

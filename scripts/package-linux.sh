@@ -26,6 +26,7 @@ install -m 0755 "$build_dir/bin/etherape2026" "$stage/$name/"
 install -m 0644 data/etherape2026.desktop "$stage/$name/"
 install -m 0644 data/etherape.png "$stage/$name/etherape2026.png"
 install -m 0644 README.md "$stage/$name/"
+install -m 0644 etherape2026.1 "$stage/$name/"
 
 cat > "$stage/$name/install.sh" <<'EOF'
 #!/bin/sh
@@ -36,6 +37,7 @@ here="$(cd "$(dirname "$0")" && pwd)"
 install -Dm0755 "$here/etherape2026" "$prefix/bin/etherape2026"
 install -Dm0644 "$here/etherape2026.desktop" "$prefix/share/applications/etherape2026.desktop"
 install -Dm0644 "$here/etherape2026.png" "$prefix/share/pixmaps/etherape2026.png"
+install -Dm0644 "$here/etherape2026.1" "$prefix/share/man/man1/etherape2026.1"
 echo "Installed in $prefix"
 echo "Live capture needs CAP_NET_RAW:"
 echo "  sudo setcap cap_net_raw,cap_net_admin+eip $prefix/bin/etherape2026"

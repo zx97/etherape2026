@@ -26,6 +26,12 @@ Première version publiable. Portage Qt 6 d'EtherApe (base 0.9.22 / 0.9.23).
 - Élévation polkit sous Linux, UAC sous Windows.
 - Installeur NSIS, recettes RPM/AppImage/Flatpak.
 
+### Binaires
+
+Chaque tag `v1.0.0` produit automatiquement : AppImage Linux (Qt 6 embarqué),
+archive Linux avec `install.sh`, installeur Windows NSIS et `SHA256SUMS`
+(voir `docs/PACKAGING.md`).
+
 ### Notes
 
 - La fusion par MAC a été retirée : derrière un routeur, tous les hôtes
