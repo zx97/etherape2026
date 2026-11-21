@@ -10,7 +10,7 @@ QStringList DisplayFilter::keyHelp()
 {
     return {
         QStringLiteral("proto:http or protocol=http"),
-        QStringLiteral("host:10.0.0 or hostname=manux"),
+        QStringLiteral("host:10.0.0 or hostname=laptop"),
         QStringLiteral("vlan:100"),
         QStringLiteral("zone:dmz  (LAN, DMZ, VPN, Internet)"),
         QStringLiteral("free text matches node id, label or protocol"),

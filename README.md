@@ -97,7 +97,7 @@ etherape2026 -i eth0 --position layout.json
 | `--speed <pct>` | vitesse de replay (0 = maximum) |
 | `--final-export <file>` | exporte le graphe en XML à la fin du replay |
 | `--position <file>` | charge une disposition de nœuds (JSON) |
-| `--show <expr>` | filtre d'affichage : `proto:http hostname=manux -vlan:100` |
+| `--show <expr>` | filtre d'affichage : `proto:http hostname=laptop -vlan:100` |
 
 ## Architecture
 

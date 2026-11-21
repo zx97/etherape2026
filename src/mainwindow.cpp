@@ -680,7 +680,7 @@ void MainWindow::showFilterHelp()
         text += QStringLiteral("<li><code>%1</code></li>").arg(line.toHtmlEscaped());
     text += tr("</ul>Several terms are combined with AND; prefix one with "
                "<code>-</code> to exclude it.<br><br>"
-               "Examples: <code>hostname=manux</code>, "
+               "Examples: <code>hostname=laptop</code>, "
                "<code>proto:http -vlan:100</code>, "
                "<code>zone:dmz</code>.");
     QMessageBox::information(this, tr("Display filter"), text);

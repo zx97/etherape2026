@@ -421,15 +421,15 @@ void CoreTests::mergesNodesByResolvedName()
     QCOMPARE(model.nodes().size(), 4);
 
     // No MAC here (as on the 'any' interface): the name is the only clue.
-    model.setLabel(QStringLiteral("10.0.0.5"), QStringLiteral("manux"));
-    model.setLabel(QStringLiteral("fe80::5"), QStringLiteral("manux"));
+    model.setLabel(QStringLiteral("10.0.0.5"), QStringLiteral("laptop"));
+    model.setLabel(QStringLiteral("fe80::5"), QStringLiteral("laptop"));
 
-    int manux = 0;
+    int laptop = 0;
     for (const auto &node : model.nodes()) {
-        if (node.label == QLatin1String("manux"))
-            ++manux;
+        if (node.label == QLatin1String("laptop"))
+            ++laptop;
     }
-    QCOMPARE(manux, 1);
+    QCOMPARE(laptop, 1);
     QCOMPARE(model.nodes().size(), 3);
 }
 
@@ -555,17 +555,17 @@ void CoreTests::filterAcceptsEqualsAndAliases()
 {
     GraphModel::Node node;
     node.id = QStringLiteral("10.0.0.1");
-    node.label = QStringLiteral("manux");
+    node.label = QStringLiteral("laptop");
     node.kind = NodeKind::Ipv4;
 
     // Both separators and the 'hostname' alias must work.
-    QVERIFY(DisplayFilter(QStringLiteral("hostname=manux")).acceptsNode(node));
-    QVERIFY(DisplayFilter(QStringLiteral("host:manux")).acceptsNode(node));
+    QVERIFY(DisplayFilter(QStringLiteral("hostname=laptop")).acceptsNode(node));
+    QVERIFY(DisplayFilter(QStringLiteral("host:laptop")).acceptsNode(node));
     QVERIFY(DisplayFilter(QStringLiteral("hostname:10.0.0.1")).acceptsNode(node));
-    QVERIFY(DisplayFilter(QStringLiteral("name=manux")).acceptsNode(node));
+    QVERIFY(DisplayFilter(QStringLiteral("name=laptop")).acceptsNode(node));
     QVERIFY(!DisplayFilter(QStringLiteral("hostname=autre")).acceptsNode(node));
     QVERIFY(DisplayFilter(QStringLiteral("-hostname=autre")).acceptsNode(node));
-    QVERIFY(!DisplayFilter(QStringLiteral("-hostname=manux")).acceptsNode(node));
+    QVERIFY(!DisplayFilter(QStringLiteral("-hostname=laptop")).acceptsNode(node));
     QVERIFY(DisplayFilter().acceptsNode(node));
 
     // Unknown keys are reported but still usable as free text.
