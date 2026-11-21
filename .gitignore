@@ -8,3 +8,9 @@ compile_commands.json
 .idea/
 .vscode/
 *~
+.opencode/
+.codegraph/
+dist/
+etherape2026-*.AppImage
+EtherApe*-Setup*.exe
+*.qm.bak
