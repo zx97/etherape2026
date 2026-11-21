@@ -107,7 +107,7 @@ private:
     void placeNewNode(Node &node);
     void removeNodeAt(int idx);
     void rebuildIndexes();
-    void mergeByMac();
+    void mergeDuplicates(bool byMac, bool byLabel);
 
     QVector<Node> m_nodes;
     QHash<QString, int> m_index;        ///< address (or alias) -> node index

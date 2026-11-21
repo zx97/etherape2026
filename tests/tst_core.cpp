@@ -123,6 +123,7 @@ private slots:
     void exportsJson();
     void modeTcpUsesPorts();
     void nodeStaysInItsZone();
+    void mergesNodesByResolvedName();
     void filterAcceptsEqualsAndAliases();
     void filterWarnsOnUnknownKey();
 };
@@ -394,6 +395,39 @@ void CoreTests::nodeStaysInItsZone()
         else
             QCOMPARE(node.zone, ZoneId::Internet);
     }
+}
+
+void CoreTests::mergesNodesByResolvedName()
+{
+    GraphModel model;
+    PacketInfo v4;
+    v4.protocol = QStringLiteral("TCP");
+    v4.origlen = 10;
+    v4.src = {QStringLiteral("10.0.0.5"), QStringLiteral("10.0.0.5"),
+              NodeKind::Ipv4};
+    v4.dst = {QStringLiteral("10.0.0.9"), QStringLiteral("10.0.0.9"),
+              NodeKind::Ipv4};
+    PacketInfo v6;
+    v6.protocol = QStringLiteral("TCP");
+    v6.origlen = 10;
+    v6.src = {QStringLiteral("fe80::5"), QStringLiteral("fe80::5"),
+              NodeKind::Ipv6};
+    v6.dst = {QStringLiteral("fe80::9"), QStringLiteral("fe80::9"),
+              NodeKind::Ipv6};
+    model.addBatch({v4, v6}, 1000);
+    QCOMPARE(model.nodes().size(), 4);
+
+    // No MAC here (as on the 'any' interface): the name is the only clue.
+    model.setLabel(QStringLiteral("10.0.0.5"), QStringLiteral("manux"));
+    model.setLabel(QStringLiteral("fe80::5"), QStringLiteral("manux"));
+
+    int manux = 0;
+    for (const auto &node : model.nodes()) {
+        if (node.label == QLatin1String("manux"))
+            ++manux;
+    }
+    QCOMPARE(manux, 1);
+    QCOMPARE(model.nodes().size(), 3);
 }
 
 void CoreTests::filterAcceptsEqualsAndAliases()

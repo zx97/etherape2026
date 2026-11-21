@@ -48,6 +48,9 @@ GraphView::GraphView(QWidget *parent) : QWidget(parent)
     connect(&m_timer, &QTimer::timeout, this, [this] {
         if (!m_model)
             return;
+        // Frozen graph while idle: keep the last picture for inspection.
+        if (!m_captureActive)
+            return;
         const auto now = std::chrono::steady_clock::now();
         const double dt = std::chrono::duration<double>(now - m_lastTick).count();
         m_lastTick = now;
@@ -82,6 +85,12 @@ void GraphView::setLegendVisible(bool visible)
 {
     m_showLegend = visible;
     update();
+}
+
+void GraphView::setCaptureActive(bool active)
+{
+    m_captureActive = active;
+    m_lastTick = std::chrono::steady_clock::now();
 }
 
 void GraphView::setZonesVisible(bool visible)

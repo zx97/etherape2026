@@ -898,6 +898,7 @@ void MainWindow::openCaptureFile()
 
 void MainWindow::resetGraph()
 {
+    m_graph->setCaptureActive(false);
     m_model->clear();
     m_packets = 0;
     m_bytes = 0;
@@ -978,6 +979,7 @@ void MainWindow::maybeResolve(const QString &id, NodeKind kind)
 
 void MainWindow::onCaptureStarted(const QString &source)
 {
+    m_graph->setCaptureActive(true);
     m_running = true;
     m_sourceText =
         m_replayFile.isEmpty() ? source : QFileInfo(source).fileName();
@@ -987,6 +989,7 @@ void MainWindow::onCaptureStarted(const QString &source)
 
 void MainWindow::onCaptureStopped()
 {
+    m_graph->setCaptureActive(false);
     const bool replayEnded = !m_replayFile.isEmpty();
     m_running = false;
     setRunning(false);

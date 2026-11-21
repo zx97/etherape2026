@@ -35,6 +35,9 @@ public:
     bool legendVisible() const { return m_showLegend; }
 
     void setZonesVisible(bool visible);
+    // When no capture is running the graph must stay frozen: the decay would
+    // otherwise erase every node a few seconds after Stop.
+    void setCaptureActive(bool active);
     bool zonesVisible() const { return m_showZones; }
 
     void selectNode(const QString &id);
@@ -76,6 +79,7 @@ private:
     double m_fontScale = 1.0;
     bool m_showLegend = true;
     bool m_showZones = true;
+    bool m_captureActive = false;
     int m_hover = -1;
     QString m_selected;
     DisplayFilter m_displayFilter;

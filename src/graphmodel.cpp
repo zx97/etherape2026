@@ -53,24 +53,40 @@ void GraphModel::setMergeFamilies(bool merge)
         return;
     m_mergeFamilies = merge;
     if (merge)
-        mergeByMac();
+        mergeDuplicates(true, true);
 }
 
-// Merges nodes that share a MAC (typically the IPv4 and IPv6 addresses of one
-// host). Links are re-keyed and their counters aggregated, keeping each
-// direction attached to the right endpoint.
-void GraphModel::mergeByMac()
+// Merges nodes that designate the same host, either by MAC (the same card
+// seen over IPv4 and IPv6) or by resolved name (several addresses resolving
+// to one hostname, which is the only clue on interfaces that do not expose
+// destination MACs, such as 'any'). Links are re-keyed and their counters
+// aggregated, keeping each direction attached to the right endpoint.
+void GraphModel::mergeDuplicates(bool byMac, bool byLabel)
 {
-    QHash<QString, int> byMac;
+    QHash<QString, int> seen;
     QVector<bool> removed(m_nodes.size(), false);
 
     for (int i = 0; i < m_nodes.size(); ++i) {
         Node &node = m_nodes[i];
-        if (node.mac.isEmpty() || node.aliases.isEmpty())
+        QString key;
+        if (byMac && !node.mac.isEmpty())
+            key = QStringLiteral("mac:") + node.mac;
+        if (key.isEmpty() && byLabel) {
+            const QString label = node.label;
+            // Only names that actually resolved: skip numeric ids, IPv6
+            // literals and the "?" placeholder.
+            if (!label.isEmpty() && label != node.id
+                && !label.contains(QLatin1Char(':'))
+                && !label.at(0).isDigit()
+                && label != QLatin1String("localhost")) {
+                key = QStringLiteral("name:") + label.toLower();
+            }
+        }
+        if (key.isEmpty())
             continue;
-        auto known = byMac.find(node.mac);
-        if (known == byMac.end()) {
-            byMac.insert(node.mac, i);
+        auto known = seen.find(key);
+        if (known == seen.end()) {
+            seen.insert(key, i);
             continue;
         }
         Node &target = m_nodes[known.value()];
@@ -402,7 +418,14 @@ void GraphModel::setLabel(const QString &id, const QString &label)
     auto it = m_index.find(id);
     if (it == m_index.end() || label.isEmpty())
         return;
-    m_nodes[it.value()].label = label;
+    Node &node = m_nodes[it.value()];
+    if (node.label == label)
+        return;
+    node.label = label;
+    // The same host reached through several addresses (IPv4, IPv6, a second
+    // interface) must be one vertex: merge whenever a name resolves.
+    if (m_mergeFamilies)
+        mergeDuplicates(false, true);
 }
 
 void GraphModel::setZoneClassifier(const ZoneClassifier &classifier)
