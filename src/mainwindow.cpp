@@ -22,6 +22,7 @@
 #include <QFileInfo>
 #include <QCompleter>
 #include <QInputDialog>
+#include <cstdio>
 #include <QStringListModel>
 #include <QToolButton>
 #include <QHostInfo>
@@ -924,6 +925,12 @@ void MainWindow::onBatch(const QList<etherape::PacketInfo> &batch)
     for (const auto &packet : batch) {
         // /etc/ethers: static MAC -> name mapping, as in the original.
         if (!m_ethers.isEmpty()) {
+            if (qEnvironmentVariableIsSet("ETHERAPE_DEBUG")
+                && m_ethers.contains(packet.src.id))
+                std::fprintf(stderr, "[etherape] ethers: %s -> %s\n",
+                             packet.src.id.toLocal8Bit().constData(),
+                             m_ethers.value(packet.src.id)
+                                 .toLocal8Bit().constData());
             if (packet.src.kind == NodeKind::Mac) {
                 const auto it = m_ethers.constFind(packet.src.id);
                 if (it != m_ethers.constEnd())
@@ -937,6 +944,10 @@ void MainWindow::onBatch(const QList<etherape::PacketInfo> &batch)
         }
         // Passive NetBIOS name service: names Windows hosts announce anyway.
         if (!packet.nbName.isEmpty() && !packet.nbIp.isEmpty()) {
+            if (qEnvironmentVariableIsSet("ETHERAPE_DEBUG"))
+                std::fprintf(stderr, "[etherape] netbios: %s -> %s\n",
+                             packet.nbIp.toLocal8Bit().constData(),
+                             packet.nbName.toLocal8Bit().constData());
             m_nameCache.insert(packet.nbIp, packet.nbName);
             m_model->setLabel(packet.nbIp, packet.nbName);
         }
@@ -963,9 +974,16 @@ void MainWindow::maybeResolve(const QString &id, NodeKind kind)
         m_pendingNames.remove(id);
         if (info.error() != QHostInfo::NoError) {
             m_nameCache.insert(id, QString());
+            if (qEnvironmentVariableIsSet("ETHERAPE_DEBUG"))
+                std::fprintf(stderr, "[etherape] dns: %s -> (no PTR)\n",
+                             id.toLocal8Bit().constData());
             return;
         }
         QString name = info.hostName();
+        if (qEnvironmentVariableIsSet("ETHERAPE_DEBUG"))
+            std::fprintf(stderr, "[etherape] dns: %s -> %s\n",
+                         id.toLocal8Bit().constData(),
+                         name.toLocal8Bit().constData());
         if (name.isEmpty() || name == id) {
             m_nameCache.insert(id, QString());
             return;
