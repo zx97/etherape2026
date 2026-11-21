@@ -65,6 +65,8 @@ add_library(etherape_core STATIC
     src/netbios.h
     src/zones.cpp
     src/zones.h
+    src/ipreassembly.cpp
+    src/ipreassembly.h
     src/displayfilter.cpp
     src/displayfilter.h
     src/graphmodel.cpp

@@ -6,6 +6,7 @@
 #include "decoder.h"
 #include "displayfilter.h"
 #include "graphmodel.h"
+#include "ipreassembly.h"
 #include "jsonexport.h"
 #include "netbios.h"
 #include "xmlexport.h"
@@ -127,6 +128,8 @@ private slots:
     void nodeStaysInItsZone();
     void mergesNodesByResolvedName();
     void ownInterfaceAddressesAreLocal();
+    void reassemblesIpv4Fragments();
+    void rejectsOverlappingFragments();
     void filterAcceptsEqualsAndAliases();
     void filterWarnsOnUnknownKey();
 };
@@ -428,6 +431,86 @@ void CoreTests::mergesNodesByResolvedName()
     }
     QCOMPARE(manux, 1);
     QCOMPARE(model.nodes().size(), 3);
+}
+
+namespace {
+
+// Ethernet + IPv4 header carrying one fragment of a UDP datagram.
+QByteArray ipv4Fragment(const QByteArray &payload, quint32 offsetBytes,
+                        bool moreFragments, quint16 identification)
+{
+    QByteArray frame = ethernetHeader(QByteArray::fromHex("001122334455"),
+                                      QByteArray::fromHex("66778899aabb"),
+                                      0x0800);
+    const quint16 total = static_cast<quint16>(20 + payload.size());
+    const quint16 flagsField = static_cast<quint16>(
+        (moreFragments ? 0x2000 : 0) | ((offsetBytes / 8) & 0x1fff));
+    QByteArray ip(20, '\0');
+    ip[0] = char(0x45);
+    ip[2] = char(total >> 8);
+    ip[3] = char(total & 0xff);
+    ip[4] = char(identification >> 8);
+    ip[5] = char(identification & 0xff);
+    ip[6] = char(flagsField >> 8);
+    ip[7] = char(flagsField & 0xff);
+    ip[8] = 64;
+    ip[9] = 17;  // UDP
+    ip[12] = 10;
+    ip[13] = 0;
+    ip[14] = 0;
+    ip[15] = 1;
+    ip[16] = 10;
+    ip[17] = 0;
+    ip[18] = 0;
+    ip[19] = 2;
+    frame.append(ip);
+    frame.append(payload);
+    return frame;
+}
+
+} // namespace
+
+void CoreTests::reassemblesIpv4Fragments()
+{
+    // A UDP/53 datagram split in two: 8-byte UDP header + data.
+    QByteArray datagram = udpHeader(5353, 53, QByteArrayLiteral("0123456789abcdef"));
+    QByteArray first = datagram.left(16);
+    QByteArray second = datagram.mid(16);
+
+    Decoder decoder(Mode::Ip, 1);
+
+    QByteArray f1 = ipv4Fragment(first, 0, true, 0x4242);
+    PacketInfo partial = decoder.decode(
+        reinterpret_cast<const uchar *>(f1.constData()), f1.size(), f1.size(),
+        1000);
+    QCOMPARE(partial.protocol, QStringLiteral("UDP"));  // no ports yet
+    QCOMPARE(partial.dport, quint16(0));
+
+    QByteArray f2 = ipv4Fragment(second, 16, false, 0x4242);
+    PacketInfo complete = decoder.decode(
+        reinterpret_cast<const uchar *>(f2.constData()), f2.size(), f2.size(),
+        1001);
+    QCOMPARE(complete.protocol, QStringLiteral("DNS"));
+    QCOMPARE(complete.sport, quint16(5353));
+    QCOMPARE(complete.dport, quint16(53));
+    QCOMPARE(complete.src.id, QStringLiteral("10.0.0.1"));
+}
+
+void CoreTests::rejectsOverlappingFragments()
+{
+    QByteArray datagram = udpHeader(5353, 53, QByteArrayLiteral("0123456789abcdef"));
+    Decoder decoder(Mode::Ip, 1);
+
+    QByteArray f1 = ipv4Fragment(datagram.left(16), 0, true, 0x7777);
+    decoder.decode(reinterpret_cast<const uchar *>(f1.constData()), f1.size(),
+                   f1.size(), 0);
+    // Same offset again: rejected, and the datagram is dropped (no crash).
+    QByteArray overlap = ipv4Fragment(datagram.left(16), 0, true, 0x7777);
+    PacketInfo pkt = decoder.decode(
+        reinterpret_cast<const uchar *>(overlap.constData()), overlap.size(),
+        overlap.size(), 1);
+    QCOMPARE(pkt.protocol, QStringLiteral("UDP"));
+    QCOMPARE(pkt.dport, quint16(0));
 }
 
 void CoreTests::ownInterfaceAddressesAreLocal()

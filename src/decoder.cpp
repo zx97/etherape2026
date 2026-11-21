@@ -31,6 +31,13 @@ inline quint16 rd16(const uchar *p)
     return static_cast<quint16>((p[0] << 8) | p[1]);
 }
 
+inline quint32 rd32(const uchar *p)
+{
+    return (static_cast<quint32>(p[0]) << 24)
+        | (static_cast<quint32>(p[1]) << 16) | (static_cast<quint32>(p[2]) << 8)
+        | static_cast<quint32>(p[3]);
+}
+
 QString ipv4ToString(const uchar *p)
 {
     QHostAddress address;
@@ -47,21 +54,52 @@ QString ipv6ToString(const uchar *p)
     return address.toString();
 }
 
+QString ipProtocolName(quint8 protocol)
+{
+    switch (protocol) {
+    case 1:
+        return QStringLiteral("ICMP");
+    case 2:
+        return QStringLiteral("IGMP");
+    case 6:
+        return QStringLiteral("TCP");
+    case 17:
+        return QStringLiteral("UDP");
+    case 41:
+        return QStringLiteral("IPv6");
+    case 47:
+        return QStringLiteral("GRE");
+    case 50:
+        return QStringLiteral("ESP");
+    case 51:
+        return QStringLiteral("AH");
+    case 58:
+        return QStringLiteral("ICMPv6");
+    case 89:
+        return QStringLiteral("OSPF");
+    case 103:
+        return QStringLiteral("PIM");
+    default:
+        break;
+    }
+    return QStringLiteral("IP/%1").arg(protocol);
+}
+
 QString applicationProtocol(const QString &transport, quint16 sport,
                             quint16 dport)
 {
     static const QHash<quint16, QString> tcpPorts = {
-        {22, QStringLiteral("SSH")},     {23, QStringLiteral("Telnet")},
-        {25, QStringLiteral("SMTP")},    {53, QStringLiteral("DNS")},
-        {80, QStringLiteral("HTTP")},    {110, QStringLiteral("POP3")},
-        {143, QStringLiteral("IMAP")},   {389, QStringLiteral("LDAP")},
-        {443, QStringLiteral("TLS")},    {445, QStringLiteral("SMB")},
-        {636, QStringLiteral("LDAPS")},  {993, QStringLiteral("IMAPS")},
-        {995, QStringLiteral("POP3S")},  {1433, QStringLiteral("MSSQL")},
+        {22, QStringLiteral("SSH")},      {23, QStringLiteral("Telnet")},
+        {25, QStringLiteral("SMTP")},     {53, QStringLiteral("DNS")},
+        {80, QStringLiteral("HTTP")},     {110, QStringLiteral("POP3")},
+        {143, QStringLiteral("IMAP")},    {389, QStringLiteral("LDAP")},
+        {443, QStringLiteral("TLS")},     {445, QStringLiteral("SMB")},
+        {636, QStringLiteral("LDAPS")},   {993, QStringLiteral("IMAPS")},
+        {995, QStringLiteral("POP3S")},   {1433, QStringLiteral("MSSQL")},
         {1521, QStringLiteral("Oracle")}, {3306, QStringLiteral("MySQL")},
-        {3389, QStringLiteral("RDP")},   {5432, QStringLiteral("PostgreSQL")},
-        {5900, QStringLiteral("VNC")},   {6379, QStringLiteral("Redis")},
-        {8080, QStringLiteral("HTTP")},  {8443, QStringLiteral("TLS")},
+        {3389, QStringLiteral("RDP")},    {5432, QStringLiteral("PostgreSQL")},
+        {5900, QStringLiteral("VNC")},    {6379, QStringLiteral("Redis")},
+        {8080, QStringLiteral("HTTP")},   {8443, QStringLiteral("TLS")},
     };
     static const QHash<quint16, QString> udpPorts = {
         {53, QStringLiteral("DNS")},     {67, QStringLiteral("DHCP")},
@@ -86,6 +124,11 @@ QString applicationProtocol(const QString &transport, quint16 sport,
     if (destKnown)
         return table.value(dport);
     return transport;
+}
+
+QString portLabel(const QString &addr, quint16 port)
+{
+    return QStringLiteral("%1:%2").arg(addr).arg(port);
 }
 
 QString etherTypeName(quint16 etherType)
@@ -116,11 +159,6 @@ QString etherTypeName(quint16 etherType)
         break;
     }
     return QStringLiteral("0x%1").arg(etherType, 4, 16, QLatin1Char('0'));
-}
-
-QString portLabel(const QString &addr, quint16 port)
-{
-    return QStringLiteral("%1:%2").arg(addr).arg(port);
 }
 
 } // namespace
@@ -196,8 +234,42 @@ bool Decoder::parseLinkLayer(const uchar *data, quint32 caplen,
     }
 }
 
+// Fills protocol, ports and (in TCP mode) endpoints from a transport header.
+void Decoder::fillTransport(PacketInfo &pkt, quint8 protocol, const uchar *data,
+                            quint32 length, const QString &src,
+                            const QString &dst) const
+{
+    pkt.protocol = ipProtocolName(protocol);
+    if ((protocol != 6 && protocol != 17) || length < 4)
+        return;
+
+    pkt.sport = rd16(data);
+    pkt.dport = rd16(data + 2);
+    pkt.protocol = applicationProtocol(pkt.protocol, pkt.sport, pkt.dport);
+
+    if (m_mode == Mode::Tcp) {
+        pkt.src = {portLabel(src, pkt.sport), portLabel(src, pkt.sport),
+                   NodeKind::Port};
+        pkt.dst = {portLabel(dst, pkt.dport), portLabel(dst, pkt.dport),
+                   NodeKind::Port};
+    }
+
+    if (protocol == 17 && (pkt.sport == 137 || pkt.dport == 137)
+        && length >= 8) {
+        const quint32 udpLength = rd16(data + 4);
+        const quint32 available = length - 8;
+        const quint32 payloadLength = (udpLength >= 8)
+            ? std::min(udpLength - 8, available)
+            : available;
+        if (auto nb = parseNetbiosResponse(data + 8, payloadLength)) {
+            pkt.nbName = nb->name;
+            pkt.nbIp = nb->ip;
+        }
+    }
+}
+
 PacketInfo Decoder::decode(const uchar *data, quint32 caplen, quint32 origlen,
-                           qint64 tsUsec) const
+                           qint64 tsUsec)
 {
     PacketInfo pkt;
     pkt.tsUsec = tsUsec;
@@ -212,8 +284,6 @@ PacketInfo Decoder::decode(const uchar *data, quint32 caplen, quint32 origlen,
     quint32 off = ll.offset;
     quint16 etherType = ll.etherType;
 
-    // Default endpoints: MAC pair when the link layer provides one, otherwise
-    // let the L3 parser fill them in.
     if (ll.hasMac) {
         pkt.src = {ll.srcMac, ll.srcMac, NodeKind::Mac};
         pkt.dst = {ll.dstMac, ll.dstMac, NodeKind::Mac};
@@ -222,14 +292,13 @@ PacketInfo Decoder::decode(const uchar *data, quint32 caplen, quint32 origlen,
     if (m_mode == Mode::Link && ll.hasMac)
         return pkt;
 
-    // Walk VLAN tags (802.1Q and 802.1ad/QinQ), keeping the identifiers.
+    // Walk VLAN tags (802.1Q and 802.1ad/QinQ), keeping the outer id.
     int vlanCount = 0;
     while ((etherType == kEtherTypeVlan || etherType == kEtherTypeQinQ)
            && caplen >= off + 4) {
         const quint16 tag = rd16(data + off);
-        const int vid = tag & 0x0fff;
         if (vlanCount == 0)
-            pkt.vlanId = vid;
+            pkt.vlanId = tag & 0x0fff;
         ++vlanCount;
         etherType = rd16(data + off + 2);
         off += 4;
@@ -238,7 +307,7 @@ PacketInfo Decoder::decode(const uchar *data, quint32 caplen, quint32 origlen,
     auto setAddresses = [&](const QString &srcAddr, const QString &dstAddr,
                             NodeKind kind) {
         if (m_mode == Mode::Tcp && kind == NodeKind::Port)
-            return;  // ports are filled by the TCP/UDP parser
+            return;
         pkt.src = {srcAddr, srcAddr, kind};
         pkt.dst = {dstAddr, dstAddr, kind};
     };
@@ -252,54 +321,39 @@ PacketInfo Decoder::decode(const uchar *data, quint32 caplen, quint32 origlen,
             return pkt;
 
         const quint8 proto = ip[9];
+        const quint16 totalLength = rd16(ip + 2);
+        const quint16 fragmentField = rd16(ip + 6);
+        const bool moreFragments = (fragmentField & 0x2000) != 0;
+        const quint32 fragmentOffset = (fragmentField & 0x1fff) * 8u;
+        const quint16 identification = rd16(ip + 4);
+
         const QString src = ipv4ToString(ip + 12);
         const QString dst = ipv4ToString(ip + 16);
         setAddresses(src, dst, NodeKind::Ipv4);
 
-        switch (proto) {
-        case 6:
-            pkt.protocol = QStringLiteral("TCP");
-            break;
-        case 17:
-            pkt.protocol = QStringLiteral("UDP");
-            break;
-        case 1:
-            pkt.protocol = QStringLiteral("ICMP");
-            break;
-        case 2:
-            pkt.protocol = QStringLiteral("IGMP");
-            break;
-        default:
-            pkt.protocol = QStringLiteral("IP/%1").arg(proto);
-            break;
+        const quint32 l4 = off + ihl;
+        quint32 available = caplen > l4 ? caplen - l4 : 0;
+        if (totalLength > ihl)
+            available = std::min(available, totalLength - ihl);
+
+        if (moreFragments || fragmentOffset != 0) {
+            pkt.protocol = ipProtocolName(proto);  // no ports yet
+            const QString key = QStringLiteral("4|%1|%2|%3|%4")
+                                    .arg(src, dst)
+                                    .arg(identification)
+                                    .arg(proto);
+            if (auto complete = m_reassembler.feed(
+                    key, fragmentOffset, moreFragments, data + l4, available,
+                    tsUsec)) {
+                fillTransport(pkt, proto,
+                              reinterpret_cast<const uchar *>(
+                                  complete->constData()),
+                              static_cast<quint32>(complete->size()), src, dst);
+            }
+            return pkt;
         }
 
-        const quint32 l4 = off + ihl;
-        if ((proto == 6 || proto == 17) && caplen >= l4 + 4) {
-            pkt.sport = rd16(data + l4);
-            pkt.dport = rd16(data + l4 + 2);
-            pkt.protocol = applicationProtocol(pkt.protocol, pkt.sport,
-                                               pkt.dport);
-            if (m_mode == Mode::Tcp) {
-                pkt.src = {portLabel(src, pkt.sport), portLabel(src, pkt.sport),
-                           NodeKind::Port};
-                pkt.dst = {portLabel(dst, pkt.dport), portLabel(dst, pkt.dport),
-                           NodeKind::Port};
-            }
-            if (proto == 17 && (pkt.sport == 137 || pkt.dport == 137)
-                && caplen >= l4 + 8) {
-                const quint32 udpLength = rd16(data + l4 + 4);
-                const quint32 available = caplen - (l4 + 8);
-                const quint32 payloadLength =
-                    (udpLength >= 8) ? std::min(udpLength - 8, available)
-                                     : available;
-                if (auto nb =
-                        parseNetbiosResponse(data + l4 + 8, payloadLength)) {
-                    pkt.nbName = nb->name;
-                    pkt.nbIp = nb->ip;
-                }
-            }
-        }
+        fillTransport(pkt, proto, data + l4, available, src, dst);
         return pkt;
     }
 
@@ -314,55 +368,61 @@ PacketInfo Decoder::decode(const uchar *data, quint32 caplen, quint32 origlen,
         quint8 next = ip6[6];
         quint32 l4 = off + 40;
 
-        // Skip the common extension headers.
+        // Walk extension headers, stopping at a fragment header.
+        bool fragmented = false;
+        quint32 fragmentOffset = 0;
+        bool moreFragments = false;
+        quint32 fragmentId = 0;
+        quint8 transport = next;
+
         for (int guard = 0; guard < 8; ++guard) {
-            const bool ext = (next == 0 || next == 43 || next == 44
-                              || next == 60 || next == 51);
-            if (!ext || caplen < l4 + 2)
+            if (next == 44) {  // fragment header
+                if (caplen < l4 + 8)
+                    return pkt;
+                const quint16 field = rd16(data + l4 + 2);
+                fragmentOffset = ((field >> 3) & 0x1fff) * 8u;
+                moreFragments = (field & 0x1) != 0;
+                fragmentId = rd32(data + l4 + 4);
+                transport = data[l4];  // next header after the fragment
+                l4 += 8;
+                next = transport;
+                fragmented = fragmentOffset != 0 || moreFragments;
+                if (fragmented)
+                    break;
+                continue;
+            }
+            const bool extension =
+                (next == 0 || next == 43 || next == 60 || next == 51);
+            if (!extension || caplen < l4 + 2)
                 break;
-            const quint8 hdrNext = data[l4];
-            quint32 hlen = (next == 44) ? 8u : (data[l4 + 1] + 1u) * 8u;
+            const quint8 headerNext = data[l4];
+            quint32 headerLength = (data[l4 + 1] + 1u) * 8u;
             if (next == 51)  // AH length is in 4-byte units plus two
-                hlen = (data[l4 + 1] + 2u) * 4u;
-            next = hdrNext;
-            l4 += hlen;
+                headerLength = (data[l4 + 1] + 2u) * 4u;
+            next = headerNext;
+            l4 += headerLength;
         }
 
-        if (next == 6) {
-            pkt.protocol = QStringLiteral("TCP");
-        } else if (next == 17) {
-            pkt.protocol = QStringLiteral("UDP");
-        } else if (next == 58) {
-            pkt.protocol = QStringLiteral("ICMPv6");
-        } else {
-            pkt.protocol = QStringLiteral("IPv6/%1").arg(next);
+        const quint32 available = caplen > l4 ? caplen - l4 : 0;
+
+        if (fragmented) {
+            pkt.protocol = ipProtocolName(transport);
+            const QString key = QStringLiteral("6|%1|%2|%3|%4")
+                                    .arg(src, dst)
+                                    .arg(fragmentId)
+                                    .arg(transport);
+            if (auto complete = m_reassembler.feed(
+                    key, fragmentOffset, moreFragments, data + l4, available,
+                    tsUsec)) {
+                fillTransport(pkt, transport,
+                              reinterpret_cast<const uchar *>(
+                                  complete->constData()),
+                              static_cast<quint32>(complete->size()), src, dst);
+            }
+            return pkt;
         }
 
-        if ((next == 6 || next == 17) && caplen >= l4 + 4) {
-            pkt.sport = rd16(data + l4);
-            pkt.dport = rd16(data + l4 + 2);
-            pkt.protocol = applicationProtocol(pkt.protocol, pkt.sport,
-                                               pkt.dport);
-            if (m_mode == Mode::Tcp) {
-                pkt.src = {portLabel(src, pkt.sport), portLabel(src, pkt.sport),
-                           NodeKind::Port};
-                pkt.dst = {portLabel(dst, pkt.dport), portLabel(dst, pkt.dport),
-                           NodeKind::Port};
-            }
-            if (next == 17 && (pkt.sport == 137 || pkt.dport == 137)
-                && caplen >= l4 + 8) {
-                const quint32 udpLength = rd16(data + l4 + 4);
-                const quint32 available = caplen - (l4 + 8);
-                const quint32 payloadLength =
-                    (udpLength >= 8) ? std::min(udpLength - 8, available)
-                                     : available;
-                if (auto nb =
-                        parseNetbiosResponse(data + l4 + 8, payloadLength)) {
-                    pkt.nbName = nb->name;
-                    pkt.nbIp = nb->ip;
-                }
-            }
-        }
+        fillTransport(pkt, transport, data + l4, available, src, dst);
         return pkt;
     }
 

@@ -7,6 +7,8 @@
 #pragma once
 
 #include <QList>
+#include "ipreassembly.h"
+
 #include <QMetaType>
 #include <QString>
 #include <QtGlobal>
@@ -58,7 +60,7 @@ public:
     int linkType() const { return m_linkType; }
 
     PacketInfo decode(const uchar *data, quint32 caplen, quint32 origlen,
-                      qint64 tsUsec) const;
+                      qint64 tsUsec);
 
 private:
     struct LinkLayer
@@ -72,9 +74,13 @@ private:
 
     bool parseLinkLayer(const uchar *data, quint32 caplen,
                         LinkLayer &layer) const;
+    void fillTransport(PacketInfo &pkt, quint8 protocol, const uchar *data,
+                       quint32 length, const QString &src,
+                       const QString &dst) const;
 
     Mode m_mode;
     int m_linkType;
+    IpReassembler m_reassembler;
 };
 
 QString macToString(const uchar *mac);
