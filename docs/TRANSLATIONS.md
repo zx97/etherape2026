@@ -48,18 +48,36 @@ Exemple : `&Merge IPv4/IPv6 Hosts` → *&Fusionner les hôtes IPv4/IPv6*.
 * **Settings → Preferences → Language** permet de forcer une langue ; le
   changement prend effet au redémarrage.
 
-## Régénérer
+## Compléter une traduction
+
+Les fichiers `.ts` sont **la source de vérité** : on les édite directement.
 
 ```bash
-# 1. rafraîchir le catalogue après ajout de chaînes
-lupdate src -ts translations/etherape2026.ts -no-obsolete
-# 2. fusionner les traductions (le dictionnaire vit dans l'outil de génération,
-#    voir scripts/update-translations.sh)
-# 3. compiler
-for f in translations/etherape2026_*.ts; do lrelease "$f" -qm "${f%.ts}.qm"; done
-# 4. reconstruire (les .qm sont embarqués par le .qrc)
-cmake --build build
+# ouvrir le catalogue de la langue
+linguist translations/etherape2026_fr.ts        # paquet qt6-linguist
+# ou lister ce qui manque, sans interface graphique
+grep -B2 -A2 'type="unfinished"' translations/etherape2026_fr.ts
 ```
+
+Dans Qt Linguist, filtre sur « unfinished », saisis la traduction, puis
+`File → Release`. En ligne de commande, cela revient à :
+
+```bash
+# remplacer <translation type="unfinished"></translation> par
+#            <translation>votre texte</translation>
+lrelease translations/etherape2026_fr.ts -qm translations/etherape2026_fr.qm
+cmake --build build     # les .qm sont embarqués par translations.qrc
+```
+
+## Après ajout de chaînes dans le code
+
+```bash
+lupdate src -ts translations/etherape2026.ts -no-obsolete
+# puis reporter les nouvelles entrées dans chaque fichier de langue
+```
+
+`scripts/update-translations.sh` enchaîne `lupdate`/`lrelease` et rappelle
+l'état de chaque langue.
 
 `scripts/update-translations.sh` enchaîne ces étapes et vérifie les manquants.
 

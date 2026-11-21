@@ -26,5 +26,7 @@ for ts in translations/etherape2026_*.ts; do
 done
 
 echo
+echo "The .ts files are the source of truth: edit them with Qt Linguist"
+echo "(qt6-linguist), or by hand between <translation> tags, then run this"
+echo "script again to rebuild the .qm files."
 echo "Now rebuild: cmake --build build"
-echo "Check completeness with: lupdate translations/*.ts -no-obsolete (or Qt Linguist)"
