@@ -194,6 +194,22 @@ void GraphModel::placeNewNode(Node &node)
 // Removes one node using a swap with the last element, keeping the link table
 // consistent. Node indices are an implementation detail, so a permutation is
 // perfectly acceptable.
+// True when the node already holds an address of this family (IPv4 or IPv6):
+// a host has at most one of each, a router has many.
+bool GraphModel::hasAddressOfKind(int index, NodeKind kind) const
+{
+    if (index < 0 || index >= m_nodes.size())
+        return true;
+    const Node &node = m_nodes[index];
+    if (node.kind == kind)
+        return true;
+    for (const QString &alias : node.aliases) {
+        if (alias.contains(QLatin1Char(':')) == (kind == NodeKind::Ipv6))
+            return true;
+    }
+    return false;
+}
+
 void GraphModel::removeNodeAt(int idx)
 {
     const int last = m_nodes.size() - 1;
@@ -251,13 +267,17 @@ int GraphModel::nodeIndex(const Endpoint &endpoint, const QString &mac,
         return it.value();
     }
 
-    // Same hardware, other address family: merge into the existing node so a
-    // host seen over IPv4 and IPv6 is a single vertex.
+    // Same hardware, other address family: merge so a host seen over IPv4 and
+    // IPv6 is a single vertex. Restricted to one address per family: a router
+    // (or the gateway MAC of an inbound capture) carries many distinct hosts,
+    // and merging them all produced a node holding GitHub, Linode and
+    // Cloudflare addresses at once.
     if (m_mergeFamilies && !mac.isEmpty()
         && (endpoint.kind == NodeKind::Ipv4
             || endpoint.kind == NodeKind::Ipv6)) {
         auto known = m_macIndex.find(mac);
-        if (known != m_macIndex.end()) {
+        if (known != m_macIndex.end() && m_nodes[known.value()].kind != NodeKind::Mac
+            && !hasAddressOfKind(known.value(), endpoint.kind)) {
             const int idx = known.value();
             Node &node = m_nodes[idx];
             node.aliases.insert(endpoint.id);

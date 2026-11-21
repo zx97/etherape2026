@@ -124,6 +124,7 @@ private slots:
     void modeTcpUsesPorts();
     void nodeStaysInItsZone();
     void mergesNodesByResolvedName();
+    void macMergeIsOnePerFamily();
     void filterAcceptsEqualsAndAliases();
     void filterWarnsOnUnknownKey();
 };
@@ -395,6 +396,57 @@ void CoreTests::nodeStaysInItsZone()
         else
             QCOMPARE(node.zone, ZoneId::Internet);
     }
+}
+
+void CoreTests::macMergeIsOnePerFamily()
+{
+    // One host with IPv4+IPv6 (same MAC) must merge...
+    PacketInfo v4;
+    v4.protocol = QStringLiteral("TCP");
+    v4.origlen = 10;
+    v4.src = {QStringLiteral("10.0.0.5"), QStringLiteral("10.0.0.5"),
+              NodeKind::Ipv4};
+    v4.srcMac = QStringLiteral("AA:BB:CC:00:00:01");
+    v4.dst = {QStringLiteral("10.0.0.9"), QStringLiteral("10.0.0.9"),
+              NodeKind::Ipv4};
+    v4.dstMac = QStringLiteral("AA:BB:CC:00:00:09");
+    PacketInfo v6;
+    v6.protocol = QStringLiteral("TCP");
+    v6.origlen = 10;
+    v6.src = {QStringLiteral("fe80::5"), QStringLiteral("fe80::5"),
+              NodeKind::Ipv6};
+    v6.srcMac = QStringLiteral("AA:BB:CC:00:00:01");
+    v6.dst = {QStringLiteral("fe80::9"), QStringLiteral("fe80::9"),
+              NodeKind::Ipv6};
+    v6.dstMac = QStringLiteral("AA:BB:CC:00:00:09");
+
+    GraphModel model;
+    model.addBatch({v4, v6}, 1000);
+    QCOMPARE(model.nodes().size(), 2);  // two hosts, each v4+v6
+
+    // ...but several IPv4 behind one MAC (a router) are distinct hosts.
+    GraphModel router;
+    for (const char *address : {"140.82.114.25", "192.46.236.7",
+                                "2a06:98c1:3120::3"}) {
+        PacketInfo pkt;
+        pkt.protocol = QStringLiteral("TCP");
+        pkt.origlen = 10;
+        pkt.src = {QString::fromLatin1(address), QString::fromLatin1(address),
+                   QString::fromLatin1(address).contains(QLatin1Char(':'))
+                       ? NodeKind::Ipv6
+                       : NodeKind::Ipv4};
+        pkt.srcMac = QStringLiteral("DC:39:6F:0C:A6:F0");
+        pkt.dst = {QStringLiteral("10.0.0.1"), QStringLiteral("10.0.0.1"),
+                   NodeKind::Ipv4};
+        pkt.dstMac = QStringLiteral("AA:BB:CC:00:00:FE");
+        router.addBatch({pkt}, 1000);
+    }
+    // 3 sources (one v4 keeps the MAC, the other v4 and the v6 are separate)
+    QVERIFY(router.nodes().size() >= 3);
+    int biggest = 0;
+    for (const auto &node : router.nodes())
+        biggest = std::max(biggest, static_cast<int>(node.aliases.size()));
+    QVERIFY2(biggest <= 2, "a node aggregated unrelated hosts");
 }
 
 void CoreTests::mergesNodesByResolvedName()

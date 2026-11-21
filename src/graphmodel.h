@@ -108,6 +108,7 @@ private:
     void layoutStep(double dtSeconds);
     void placeNewNode(Node &node);
     void removeNodeAt(int idx);
+    bool hasAddressOfKind(int index, NodeKind kind) const;
     void rebuildIndexes();
     void mergeDuplicates(bool byMac, bool byLabel);
 
