@@ -42,7 +42,19 @@ install -Dm644 etherape2026.1 "$stage/usr/share/man/man1/etherape2026.1"
 # linuxdeploy only deploys the platform plugin of the build machine (xcb on a
 # CI runner). Ask for Wayland explicitly, otherwise the AppImage falls back to
 # XWayland on every modern desktop and prints a plugin warning at start-up.
-export EXTRA_PLATFORM_PLUGINS="${EXTRA_PLATFORM_PLUGINS:-libqwayland.so}"
+# The plugin file names depend on the Qt version: libqwayland.so since 6.5,
+# libqwayland-egl.so + libqwayland-generic.so in 6.4 (Ubuntu 24.04).
+plugin_dir="$(qmake6 -query QT_INSTALL_PLUGINS 2>/dev/null || true)"
+[ -n "$plugin_dir" ] || plugin_dir="$(pkg-config --variable=plugindir Qt6Gui 2>/dev/null || true)"
+wayland_plugins=""
+for name in libqwayland.so libqwayland-egl.so libqwayland-generic.so; do
+  if [ -n "$plugin_dir" ] && [ -f "$plugin_dir/platforms/$name" ]; then
+    wayland_plugins="${wayland_plugins:+$wayland_plugins;}$name"
+  fi
+done
+if [ -n "$wayland_plugins" ]; then
+  export EXTRA_PLATFORM_PLUGINS="${EXTRA_PLATFORM_PLUGINS:-$wayland_plugins}"
+fi
 
 # linuxdeploy bundles its own binutils, which predates the .relr.dyn section
 # emitted by recent toolchains; stripping would fail on every Qt library.
