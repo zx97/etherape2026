@@ -34,10 +34,7 @@ struct PacketInfo
     Endpoint dst;
     quint16 sport = 0;
     quint16 dport = 0;
-    QString srcMac;       ///< link-layer source, empty when unknown
-    QString dstMac;       ///< link-layer destination, empty when unknown
     int vlanId = -1;      ///< outer 802.1Q id, -1 when untagged
-    int vlanInner = -1;   ///< inner id for QinQ (802.1ad), -1 otherwise
     // Passive NetBIOS name service hint (UDP/137 responses only).
     QString nbName;
     QString nbIp;

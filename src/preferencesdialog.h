@@ -26,7 +26,7 @@ public:
         double fontScale = 1.0;
         int replaySpeed = 100;
         bool usePolkit = false;
-        bool mergeFamilies = true;
+        bool mergeByName = true;
         bool dnsOnly = false;
         QString language;
         QString localZones;

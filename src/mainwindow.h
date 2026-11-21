@@ -81,7 +81,7 @@ private:
     void setRunning(bool running);
     void updateStatus();
     void setResolveNames(bool enabled);
-    void setMergeFamilies(bool enabled);
+    void setMergeByName(bool enabled);
     void applyDisplayFilter();
     void findNode();
     void updateTraffic();
@@ -127,7 +127,7 @@ private:
     bool m_numeric = false;
     bool m_resolveNames = false;
     bool m_usePolkit = false;
-    bool m_mergeFamilies = true;
+    bool m_mergeByName = true;
     bool m_dnsOnly = false;
     QString m_language;
     QString m_pendingDevice;

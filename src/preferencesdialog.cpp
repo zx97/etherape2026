@@ -52,12 +52,12 @@ PreferencesDialog::PreferencesDialog(const Values &values, QWidget *parent)
     m_speed->setToolTip(tr("Replay speed for capture files."));
 
     m_merge = new QCheckBox(
-        tr("Merge a host's IPv4 and IPv6 addresses into one node (by MAC)"),
-        this);
-    m_merge->setChecked(values.mergeFamilies);
+        tr("Merge addresses that resolve to the same host name"), this);
+    m_merge->setChecked(values.mergeByName);
     m_merge->setToolTip(
-        tr("A host that talks over both families then appears once, with its "
-           "MAC as the common identity."));
+        tr("Two addresses answered by the same PTR (or /etc/hosts name) become "
+           "one node. Merging by MAC was removed: behind a router every host "
+           "carries the gateway's MAC, which merged unrelated machines."));
 
     m_polkit = new QCheckBox(
         tr("Ask for the root password (polkit) when capture is denied"), this);
@@ -141,7 +141,7 @@ PreferencesDialog::Values PreferencesDialog::values() const
     values.fontScale = m_font->value();
     values.replaySpeed = m_speed->value();
     values.usePolkit = m_polkit->isChecked();
-    values.mergeFamilies = m_merge->isChecked();
+    values.mergeByName = m_merge->isChecked();
     values.dnsOnly = m_dnsOnly->isChecked();
     values.language = m_language->currentData().toString();
     values.localZones = m_localZones->text();

@@ -39,7 +39,6 @@ public:
         ZoneId zone = ZoneId::Local;  ///< cloud the node belongs to
         QSet<quint16> vlans;          ///< 802.1Q ids seen for this node
         QSet<QString> aliases;        ///< every address merged into this node
-        QString mac;                  ///< link-layer identity when known
         bool pinned = false;          ///< manually placed, ignored by the layout
     };
 
@@ -75,8 +74,11 @@ public:
     void setNodeLimit(int limit);
     int nodeLimit() const { return m_nodeLimit; }
     void setDecaySeconds(double seconds);
-    void setMergeFamilies(bool merge);
-    bool mergeFamilies() const { return m_mergeFamilies; }
+    // Merge addresses that resolve to the same host name. MAC-based
+    // merging was removed: behind a router every host shares the gateway's
+    // MAC, so it merged unrelated machines.
+    void setMergeByName(bool merge);
+    bool mergeByName() const { return m_mergeByName; }
     double decaySeconds() const { return m_decaySeconds; }
 
     const QVector<Node> &nodes() const { return m_nodes; }
@@ -103,18 +105,16 @@ signals:
 
 private:
     void addPacket(const PacketInfo &pkt, qint64 nowMs);
-    int nodeIndex(const Endpoint &endpoint, const QString &mac, qint64 nowMs);
+    int nodeIndex(const Endpoint &endpoint, qint64 nowMs);
     void prune(qint64 nowMs);
     void layoutStep(double dtSeconds);
     void placeNewNode(Node &node);
     void removeNodeAt(int idx);
-    bool hasAddressOfKind(int index, NodeKind kind) const;
     void rebuildIndexes();
-    void mergeDuplicates(bool byMac, bool byLabel);
+    void mergeByName();
 
     QVector<Node> m_nodes;
     QHash<QString, int> m_index;        ///< address (or alias) -> node index
-    QHash<QString, int> m_macIndex;     ///< MAC -> node index
     QHash<quint64, Link> m_links;
     QHash<QString, ProtoStat> m_protocols;
     QHash<quint16, quint64> m_vlanPackets;
@@ -125,7 +125,7 @@ private:
     qint64 m_startedAtMs = 0;
     int m_nodeLimit = 300;
     double m_decaySeconds = 4.0;
-    bool m_mergeFamilies = true;   ///< one node for a host's IPv4 + IPv6
+    bool m_mergeByName = true;   ///< one node per resolved host name
     ZoneClassifier m_zones;
 };
 

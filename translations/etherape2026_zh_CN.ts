@@ -443,8 +443,8 @@
     </message>
     <message>
         <location filename="../src/mainwindow.cpp" line="359" />
-        <source>&amp;Merge IPv4/IPv6 Hosts</source>
-        <translation>&amp;合并 IPv4/IPv6 主机</translation>
+        <source>Merge by &amp;Host Name</source>
+        <translation>按主机&amp;名合并</translation>
     </message>
     <message>
         <location filename="../src/mainwindow.cpp" line="364" />
@@ -482,42 +482,42 @@
         <translation>关于 &amp;Qt</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="543" />
+        <location filename="../src/mainwindow.cpp" line="547" />
         <source>Language will change at the next start.</source>
         <translation>语言将在下次启动时更改。</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="581" />
+        <location filename="../src/mainwindow.cpp" line="585" />
         <source>Mode will apply to the next capture.</source>
         <translation>模式将在下次捕获时生效。</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="618" />
+        <location filename="../src/mainwindow.cpp" line="622" />
         <source>Reverse DNS enabled for new nodes.</source>
         <translation>已为新节点启用反向 DNS。</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="619" />
+        <location filename="../src/mainwindow.cpp" line="623" />
         <source>Reverse DNS disabled.</source>
         <translation>反向 DNS 已禁用。</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="633" />
-        <source>IPv4/IPv6 addresses of the same host are merged.</source>
-        <translation>同一主机的 IPv4/IPv6 地址已合并。</translation>
+        <location filename="../src/mainwindow.cpp" line="637" />
+        <source>Addresses resolving to the same name share one node.</source>
+        <translation>解析到同一名称的地址共用一个节点。</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="634" />
-        <source>IPv4/IPv6 addresses are kept as separate nodes.</source>
-        <translation>IPv4/IPv6 地址保留为独立节点。</translation>
+        <location filename="../src/mainwindow.cpp" line="638" />
+        <source>Every address is kept as a separate node.</source>
+        <translation>每个地址保留为独立节点。</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="652" />
+        <location filename="../src/mainwindow.cpp" line="656" />
         <source>Display filter: proto, host, vlan, zone; '-' excludes.</source>
         <translation>显示过滤器：proto、host、vlan、zone；'-' 表示排除。</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="657" />
+        <location filename="../src/mainwindow.cpp" line="661" />
         <source>Not understood: %1
 
 Use proto:, host:, vlan:, zone: (or = instead of :). Click ? for help.</source>
@@ -526,57 +526,57 @@ Use proto:, host:, vlan:, zone: (or = instead of :). Click ? for help.</source>
 请使用 proto:、host:、vlan:、zone:（或用 = 代替 :）。点击 ? 查看帮助。</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="667" />
+        <location filename="../src/mainwindow.cpp" line="671" />
         <source>&lt;b&gt;Display filter&lt;/b&gt;&lt;br&gt;&lt;br&gt;Hides nodes and links; the capture keeps running and counters keep accumulating.&lt;br&gt;&lt;br&gt;</source>
         <translation>&lt;b&gt;显示过滤器&lt;/b&gt;&lt;br&gt;&lt;br&gt;隐藏节点和链路；捕获继续进行，计数器持续累加。&lt;br&gt;&lt;br&gt;</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="670" />
+        <location filename="../src/mainwindow.cpp" line="674" />
         <source>Keys (both &lt;code&gt;key:value&lt;/code&gt; and &lt;code&gt;key=value&lt;/code&gt; work):&lt;br&gt;&lt;ul&gt;</source>
         <translation>键（&lt;code&gt;键:值&lt;/code&gt; 和 &lt;code&gt;键=值&lt;/code&gt; 均可）：&lt;br&gt;&lt;ul&gt;</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="674" />
+        <location filename="../src/mainwindow.cpp" line="678" />
         <source>&lt;/ul&gt;Several terms are combined with AND; prefix one with &lt;code&gt;-&lt;/code&gt; to exclude it.&lt;br&gt;&lt;br&gt;Examples: &lt;code&gt;hostname=manux&lt;/code&gt;, &lt;code&gt;proto:http -vlan:100&lt;/code&gt;, &lt;code&gt;zone:dmz&lt;/code&gt;.</source>
         <translation>&lt;/ul&gt;多个词以“与”组合；在词前加 &lt;code&gt;-&lt;/code&gt; 可排除。&lt;br&gt;&lt;br&gt;示例：&lt;code&gt;hostname=manux&lt;/code&gt;、&lt;code&gt;proto:http -vlan:100&lt;/code&gt;、&lt;code&gt;zone:dmz&lt;/code&gt;。</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="679" />
+        <location filename="../src/mainwindow.cpp" line="683" />
         <source>Display filter</source>
         <translation>显示过滤器</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="712" />
+        <location filename="../src/mainwindow.cpp" line="716" />
         <source>Find node</source>
         <translation>查找节点</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="713" />
+        <location filename="../src/mainwindow.cpp" line="717" />
         <source>Node name, address or protocol (current display filter applies):</source>
         <translation>节点名称、地址或协议（当前显示过滤器生效）：</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="726" />
+        <location filename="../src/mainwindow.cpp" line="730" />
         <source>Found %1</source>
         <translation>已找到 %1</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="729" />
+        <location filename="../src/mainwindow.cpp" line="733" />
         <source>No node matches "%1".</source>
         <translation>没有匹配 "%1" 的节点。</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="815" />
+        <location filename="../src/mainwindow.cpp" line="819" />
         <source>No capture interface available.</source>
         <translation>没有可用的捕获接口。</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="843" />
+        <location filename="../src/mainwindow.cpp" line="847" />
         <source>Administrator rights required</source>
         <translation>需要管理员权限</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="844" />
+        <location filename="../src/mainwindow.cpp" line="848" />
         <source>Capturing on "%1" requires administrator rights:
 %2
 
@@ -584,17 +584,17 @@ Restart EtherApe 2026 elevated?</source>
         <translation type="unfinished" />
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="864" />
+        <location filename="../src/mainwindow.cpp" line="868" />
         <source>Elevation was cancelled.</source>
         <translation>提权已取消。</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="867" />
+        <location filename="../src/mainwindow.cpp" line="871" />
         <source>Root privileges required</source>
         <translation>需要 root 权限</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="868" />
+        <location filename="../src/mainwindow.cpp" line="872" />
         <source>Capturing on "%1" was denied:
 %2
 
@@ -602,39 +602,39 @@ Elevate through polkit? The password is asked once per application session: the 
         <translation type="unfinished" />
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="901" />
+        <location filename="../src/mainwindow.cpp" line="905" />
         <source>Open capture file</source>
         <translation>打开捕获文件</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="902" />
+        <location filename="../src/mainwindow.cpp" line="906" />
         <source>Capture files (*.pcap *.pcapng *.cap);;All files (*)</source>
         <translation>捕获文件 (*.pcap *.pcapng *.cap);;所有文件 (*)</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1055" />
-        <location filename="../src/mainwindow.cpp" line="1228" />
+        <location filename="../src/mainwindow.cpp" line="1059" />
+        <location filename="../src/mainwindow.cpp" line="1232" />
         <source>Final export failed: %1</source>
         <translation>最终导出失败：%1</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1058" />
-        <location filename="../src/mainwindow.cpp" line="1153" />
+        <location filename="../src/mainwindow.cpp" line="1062" />
+        <location filename="../src/mainwindow.cpp" line="1157" />
         <source>Exported to %1</source>
         <translation>已导出到 %1</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1073" />
+        <location filename="../src/mainwindow.cpp" line="1077" />
         <source>Capture error: %1</source>
         <translation>捕获错误：%1</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1078" />
+        <location filename="../src/mainwindow.cpp" line="1082" />
         <source>Capture denied</source>
         <translation>捕获被拒绝</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1079" />
+        <location filename="../src/mainwindow.cpp" line="1083" />
         <source>libpcap needs CAP_NET_RAW. Either run as root or grant the capability once:
 
 sudo setcap cap_net_raw,cap_net_admin+eip %1</source>
@@ -643,73 +643,73 @@ sudo setcap cap_net_raw,cap_net_admin+eip %1</source>
 sudo setcap cap_net_raw,cap_net_admin+eip %1</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1112" />
+        <location filename="../src/mainwindow.cpp" line="1116" />
         <source>idle</source>
         <translation>空闲</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1115" />
+        <location filename="../src/mainwindow.cpp" line="1119" />
         <source>%1 packets · %2</source>
         <translation>%1 个数据包 · %2</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1116" />
+        <location filename="../src/mainwindow.cpp" line="1120" />
         <source>%1 nodes · %2 links</source>
         <translation>%1 个节点 · %2 条链路</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1140" />
+        <location filename="../src/mainwindow.cpp" line="1144" />
         <source>Cannot load layout: %1</source>
         <translation>无法加载布局：%1</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1146" />
+        <location filename="../src/mainwindow.cpp" line="1150" />
         <source>Export graph</source>
         <translation>导出图</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1147" />
+        <location filename="../src/mainwindow.cpp" line="1151" />
         <source>XML files (*.xml);;JSON files (*.json);;All files (*)</source>
         <translation>XML 文件 (*.xml);;JSON 文件 (*.json);;所有文件 (*)</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1155" />
+        <location filename="../src/mainwindow.cpp" line="1159" />
         <source>Export failed</source>
         <translation>导出失败</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1168" />
+        <location filename="../src/mainwindow.cpp" line="1172" />
         <source>Save node layout</source>
         <translation>保存节点布局</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1169" />
-        <location filename="../src/mainwindow.cpp" line="1184" />
+        <location filename="../src/mainwindow.cpp" line="1173" />
+        <location filename="../src/mainwindow.cpp" line="1188" />
         <source>JSON files (*.json);;All files (*)</source>
         <translation>JSON 文件 (*.json);;所有文件 (*)</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1175" />
+        <location filename="../src/mainwindow.cpp" line="1179" />
         <source>Layout saved to %1</source>
         <translation>布局已保存到 %1</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1177" />
+        <location filename="../src/mainwindow.cpp" line="1181" />
         <source>Save failed</source>
         <translation>保存失败</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1183" />
+        <location filename="../src/mainwindow.cpp" line="1187" />
         <source>Load node layout</source>
         <translation>加载节点布局</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1212" />
+        <location filename="../src/mainwindow.cpp" line="1216" />
         <source>About EtherApe 2026</source>
         <translation>关于 EtherApe 2026</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1213" />
+        <location filename="../src/mainwindow.cpp" line="1217" />
         <source>&lt;h3&gt;EtherApe 2026 %1&lt;/h3&gt;&lt;p&gt;Graphical network traffic monitor, Qt 6 port of EtherApe.&lt;/p&gt;&lt;p&gt;Original EtherApe © 2001 Juan Toledo, Riccardo Ghetta and contributors.&lt;br&gt;This port: GPL-2.0-or-later.&lt;/p&gt;&lt;p&gt;Capture powered by libpcap.&lt;/p&gt;</source>
         <translation type="unfinished" />
     </message>
@@ -763,13 +763,13 @@ sudo setcap cap_net_raw,cap_net_admin+eip %1</translation>
     </message>
     <message>
         <location filename="../src/preferencesdialog.cpp" line="55" />
-        <source>Merge a host's IPv4 and IPv6 addresses into one node (by MAC)</source>
-        <translation>将同一主机的 IPv4 和 IPv6 地址合并为一个节点（按 MAC）</translation>
+        <source>Merge addresses that resolve to the same host name</source>
+        <translation>合并解析到同一主机名的地址</translation>
     </message>
     <message>
-        <location filename="../src/preferencesdialog.cpp" line="59" />
-        <source>A host that talks over both families then appears once, with its MAC as the common identity.</source>
-        <translation>同时在两个地址族上通信的主机只显示一次，以 MAC 作为共同标识。</translation>
+        <location filename="../src/preferencesdialog.cpp" line="58" />
+        <source>Two addresses answered by the same PTR (or /etc/hosts name) become one node. Merging by MAC was removed: behind a router every host carries the gateway's MAC, which merged unrelated machines.</source>
+        <translation>解析到同一 PTR（或 /etc/hosts 名称）的两个地址合并为一个节点。按 MAC 合幵已移除：在路由器后面所有主机都使用网关的 MAC，会错误地合并无关机器。</translation>
     </message>
     <message>
         <location filename="../src/preferencesdialog.cpp" line="63" />
@@ -799,12 +799,12 @@ sudo setcap cap_net_raw,cap_net_admin+eip %1</translation>
     <message>
         <location filename="../src/preferencesdialog.cpp" line="81" />
         <source>Resolve with DNS only (ignore /etc/hosts, NSS/LDAP, mDNS)</source>
-        <translation type="unfinished" />
+        <translation>仅使用 DNS 解析（忽略 /etc/hosts、NSS/LDAP、mDNS）</translation>
     </message>
     <message>
         <location filename="../src/preferencesdialog.cpp" line="84" />
         <source>QHostInfo goes through NSS, which may consult LDAP or SSSD and return names your DNS does not have. This option asks the DNS directly.</source>
-        <translation type="unfinished" />
+        <translation>QHostInfo 经过 NSS，可能查询 LDAP 或 SSSD 并返回 DNS 中没有的名称。此选项直接查询 DNS。</translation>
     </message>
     <message>
         <location filename="../src/preferencesdialog.cpp" line="89" />
@@ -914,12 +914,12 @@ sudo setcap cap_net_raw,cap_net_admin+eip %1</translation>
     <message>
         <location filename="../src/statspanel.cpp" line="109" />
         <source>Copy</source>
-        <translation type="unfinished" />
+        <translation>复制</translation>
     </message>
     <message>
         <location filename="../src/statspanel.cpp" line="110" />
         <source>Copy the selection, or the whole panel if nothing is selected.</source>
-        <translation type="unfinished" />
+        <translation>复制选中内容；若未选中则复制整个面板。</translation>
     </message>
     <message>
         <location filename="../src/statspanel.cpp" line="121" />

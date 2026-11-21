@@ -47,13 +47,13 @@ void GraphModel::clear()
     emit structureChanged();
 }
 
-void GraphModel::setMergeFamilies(bool merge)
+void GraphModel::setMergeByName(bool merge)
 {
-    if (m_mergeFamilies == merge)
+    if (m_mergeByName == merge)
         return;
-    m_mergeFamilies = merge;
+    m_mergeByName = merge;
     if (merge)
-        mergeDuplicates(true, true);
+        mergeByName();
 }
 
 // Merges nodes that designate the same host, either by MAC (the same card
@@ -61,26 +61,21 @@ void GraphModel::setMergeFamilies(bool merge)
 // to one hostname, which is the only clue on interfaces that do not expose
 // destination MACs, such as 'any'). Links are re-keyed and their counters
 // aggregated, keeping each direction attached to the right endpoint.
-void GraphModel::mergeDuplicates(bool byMac, bool byLabel)
+void GraphModel::mergeByName()
 {
     QHash<QString, int> seen;
     QVector<bool> removed(m_nodes.size(), false);
 
     for (int i = 0; i < m_nodes.size(); ++i) {
         Node &node = m_nodes[i];
+        // Only resolved names are an identity: skipping numeric ids, IPv6
+        // literals and 'localhost'.
         QString key;
-        if (byMac && !node.mac.isEmpty())
-            key = QStringLiteral("mac:") + node.mac;
-        if (key.isEmpty() && byLabel) {
-            const QString label = node.label;
-            // Only names that actually resolved: skip numeric ids, IPv6
-            // literals and the "?" placeholder.
-            if (!label.isEmpty() && label != node.id
-                && !label.contains(QLatin1Char(':'))
-                && !label.at(0).isDigit()
-                && label != QLatin1String("localhost")) {
-                key = QStringLiteral("name:") + label.toLower();
-            }
+        const QString label = node.label;
+        if (!label.isEmpty() && label != node.id
+            && !label.contains(QLatin1Char(':')) && !label.at(0).isDigit()
+            && label != QLatin1String("localhost")) {
+            key = QStringLiteral("name:") + label.toLower();
         }
         if (key.isEmpty())
             continue;
@@ -194,22 +189,6 @@ void GraphModel::placeNewNode(Node &node)
 // Removes one node using a swap with the last element, keeping the link table
 // consistent. Node indices are an implementation detail, so a permutation is
 // perfectly acceptable.
-// True when the node already holds an address of this family (IPv4 or IPv6):
-// a host has at most one of each, a router has many.
-bool GraphModel::hasAddressOfKind(int index, NodeKind kind) const
-{
-    if (index < 0 || index >= m_nodes.size())
-        return true;
-    const Node &node = m_nodes[index];
-    if (node.kind == kind)
-        return true;
-    for (const QString &alias : node.aliases) {
-        if (alias.contains(QLatin1Char(':')) == (kind == NodeKind::Ipv6))
-            return true;
-    }
-    return false;
-}
-
 void GraphModel::removeNodeAt(int idx)
 {
     const int last = m_nodes.size() - 1;
@@ -245,18 +224,14 @@ void GraphModel::removeNodeAt(int idx)
 void GraphModel::rebuildIndexes()
 {
     m_index.clear();
-    m_macIndex.clear();
     for (int i = 0; i < m_nodes.size(); ++i) {
         m_index.insert(m_nodes[i].id, i);
         for (const QString &alias : std::as_const(m_nodes[i].aliases))
             m_index.insert(alias, i);
-        if (!m_nodes[i].mac.isEmpty())
-            m_macIndex.insert(m_nodes[i].mac, i);
     }
 }
 
-int GraphModel::nodeIndex(const Endpoint &endpoint, const QString &mac,
-                          qint64 nowMs)
+int GraphModel::nodeIndex(const Endpoint &endpoint, qint64 nowMs)
 {
     auto it = m_index.find(endpoint.id);
     if (it != m_index.end()) {
@@ -265,37 +240,6 @@ int GraphModel::nodeIndex(const Endpoint &endpoint, const QString &mac,
         if (node.label.isEmpty())
             node.label = endpoint.label;
         return it.value();
-    }
-
-    // Same hardware, other address family: merge so a host seen over IPv4 and
-    // IPv6 is a single vertex. Restricted to one address per family: a router
-    // (or the gateway MAC of an inbound capture) carries many distinct hosts,
-    // and merging them all produced a node holding GitHub, Linode and
-    // Cloudflare addresses at once.
-    if (m_mergeFamilies && !mac.isEmpty()
-        && (endpoint.kind == NodeKind::Ipv4
-            || endpoint.kind == NodeKind::Ipv6)) {
-        auto known = m_macIndex.find(mac);
-        if (known != m_macIndex.end() && m_nodes[known.value()].kind != NodeKind::Mac
-            && !hasAddressOfKind(known.value(), endpoint.kind)) {
-            const int idx = known.value();
-            Node &node = m_nodes[idx];
-            node.aliases.insert(endpoint.id);
-            m_index.insert(endpoint.id, idx);
-            node.lastSeenMs = nowMs;
-            // Prefer an IPv4 address as the displayed identity.
-            if (endpoint.kind == NodeKind::Ipv4
-                && node.kind == NodeKind::Ipv6) {
-                m_index.remove(node.id);
-                node.id = endpoint.id;
-                node.kind = NodeKind::Ipv4;
-                if (node.label.isEmpty() || node.label == endpoint.id
-                    || node.label.contains(QLatin1Char(':')))
-                    node.label = endpoint.id;
-                m_index.insert(node.id, idx);
-            }
-            return idx;
-        }
     }
 
     if (m_nodes.size() >= m_nodeLimit) {
@@ -315,7 +259,6 @@ int GraphModel::nodeIndex(const Endpoint &endpoint, const QString &mac,
     node.id = endpoint.id;
     node.label = endpoint.label;
     node.kind = endpoint.kind;
-    node.mac = mac;
     node.aliases.insert(endpoint.id);
     node.zone = m_zones.classify(endpoint.id, endpoint.kind);
     node.firstSeenMs = nowMs;
@@ -324,8 +267,6 @@ int GraphModel::nodeIndex(const Endpoint &endpoint, const QString &mac,
     m_nodes.append(node);
     const int index = m_nodes.size() - 1;
     m_index.insert(node.id, index);
-    if (!mac.isEmpty())
-        m_macIndex.insert(mac, index);
     emit structureChanged();
     return index;
 }
@@ -347,8 +288,8 @@ void GraphModel::addPacket(const PacketInfo &pkt, qint64 nowMs)
     m_totalPackets += 1;
     m_totalBytes += pkt.origlen;
 
-    const int srcIndex = nodeIndex(pkt.src, pkt.srcMac, nowMs);
-    const int dstIndex = nodeIndex(pkt.dst, pkt.dstMac, nowMs);
+    const int srcIndex = nodeIndex(pkt.src, nowMs);
+    const int dstIndex = nodeIndex(pkt.dst, nowMs);
     if (srcIndex < 0 || dstIndex < 0 || srcIndex == dstIndex)
         return;
 
@@ -446,8 +387,8 @@ void GraphModel::setLabel(const QString &id, const QString &label,
     node.labelSource = source;
     // The same host reached through several addresses (IPv4, IPv6, a second
     // interface) must be one vertex: merge whenever a name resolves.
-    if (m_mergeFamilies)
-        mergeDuplicates(false, true);
+    if (m_mergeByName)
+        mergeByName();
 }
 
 void GraphModel::setZoneClassifier(const ZoneClassifier &classifier)

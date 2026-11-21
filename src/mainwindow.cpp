@@ -356,10 +356,10 @@ void MainWindow::buildMenus()
     connect(m_resolveAction, &QAction::toggled, this,
             &MainWindow::setResolveNames);
 
-    m_mergeAction = viewMenu->addAction(tr("&Merge IPv4/IPv6 Hosts"));
+    m_mergeAction = viewMenu->addAction(tr("Merge by &Host Name"));
     m_mergeAction->setCheckable(true);
     connect(m_mergeAction, &QAction::toggled, this,
-            &MainWindow::setMergeFamilies);
+            &MainWindow::setMergeByName);
 
     auto *findAction = viewMenu->addAction(tr("&Find Node…"));
     findAction->setShortcut(QKeySequence::Find);
@@ -397,14 +397,18 @@ void MainWindow::loadSettings()
         settings.value(QStringLiteral("names/resolve"), false).toBool();
     m_usePolkit =
         settings.value(QStringLiteral("capture/usePolkit"), false).toBool();
-    m_mergeFamilies =
-        settings.value(QStringLiteral("graph/mergeFamilies"), true).toBool();
+    // Formerly graph/mergeFamilies (MAC-based merging); reuse the value.
+    m_mergeByName = settings
+                        .value(QStringLiteral("graph/mergeByName"),
+                               settings.value(QStringLiteral("graph/mergeFamilies"),
+                                              true))
+                        .toBool();
     m_dnsOnly = settings.value(QStringLiteral("names/dnsOnly"), false).toBool();
     m_language = settings.value(QStringLiteral("ui/language")).toString();
-    m_model->setMergeFamilies(m_mergeFamilies);
+    m_model->setMergeByName(m_mergeByName);
     if (m_mergeAction) {
         const QSignalBlocker blocker(m_mergeAction);
-        m_mergeAction->setChecked(m_mergeFamilies);
+        m_mergeAction->setChecked(m_mergeByName);
     }
     m_numeric = settings.value(QStringLiteral("names/numeric"), false).toBool();
     m_localZones = settings
@@ -497,7 +501,7 @@ void MainWindow::saveSettings()
     settings.setValue(QStringLiteral("names/resolve"), m_resolveNames);
     settings.setValue(QStringLiteral("names/numeric"), m_numeric);
     settings.setValue(QStringLiteral("capture/usePolkit"), m_usePolkit);
-    settings.setValue(QStringLiteral("graph/mergeFamilies"), m_mergeFamilies);
+    settings.setValue(QStringLiteral("graph/mergeByName"), m_mergeByName);
     settings.setValue(QStringLiteral("names/dnsOnly"), m_dnsOnly);
     settings.setValue(QStringLiteral("zones/local"), m_localZones);
     settings.setValue(QStringLiteral("zones/dmz"), m_dmzZones);
@@ -513,7 +517,7 @@ void MainWindow::showPreferences()
     values.fontScale = m_graph->fontScale();
     values.replaySpeed = m_replaySpeed;
     values.usePolkit = m_usePolkit;
-    values.mergeFamilies = m_mergeFamilies;
+    values.mergeByName = m_mergeByName;
     values.dnsOnly = m_dnsOnly;
     values.language = m_language;
     values.localZones = m_localZones;
@@ -534,7 +538,7 @@ void MainWindow::showPreferences()
     }
     m_replaySpeed = updated.replaySpeed;
     m_usePolkit = updated.usePolkit;
-    m_mergeFamilies = updated.mergeFamilies;
+    m_mergeByName = updated.mergeByName;
     m_dnsOnly = updated.dnsOnly;
     if (updated.language != m_language) {
         m_language = updated.language;
@@ -542,10 +546,10 @@ void MainWindow::showPreferences()
         statusBar()->showMessage(
             tr("Language will change at the next start."), 6000);
     }
-    m_model->setMergeFamilies(m_mergeFamilies);
+    m_model->setMergeByName(m_mergeByName);
     if (m_mergeAction) {
         const QSignalBlocker blocker(m_mergeAction);
-        m_mergeAction->setChecked(m_mergeFamilies);
+        m_mergeAction->setChecked(m_mergeByName);
     }
     m_localZones = updated.localZones;
     m_dmzZones = updated.dmzZones;
@@ -620,18 +624,18 @@ void MainWindow::setResolveNames(bool enabled)
         3000);
 }
 
-void MainWindow::setMergeFamilies(bool enabled)
+void MainWindow::setMergeByName(bool enabled)
 {
-    m_mergeFamilies = enabled;
+    m_mergeByName = enabled;
     if (m_mergeAction && m_mergeAction->isChecked() != enabled) {
         const QSignalBlocker blocker(m_mergeAction);
         m_mergeAction->setChecked(enabled);
     }
-    m_model->setMergeFamilies(enabled);
+    m_model->setMergeByName(enabled);
     saveSettings();
     statusBar()->showMessage(
-        enabled ? tr("IPv4/IPv6 addresses of the same host are merged.")
-                : tr("IPv4/IPv6 addresses are kept as separate nodes."),
+        enabled ? tr("Addresses resolving to the same name share one node.")
+                : tr("Every address is kept as a separate node."),
         4000);
 }
 

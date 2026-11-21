@@ -443,8 +443,8 @@
     </message>
     <message>
         <location filename="../src/mainwindow.cpp" line="359" />
-        <source>&amp;Merge IPv4/IPv6 Hosts</source>
-        <translation>&amp;Fusionner les hôtes IPv4/IPv6</translation>
+        <source>Merge by &amp;Host Name</source>
+        <translation>Fusionner par nom d'&amp;hôte</translation>
     </message>
     <message>
         <location filename="../src/mainwindow.cpp" line="364" />
@@ -482,42 +482,42 @@
         <translation>À propos de &amp;Qt</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="543" />
+        <location filename="../src/mainwindow.cpp" line="547" />
         <source>Language will change at the next start.</source>
         <translation>La langue changera au prochain démarrage.</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="581" />
+        <location filename="../src/mainwindow.cpp" line="585" />
         <source>Mode will apply to the next capture.</source>
         <translation>Le mode s'appliquera à la prochaine capture.</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="618" />
+        <location filename="../src/mainwindow.cpp" line="622" />
         <source>Reverse DNS enabled for new nodes.</source>
         <translation>DNS inverse activé pour les nouveaux nœuds.</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="619" />
+        <location filename="../src/mainwindow.cpp" line="623" />
         <source>Reverse DNS disabled.</source>
         <translation>DNS inverse désactivé.</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="633" />
-        <source>IPv4/IPv6 addresses of the same host are merged.</source>
-        <translation>Les adresses IPv4/IPv6 d'un même hôte sont fusionnées.</translation>
+        <location filename="../src/mainwindow.cpp" line="637" />
+        <source>Addresses resolving to the same name share one node.</source>
+        <translation>Les adresses résolvant vers le même nom partagent un nœud.</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="634" />
-        <source>IPv4/IPv6 addresses are kept as separate nodes.</source>
-        <translation>Les adresses IPv4/IPv6 restent des nœuds distincts.</translation>
+        <location filename="../src/mainwindow.cpp" line="638" />
+        <source>Every address is kept as a separate node.</source>
+        <translation>Chaque adresse reste un nœud distinct.</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="652" />
+        <location filename="../src/mainwindow.cpp" line="656" />
         <source>Display filter: proto, host, vlan, zone; '-' excludes.</source>
         <translation>Filtre d'affichage : proto, host, vlan, zone ; '-' exclut.</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="657" />
+        <location filename="../src/mainwindow.cpp" line="661" />
         <source>Not understood: %1
 
 Use proto:, host:, vlan:, zone: (or = instead of :). Click ? for help.</source>
@@ -526,57 +526,57 @@ Use proto:, host:, vlan:, zone: (or = instead of :). Click ? for help.</source>
 Utilisez proto:, host:, vlan:, zone: (ou = à la place de :). Cliquez sur ? pour l'aide.</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="667" />
+        <location filename="../src/mainwindow.cpp" line="671" />
         <source>&lt;b&gt;Display filter&lt;/b&gt;&lt;br&gt;&lt;br&gt;Hides nodes and links; the capture keeps running and counters keep accumulating.&lt;br&gt;&lt;br&gt;</source>
         <translation>&lt;b&gt;Filtre d'affichage&lt;/b&gt;&lt;br&gt;&lt;br&gt;Masque des nœuds et des liens ; la capture continue et les compteurs s'accumulent.&lt;br&gt;&lt;br&gt;</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="670" />
+        <location filename="../src/mainwindow.cpp" line="674" />
         <source>Keys (both &lt;code&gt;key:value&lt;/code&gt; and &lt;code&gt;key=value&lt;/code&gt; work):&lt;br&gt;&lt;ul&gt;</source>
         <translation>Clés (&lt;code&gt;clé:valeur&lt;/code&gt; et &lt;code&gt;clé=valeur&lt;/code&gt; fonctionnent) :&lt;br&gt;&lt;ul&gt;</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="674" />
+        <location filename="../src/mainwindow.cpp" line="678" />
         <source>&lt;/ul&gt;Several terms are combined with AND; prefix one with &lt;code&gt;-&lt;/code&gt; to exclude it.&lt;br&gt;&lt;br&gt;Examples: &lt;code&gt;hostname=manux&lt;/code&gt;, &lt;code&gt;proto:http -vlan:100&lt;/code&gt;, &lt;code&gt;zone:dmz&lt;/code&gt;.</source>
         <translation>&lt;/ul&gt;Plusieurs termes se combinent en ET ; préfixez-en un par &lt;code&gt;-&lt;/code&gt; pour l'exclure.&lt;br&gt;&lt;br&gt;Exemples : &lt;code&gt;hostname=manux&lt;/code&gt;, &lt;code&gt;proto:http -vlan:100&lt;/code&gt;, &lt;code&gt;zone:dmz&lt;/code&gt;.</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="679" />
+        <location filename="../src/mainwindow.cpp" line="683" />
         <source>Display filter</source>
         <translation>Filtre d'affichage</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="712" />
+        <location filename="../src/mainwindow.cpp" line="716" />
         <source>Find node</source>
         <translation>Rechercher un nœud</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="713" />
+        <location filename="../src/mainwindow.cpp" line="717" />
         <source>Node name, address or protocol (current display filter applies):</source>
         <translation>Nom, adresse ou protocole du nœud (le filtre d'affichage courant s'applique) :</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="726" />
+        <location filename="../src/mainwindow.cpp" line="730" />
         <source>Found %1</source>
         <translation>%1 trouvé</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="729" />
+        <location filename="../src/mainwindow.cpp" line="733" />
         <source>No node matches "%1".</source>
         <translation>Aucun nœud ne correspond à « %1 ».</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="815" />
+        <location filename="../src/mainwindow.cpp" line="819" />
         <source>No capture interface available.</source>
         <translation>Aucune interface de capture disponible.</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="843" />
+        <location filename="../src/mainwindow.cpp" line="847" />
         <source>Administrator rights required</source>
         <translation>Droits administrateur requis</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="844" />
+        <location filename="../src/mainwindow.cpp" line="848" />
         <source>Capturing on "%1" requires administrator rights:
 %2
 
@@ -587,17 +587,17 @@ Restart EtherApe 2026 elevated?</source>
 Redémarrer EtherApe 2026 avec élévation ?</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="864" />
+        <location filename="../src/mainwindow.cpp" line="868" />
         <source>Elevation was cancelled.</source>
         <translation>Élévation annulée.</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="867" />
+        <location filename="../src/mainwindow.cpp" line="871" />
         <source>Root privileges required</source>
         <translation>Privilèges root requis</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="868" />
+        <location filename="../src/mainwindow.cpp" line="872" />
         <source>Capturing on "%1" was denied:
 %2
 
@@ -608,39 +608,39 @@ Elevate through polkit? The password is asked once per application session: the 
 Élever via polkit ? Le mot de passe est demandé une fois par session : le helper privilégié est ensuite réutilisé par Start/Stop, et l'interface reste non privilégiée.</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="901" />
+        <location filename="../src/mainwindow.cpp" line="905" />
         <source>Open capture file</source>
         <translation>Ouvrir un fichier de capture</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="902" />
+        <location filename="../src/mainwindow.cpp" line="906" />
         <source>Capture files (*.pcap *.pcapng *.cap);;All files (*)</source>
         <translation>Fichiers de capture (*.pcap *.pcapng *.cap);;Tous les fichiers (*)</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1055" />
-        <location filename="../src/mainwindow.cpp" line="1228" />
+        <location filename="../src/mainwindow.cpp" line="1059" />
+        <location filename="../src/mainwindow.cpp" line="1232" />
         <source>Final export failed: %1</source>
         <translation>Échec de l'export final : %1</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1058" />
-        <location filename="../src/mainwindow.cpp" line="1153" />
+        <location filename="../src/mainwindow.cpp" line="1062" />
+        <location filename="../src/mainwindow.cpp" line="1157" />
         <source>Exported to %1</source>
         <translation>Exporté vers %1</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1073" />
+        <location filename="../src/mainwindow.cpp" line="1077" />
         <source>Capture error: %1</source>
         <translation>Erreur de capture : %1</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1078" />
+        <location filename="../src/mainwindow.cpp" line="1082" />
         <source>Capture denied</source>
         <translation>Capture refusée</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1079" />
+        <location filename="../src/mainwindow.cpp" line="1083" />
         <source>libpcap needs CAP_NET_RAW. Either run as root or grant the capability once:
 
 sudo setcap cap_net_raw,cap_net_admin+eip %1</source>
@@ -649,73 +649,73 @@ sudo setcap cap_net_raw,cap_net_admin+eip %1</source>
 sudo setcap cap_net_raw,cap_net_admin+eip %1</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1112" />
+        <location filename="../src/mainwindow.cpp" line="1116" />
         <source>idle</source>
         <translation>inactif</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1115" />
+        <location filename="../src/mainwindow.cpp" line="1119" />
         <source>%1 packets · %2</source>
         <translation>%1 paquets · %2</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1116" />
+        <location filename="../src/mainwindow.cpp" line="1120" />
         <source>%1 nodes · %2 links</source>
         <translation>%1 nœuds · %2 liens</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1140" />
+        <location filename="../src/mainwindow.cpp" line="1144" />
         <source>Cannot load layout: %1</source>
         <translation>Impossible de charger la disposition : %1</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1146" />
+        <location filename="../src/mainwindow.cpp" line="1150" />
         <source>Export graph</source>
         <translation>Exporter le graphe</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1147" />
+        <location filename="../src/mainwindow.cpp" line="1151" />
         <source>XML files (*.xml);;JSON files (*.json);;All files (*)</source>
         <translation>Fichiers XML (*.xml);;Fichiers JSON (*.json);;Tous les fichiers (*)</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1155" />
+        <location filename="../src/mainwindow.cpp" line="1159" />
         <source>Export failed</source>
         <translation>Échec de l'export</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1168" />
+        <location filename="../src/mainwindow.cpp" line="1172" />
         <source>Save node layout</source>
         <translation>Enregistrer la disposition des nœuds</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1169" />
-        <location filename="../src/mainwindow.cpp" line="1184" />
+        <location filename="../src/mainwindow.cpp" line="1173" />
+        <location filename="../src/mainwindow.cpp" line="1188" />
         <source>JSON files (*.json);;All files (*)</source>
         <translation>Fichiers JSON (*.json);;Tous les fichiers (*)</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1175" />
+        <location filename="../src/mainwindow.cpp" line="1179" />
         <source>Layout saved to %1</source>
         <translation>Disposition enregistrée dans %1</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1177" />
+        <location filename="../src/mainwindow.cpp" line="1181" />
         <source>Save failed</source>
         <translation>Échec de l'enregistrement</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1183" />
+        <location filename="../src/mainwindow.cpp" line="1187" />
         <source>Load node layout</source>
         <translation>Charger une disposition de nœuds</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1212" />
+        <location filename="../src/mainwindow.cpp" line="1216" />
         <source>About EtherApe 2026</source>
         <translation>À propos d'EtherApe 2026</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="1213" />
+        <location filename="../src/mainwindow.cpp" line="1217" />
         <source>&lt;h3&gt;EtherApe 2026 %1&lt;/h3&gt;&lt;p&gt;Graphical network traffic monitor, Qt 6 port of EtherApe.&lt;/p&gt;&lt;p&gt;Original EtherApe © 2001 Juan Toledo, Riccardo Ghetta and contributors.&lt;br&gt;This port: GPL-2.0-or-later.&lt;/p&gt;&lt;p&gt;Capture powered by libpcap.&lt;/p&gt;</source>
         <translation type="unfinished" />
     </message>
@@ -769,13 +769,13 @@ sudo setcap cap_net_raw,cap_net_admin+eip %1</translation>
     </message>
     <message>
         <location filename="../src/preferencesdialog.cpp" line="55" />
-        <source>Merge a host's IPv4 and IPv6 addresses into one node (by MAC)</source>
-        <translation>Fusionner les adresses IPv4 et IPv6 d'un hôte en un seul nœud (par MAC)</translation>
+        <source>Merge addresses that resolve to the same host name</source>
+        <translation>Fusionner les adresses qui résolvent vers le même nom d'hôte</translation>
     </message>
     <message>
-        <location filename="../src/preferencesdialog.cpp" line="59" />
-        <source>A host that talks over both families then appears once, with its MAC as the common identity.</source>
-        <translation>Un hôte vu sur les deux familles n'apparaît alors qu'une fois, sa MAC servant d'identité commune.</translation>
+        <location filename="../src/preferencesdialog.cpp" line="58" />
+        <source>Two addresses answered by the same PTR (or /etc/hosts name) become one node. Merging by MAC was removed: behind a router every host carries the gateway's MAC, which merged unrelated machines.</source>
+        <translation>Deux adresses répondant au même PTR (ou nom /etc/hosts) deviennent un seul nœud. La fusion par MAC a été retirée : derrière un routeur, tous les hôtes portent la MAC de la passerelle, ce qui regroupait des machines sans rapport.</translation>
     </message>
     <message>
         <location filename="../src/preferencesdialog.cpp" line="63" />
@@ -805,12 +805,12 @@ sudo setcap cap_net_raw,cap_net_admin+eip %1</translation>
     <message>
         <location filename="../src/preferencesdialog.cpp" line="81" />
         <source>Resolve with DNS only (ignore /etc/hosts, NSS/LDAP, mDNS)</source>
-        <translation type="unfinished" />
+        <translation>Résoudre uniquement par DNS (ignorer /etc/hosts, NSS/LDAP, mDNS)</translation>
     </message>
     <message>
         <location filename="../src/preferencesdialog.cpp" line="84" />
         <source>QHostInfo goes through NSS, which may consult LDAP or SSSD and return names your DNS does not have. This option asks the DNS directly.</source>
-        <translation type="unfinished" />
+        <translation>QHostInfo passe par NSS, qui peut consulter LDAP ou SSSD et renvoyer des noms absents du DNS. Cette option interroge le DNS directement.</translation>
     </message>
     <message>
         <location filename="../src/preferencesdialog.cpp" line="89" />
@@ -920,12 +920,12 @@ sudo setcap cap_net_raw,cap_net_admin+eip %1</translation>
     <message>
         <location filename="../src/statspanel.cpp" line="109" />
         <source>Copy</source>
-        <translation type="unfinished" />
+        <translation>Copier</translation>
     </message>
     <message>
         <location filename="../src/statspanel.cpp" line="110" />
         <source>Copy the selection, or the whole panel if nothing is selected.</source>
-        <translation type="unfinished" />
+        <translation>Copie la sélection, ou tout le panneau si rien n'est sélectionné.</translation>
     </message>
     <message>
         <location filename="../src/statspanel.cpp" line="121" />
