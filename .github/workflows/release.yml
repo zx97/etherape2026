@@ -1,6 +1,6 @@
 name: release
 
-# One tag (v1.0.0) produces:
+# One tag (v1.0.1) produces:
 #   - etherape2026-<version>-x86_64.AppImage   (Linux, Qt bundled, run anywhere)
 #   - etherape2026-<version>-linux-x86_64.tar.gz (binary + install.sh)
 #   - EtherApe2026-Setup-<version>.exe        (Windows installer, NSIS)

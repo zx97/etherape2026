@@ -1,119 +1,119 @@
-# Traductions
+# Translations
 
-## Langues fournies
+## Languages provided
 
-Les dix langues les plus parlées au monde, l'anglais étant la langue source
-(intégrée au code, aucun fichier `.ts` nécessaire) :
+The ten most spoken languages in the world, English being the source language
+(built into the code, no `.ts` file needed):
 
-| Langue | Code | Fichier | Chaînes | État |
+| Language | Code | File | Strings | State |
 |---|---|---|---|---|
-| Français | `fr` | `etherape2026_fr.ts` | 185/185 | complet |
-| Español | `es` | `etherape2026_es.ts` | 185/185 | complet |
-| Português (BR) | `pt_BR` | `etherape2026_pt_BR.ts` | 185/185 | complet |
-| Русский | `ru` | `etherape2026_ru.ts` | 185/185 | complet |
-| 简体中文 | `zh_CN` | `etherape2026_zh_CN.ts` | 185/185 | complet |
-| العربية | `ar` | `etherape2026_ar.ts` | 185/185 | complet, interface RTL |
-| हिन्दी | `hi` | `etherape2026_hi.ts` | 108/185 | noyau |
-| বাংলা | `bn` | `etherape2026_bn.ts` | 108/185 | noyau |
-| اردو | `ur` | `etherape2026_ur.ts` | 108/185 | noyau |
+| French | `fr` | `etherape2026_fr.ts` | 185/185 | complete |
+| Spanish | `es` | `etherape2026_es.ts` | 185/185 | complete |
+| Portuguese (BR) | `pt_BR` | `etherape2026_pt_BR.ts` | 185/185 | complete |
+| Russian | `ru` | `etherape2026_ru.ts` | 185/185 | complete |
+| Simplified Chinese | `zh_CN` | `etherape2026_zh_CN.ts` | 185/185 | complete |
+| Arabic | `ar` | `etherape2026_ar.ts` | 185/185 | complete, RTL interface |
+| Hindi | `hi` | `etherape2026_hi.ts` | 108/185 | core only |
+| Bengali | `bn` | `etherape2026_bn.ts` | 108/185 | core only |
+| Urdu | `ur` | `etherape2026_ur.ts` | 108/185 | core only |
 
-Les 77 chaînes qui manquent à `hi/bn/ur` sont uniquement des textes longs :
-descriptions de `--help`, boîte **À propos**, aide HTML imbriquée et messages
-d'erreur détaillés. Tout le libellé d'interface courant est traduit.
+The 77 strings missing from `hi/bn/ur` are only long texts: `--help`
+descriptions, the **About** box, nested HTML help and detailed error messages.
+Everyday interface text is translated.
 
-Les chaînes non traduites retombent automatiquement en anglais : une interface
-partielle reste parfaitement utilisable.
+Untranslated strings fall back to English automatically: a partial interface
+remains perfectly usable.
 
-> **Relecture native nécessaire.** Les six langues complètes ont été écrites
-> avec soin et passent les contrôles automatiques, mais une relecture humaine
-> reste souhaitable, en particulier pour `zh_CN` et `ar`. Les fichiers `.ts`
-> sont conçus pour cela (Qt Linguist).
+> **Native review needed.** The six complete languages were written carefully
+> and pass the automated checks, but a human review remains desirable,
+> especially for `zh_CN` and `ar`. The `.ts` files are designed for that
+> (Qt Linguist).
 
-## Termes volontairement laissés en anglais
+## Terms deliberately left in English
 
-Consigne de traduction : les termes techniques gardent leur forme d'origine
-dans **toutes** les langues.
+Translation policy: technical terms keep their original form in **every**
+language.
 
 `VLAN`, `MAC`, `BPF`, `DNS`, `TLS`, `HTTP`, `TCP`, `UDP`, `ICMP`, `IP`,
 `IPv4`/`IPv6`, `ARP`, `pcap`, `Npcap`, `pkexec`, `polkit`, `CAP_NET_RAW`,
 `CIDR`, `LAN`, `DMZ`, `VPN`, `XML`, `JSON`, `Qt`, `EtherApe`, `NetBIOS`.
 
-### Noms et identifiants : jamais traduits
+### Names and identifiers: never translated
 
-Les noms de mode et les identifiants restent **identiques** au texte source
-dans toutes les langues, sinon l'interface devient incohérente :
+Mode names and identifiers stay **identical** to the source text in every
+language, otherwise the interface becomes inconsistent:
 
 `Link`, `IP`, `TCP`, `VLAN`, `VLAN %1`, `DNS`, `NetBIOS`, `/etc/ethers`,
-`EtherApe 2026`, `ms`, ainsi que l'exemple de syntaxe
+`EtherApe 2026`, `ms`, and the syntax example
 `proto:http host:10.0 -vlan:100 zone:dmz`.
 
-> Le sélecteur de mode affiche donc `Link | IP | TCP` dans les dix langues :
-> `Link` avait été traduit en *Lien* en français, ce qui laissait un menu
-> mi-français mi-anglais.
+> The mode selector therefore shows `Link | IP | TCP` in all ten languages:
+> `Link` had been translated to *Lien* in French, leaving a half-French,
+> half-English menu.
 
-Exemple de traduction correcte : `&Merge IPv4/IPv6 Hosts` →
+Example of a correct translation: `&Merge IPv4/IPv6 Hosts` →
 *&Fusionner les hôtes IPv4/IPv6*.
 
-### Espaces réservés
+### Placeholders
 
-`<device>`, `<file>`, `<ms>`… sont traduits **en même temps que le nom de
-l'argument** affiché par `--help` : en français `--interface <périphérique>`
-s'explique par « Capturer sur <périphérique>. ». Les `%1`, `%2` et les balises
-HTML restent intacts, sinon la chaîne perd des données ou son formatage.
+`<device>`, `<file>`, `<ms>`… are translated **together with the argument
+name** shown by `--help`: in French `--interface <périphérique>` is explained as
+"Capturer sur <périphérique>.". `%1`, `%2` and HTML tags stay intact,
+otherwise the string loses data or formatting.
 
-## Comment ça fonctionne
+## How it works
 
-* Les chaînes sources sont dans le code (`tr("...")`).
-* `lupdate` extrait le catalogue : `translations/etherape2026.ts`.
-* Un fichier `.ts` par langue, compilé en `.qm` par `lrelease`.
-* Les `.qm` sont embarqués dans le binaire via `translations.qrc`.
-* Au démarrage, `main.cpp` charge `:/translations/etherape2026_<locale>.qm`
-  d'après la préférence `ui/language`, sinon `QLocale::system()` ; la direction
-  du texte (RTL/LTR) est appliquée automatiquement.
-* **Settings → Preferences → Language** permet de forcer une langue ; le
-  changement prend effet au redémarrage.
+* Source strings live in the code (`tr("...")`).
+* `lupdate` extracts the catalogue: `translations/etherape2026.ts`.
+* One `.ts` file per language, compiled to `.qm` by `lrelease`.
+* The `.qm` files are embedded in the binary through `translations.qrc`.
+* At start-up, `main.cpp` loads `:/translations/etherape2026_<locale>.qm`
+  according to the `ui/language` preference, otherwise `QLocale::system()`;
+  the text direction (RTL/LTR) is applied automatically.
+* **Settings → Preferences → Language** forces a language; the change takes
+  effect at the next start.
 
-## Compléter une traduction
+## Completing a translation
 
-Les fichiers `.ts` sont **la source de vérité** : on les édite directement.
+The `.ts` files are **the source of truth**: they are edited directly.
 
 ```bash
-# ouvrir le catalogue de la langue
-linguist translations/etherape2026_fr.ts        # paquet qt6-linguist
-# ou lister ce qui manque, sans interface graphique
+# open the language catalogue
+linguist translations/etherape2026_fr.ts        # qt6-linguist package
+# or list what is missing, without a GUI
 grep -B2 -A2 'type="unfinished"' translations/etherape2026_fr.ts
 ```
 
-Dans Qt Linguist, filtre sur « unfinished », saisis la traduction, puis
-`File → Release`. En ligne de commande, cela revient à :
+In Qt Linguist, filter on "unfinished", type the translation, then
+`File → Release`. On the command line this amounts to:
 
 ```bash
-# remplacer <translation type="unfinished"></translation> par
-#            <translation>votre texte</translation>
+# replace <translation type="unfinished"></translation> with
+#         <translation>your text</translation>
 lrelease translations/etherape2026_fr.ts -qm translations/etherape2026_fr.qm
-cmake --build build     # les .qm sont embarqués par translations.qrc
+cmake --build build     # the .qm files are embedded by translations.qrc
 ```
 
-## Après ajout de chaînes dans le code
+## After adding strings in the code
 
 ```bash
 lupdate src -ts translations/etherape2026.ts -no-obsolete
-# puis reporter les nouvelles entrées dans chaque fichier de langue
+# then propagate the new entries to every language file
 ```
 
-`scripts/update-translations.sh` enchaîne `lupdate`/`lrelease` et rappelle
-l'état de chaque langue.
+`scripts/update-translations.sh` runs `lupdate`/`lrelease` and reports the state
+of every language.
 
-## Vérification
+## Verification
 
 ```bash
-python3 scripts/check-translations.py            # règles ci-dessus, code 1 si échec
-LANG=fr_FR.UTF-8 ./build/bin/etherape2026 --help # rendu réel
+python3 scripts/check-translations.py            # rules above, exit code 1 on failure
+LANG=fr_FR.UTF-8 ./build/bin/etherape2026 --help # actual output
 ```
 
-> **Piège** : la préférence `ui/language` enregistrée dans
-> `~/.config/etherape/etherape2026.conf` **prime** sur `LANG`. Pour tester une
-> autre langue sans toucher à ta configuration :
+> **Pitfall**: the `ui/language` preference stored in
+> `~/.config/etherape/etherape2026.conf` **overrides** `LANG`. To test another
+> language without touching your configuration:
 >
 > ```bash
 > XDG_CONFIG_HOME=$(mktemp -d -p /dev/shm) LC_ALL=ar_SA.UTF-8 \

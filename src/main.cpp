@@ -17,7 +17,7 @@
 #include <QTimer>
 
 #ifndef APP_VERSION
-#define APP_VERSION "1.0.0"
+#define APP_VERSION "1.0.1"
 #endif
 
 namespace {

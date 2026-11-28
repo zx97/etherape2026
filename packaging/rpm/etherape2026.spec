@@ -5,14 +5,14 @@
 # binary is not rebuilt here).
 #
 #   ./scripts/package-linux.sh build dist
-#   cp dist/etherape2026-1.0.0-linux-x86_64.tar.gz ~/rpmbuild/SOURCES/
+#   cp dist/etherape2026-1.0.1-linux-x86_64.tar.gz ~/rpmbuild/SOURCES/
 #   rpmbuild -bb packaging/rpm/etherape2026.spec
 #
 # Building from source would need the Qt 6 toolchain on the build host; this
 # keeps packaging reproducible on any machine that has rpmbuild.
 
 Name:           etherape2026
-Version:        1.0.0
+Version:        1.0.1
 Release:        1%{?dist}
 Summary:        Graphical network traffic monitor (Qt 6 port of EtherApe)
 License:        GPL-2.0-or-later
@@ -50,5 +50,7 @@ install -Dm0644 etherape2026.1 \
 %{_mandir}/man1/etherape2026.1
 
 %changelog
+* Sat Nov 28 2026 zx97 <zx97@users.noreply.github.com> - 1.0.1-1
+- Documentation and release text in English; no functional change
 * Sat Nov 21 2026 zx97 <zx97@users.noreply.github.com> - 1.0.0-1
 - Initial package

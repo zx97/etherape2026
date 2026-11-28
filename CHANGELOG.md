@@ -1,40 +1,46 @@
 # Changelog
 
+## 1.0.1 — 2026-11-28
+
+Documentation, release notes and packaging text are now in **English**, the
+language this project documents in. No functional change: the code is identical
+to 1.0.0, the release is rebuilt so that the shipped README and the release
+notes match the repository.
+
 ## 1.0.0 — 2026-11-21
 
-Première version publiable. Portage Qt 6 d'EtherApe (base 0.9.22 / 0.9.23).
+First publishable release. Qt 6 port of EtherApe (base 0.9.22 / 0.9.23).
 
-### Fonctionnalités
+### Features
 
-- Capture live via libpcap (Npcap sous Windows), filtre BPF.
-- Replay de fichiers pcap, vitesse réglable.
-- Modes **Link** (MAC), **IP**, **TCP** (adresse:port).
-- Décodage Ethernet, VLAN 802.1Q/QinQ, IPv4, IPv6 (+ en-têtes d'extension),
-  ARP, TCP, UDP, ICMP ; **réassemblage des fragments** IPv4/IPv6.
-- Dissection applicative : HTTP, TLS, DNS, SSH, SMB, RDP, MySQL, NTP, NBNS…
-- Graphe animé (layout force-directed), zoom, épinglage des nœuds.
-- Nuages de zones LAN / DMZ / VPN / Internet, avec préfixes des interfaces
-  locales détectés automatiquement.
-- Fusion des adresses résolvant vers le même nom d'hôte.
-- Panneau statistiques (nœuds, liens, protocoles) + courbe de débit 5 min.
-- Filtrer l'affichage (`proto:`, `host:`, `vlan:`, `zone:`, négation) sans
-  toucher à la capture ; autocomplétion et aide.
-- Recherche de nœud (`Ctrl+F`), conversations détaillées avec export CSV.
-- Export XML et JSON ; disposition des nœuds en JSON.
-- Résolution DNS inverse asynchrone, NetBIOS passif, `/etc/ethers`.
-- 10 langues (anglais source, fr, es, pt_BR, ru, zh_CN, ar, hi, bn, ur).
-- Élévation polkit sous Linux, UAC sous Windows.
-- Installeur NSIS, recettes RPM/AppImage/Flatpak.
+- Live capture through libpcap (Npcap on Windows), BPF filter.
+- pcap file replay, adjustable speed.
+- **Link** (MAC), **IP**, **TCP** (address:port) modes.
+- Ethernet, 802.1Q/QinQ VLAN, IPv4, IPv6 (+ extension headers), ARP, TCP, UDP,
+  ICMP decoding; IPv4/IPv6 **fragment reassembly**.
+- Application dissection: HTTP, TLS, DNS, SSH, SMB, RDP, MySQL, NTP, NBNS…
+- Animated graph (force-directed layout), zoom, node pinning.
+- LAN / DMZ / VPN / Internet zone clouds, with local interface prefixes
+  detected automatically.
+- Addresses resolving to the same host name are merged.
+- Statistics panel (nodes, links, protocols) + 5-minute throughput chart.
+- Display filter (`proto:`, `host:`, `vlan:`, `zone:`, negation) that does not
+  touch the capture; completion and help.
+- Node search (`Ctrl+F`), detailed conversations with CSV export.
+- XML and JSON export; node layout as JSON.
+- Asynchronous reverse DNS, passive NetBIOS, `/etc/ethers`.
+- 10 languages (English source, fr, es, pt_BR, ru, zh_CN, ar, hi, bn, ur).
+- polkit elevation on Linux, UAC on Windows.
+- NSIS installer, RPM/AppImage/Flatpak recipes.
 
-### Binaires
+### Binaries
 
-Chaque tag `v1.0.0` produit automatiquement : AppImage Linux (Qt 6 embarqué),
-archive Linux avec `install.sh`, installeur Windows NSIS et `SHA256SUMS`
-(voir `docs/PACKAGING.md`).
+Every `v*` tag automatically produces: a Linux AppImage (Qt 6 bundled), a Linux
+archive with `install.sh`, a Windows NSIS installer and `SHA256SUMS`
+(see `docs/PACKAGING.md`).
 
 ### Notes
 
-- La fusion par MAC a été retirée : derrière un routeur, tous les hôtes
-  portent la MAC de la passerelle.
-- La capture live ne fonctionne pas dans un bac à sable Flatpak
-  (pas de `CAP_NET_RAW`).
+- MAC-based merging was removed: behind a router every host carries the
+  gateway's MAC.
+- Live capture does not work inside a Flatpak sandbox (no `CAP_NET_RAW`).

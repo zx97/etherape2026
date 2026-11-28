@@ -1,71 +1,78 @@
-# Packaging et publication
+# Packaging and publishing
 
-Un tag `vX.Y.Z` déclenche la construction des exécutables et la création d'une
-release. Rien n'est compilé à la main pour publier.
+A `vX.Y.Z` tag builds the executables and creates a release. Nothing is compiled
+by hand to publish.
 
 ```mermaid
 flowchart LR
-    T[git tag v1.0.0 + push] --> V{version du tag<br/>= CMakeLists ?}
-    V -- non --> X[échec immédiat]
-    V -- oui --> L[Linux: build + 22 tests]
-    V -- oui --> W[Windows: build + tests]
-    L --> A[AppImage<br/>Qt 6 embarqué]
-    L --> B[tar.gz<br/>binaire + install.sh]
+    T[git tag v1.0.1 + push] --> V{tag version<br/>= CMakeLists?}
+    V -- no --> X[immediate failure]
+    V -- yes --> L[Linux: build + 22 tests]
+    V -- yes --> W[Windows: build + tests]
+    L --> A[AppImage<br/>Qt 6 bundled]
+    L --> B[tar.gz<br/>binary + install.sh]
     W --> C[EtherApe2026-Setup.exe<br/>NSIS]
-    A --> R[release GitHub<br/>+ SHA256SUMS]
+    A --> R[GitHub release<br/>+ SHA256SUMS]
     B --> R
     C --> R
-    A --> G[release GitLab<br/>artefacts du job]
+    A --> G[GitLab release<br/>job artifacts]
     B --> G
 ```
 
-## Ce que reçoit quelqu'un qui veut essayer
+## What someone who wants to try gets
 
-| Fichier | Plateforme | Ce qu'il faut installer |
+| File | Platform | What to install |
 |---|---|---|
-| `etherape2026-1.0.0-x86_64.AppImage` | Linux | rien (Qt 6 est dedans) ; `libfuse2`, ou lancer avec `--appimage-extract-and-run` |
-| `etherape2026-1.0.0-linux-x86_64.tar.gz` | Linux | Qt 6 et libpcap de la distribution ; `./install.sh` |
-| `EtherApe2026-Setup-1.0.0.exe` | Windows | **Npcap** (https://npcap.com) pour la capture live |
-| `SHA256SUMS` | — | vérification des trois fichiers ci-dessus |
+| `etherape2026-<version>-x86_64.AppImage` | Linux | nothing (Qt 6 is inside); `libfuse2`, or run with `--appimage-extract-and-run` |
+| `etherape2026-<version>-linux-x86_64.tar.gz` | Linux | distribution Qt 6 and libpcap; `./install.sh` |
+| `EtherApe2026-Setup-<version>.exe` | Windows | **Npcap** (https://npcap.com) for live capture |
+| `SHA256SUMS` | — | verification of the three files above |
 
-La capture live demande `CAP_NET_RAW` : l'application éléve ses droits via
-polkit (Linux) ou UAC (Windows), jamais par `setcap` sur le binaire installé.
+Live capture requires `CAP_NET_RAW`: the application elevates through polkit
+(Linux) or UAC (Windows), or you can grant the capability with `setcap`.
 
-## Recettes locales (hors CI)
+## Local recipes (outside CI)
 
-| Format | Fichier | Commande |
+| Format | File | Command |
 |---|---|---|
 | Archive + `install.sh` | `scripts/package-linux.sh` | `./scripts/package-linux.sh build dist` |
 | AppImage | `scripts/build-appimage.sh` | `./scripts/build-appimage.sh build` |
-| Installeur Windows | `scripts/build-installer-windows.sh` | `./scripts/build-installer-windows.sh build` |
-| RPM | `packaging/rpm/etherape2026.spec` | voir ci-dessous |
+| Windows installer | `scripts/build-installer-windows.sh` | `./scripts/build-installer-windows.sh build` |
+| RPM | `packaging/rpm/etherape2026.spec` | see below |
 | Flatpak | `packaging/flatpak/org.etherape.EtherApe2026.yml` | `flatpak-builder --user …` |
 
 ## AppImage
 
-`linuxdeploy`, `linuxdeploy-plugin-qt` et `appimagetool` doivent être dans le
-`PATH` (voir l'en-tête du script). Deux détails appris à l'usage :
+`linuxdeploy`, `linuxdeploy-plugin-qt` and `appimagetool` must be on the `PATH`
+(see the header of the script). Four details learned the hard way:
 
-- `APPIMAGE_EXTRACT_AND_RUN=1` : ces outils sont eux-mêmes des AppImages et
-  n'ont pas besoin de FUSE pour tourner (c'est ce que fait la CI) ;
-- `NO_STRIP=1` : le `strip` embarqué par `linuxdeploy` est plus ancien que la
-  section `.relr.dyn` produite par les chaînes de compilation récentes ; sans
-  cela, le déploiement des bibliothèques Qt échoue ;
-- `EXTRA_PLATFORM_PLUGINS=libqwayland.so` : sans cela, `linuxdeploy` n'embarque
-  que le plugin **xcb** de la machine de build et l'application retombe sur
-  XWayland sur les bureaux Wayland. Le plugin Wayland doit être installé sur le
-  runner (`qt6-wayland` sur Ubuntu).
+- `APPIMAGE_EXTRACT_AND_RUN=1`: these tools are AppImages themselves and do not
+  need FUSE to run (this is what CI does);
+- `NO_STRIP=1`: the `strip` bundled with `linuxdeploy` predates the `.relr.dyn`
+  section emitted by recent toolchains; without it, deploying the Qt libraries
+  fails;
+- the Wayland platform plugin must be deployed explicitly, otherwise only the
+  **xcb** plugin of the build machine is bundled and the application falls back
+  to XWayland on Wayland desktops. The script detects the available plugin names
+  (`libqwayland.so` since Qt 6.5, `libqwayland-egl.so` +
+  `libqwayland-generic.so` in 6.4) and passes them through
+  `EXTRA_PLATFORM_PLUGINS`; the plugin must be installed on the runner
+  (`qt6-wayland` on Ubuntu);
+- the AppDir must be created on an executable filesystem: `linuxdeploy` runs
+  `ldd` on the staged binary, and `ldd` answers "not a dynamic executable" when
+  the file sits on a `noexec` mount (`/dev/shm` on CI runners and in
+  containers).
 
 ## RPM
 
-Le spec produit un paquet **binaire** : l'archive de `package-linux.sh` contient
-déjà l'exécutable, Qt 6 et libpcap restant des paquets de la distribution. Pas
-de `%cmake` — reconstruire depuis les sources demanderait toute la chaîne Qt sur
-la machine d'empaquetage.
+The spec produces a **binary** package: the archive from `package-linux.sh`
+already contains the executable, while Qt 6 and libpcap remain distribution
+packages. No `%cmake` — rebuilding from source would require the whole Qt
+toolchain on the packaging machine.
 
 ```bash
 ./scripts/package-linux.sh build dist
-cp dist/etherape2026-1.0.0-linux-x86_64.tar.gz ~/rpmbuild/SOURCES/
+cp dist/etherape2026-1.0.1-linux-x86_64.tar.gz ~/rpmbuild/SOURCES/
 rpmbuild -bb packaging/rpm/etherape2026.spec
 ```
 
@@ -78,32 +85,31 @@ pacman -S --needed mingw-w64-ucrt-x86_64-nsis
 NPCAP_SDK_DIR=C:/npcap-sdk ./scripts/build-installer-windows.sh build
 ```
 
-`scripts/build-windows.sh` fait la configuration, la compilation,
-`windeployqt` et la copie des DLL MinGW ; le script d'installeur ne fait
-qu'ajouter `makensis`. Le bloc de version de l'exe est généré par CMake depuis
-`data/windows.rc.in`, il ne peut donc pas diverger de `CMakeLists.txt`.
+`scripts/build-windows.sh` does the configuration, the build, `windeployqt` and
+the copy of the MinGW DLLs; the installer script only adds `makensis`. The
+version block of the executable is generated by CMake from
+`data/windows.rc.in`, so it cannot drift from `CMakeLists.txt`.
 
-L'installeur crée les raccourcis (Bureau, menu Démarrer), enregistre l'entrée
-« Applications et fonctionnalités » et fournit un désinstalleur.
+The installer creates the shortcuts (Desktop, Start menu), registers the
+"Apps & features" entry and provides an uninstaller.
 
-**Npcap n'est pas embarqué** : son pilote signé exige une installation
-interactive. L'installeur le rappelle à la fin.
+**Npcap is not bundled**: its signed driver requires an interactive
+installation. The installer reminds the user at the end.
 
 ## Flatpak
 
-Le manifeste construit libpcap puis l'application avec le runtime
-`org.kde.Platform` (Qt 6).
+The manifest builds libpcap, then the application, against the
+`org.kde.Platform` runtime (Qt 6).
 
-> **Limite assumée** : un Flatpak ne peut pas ouvrir de socket `AF_PACKET`
-> avec `CAP_NET_RAW`. **La capture live ne fonctionne donc pas dans le bac à
-> sable** ; le replay de fichiers, l'interface, le graphe et les exports
-> fonctionnent normalement.
+> **Accepted limitation**: a Flatpak cannot open an `AF_PACKET` socket with
+> `CAP_NET_RAW`. **Live capture therefore does not work inside the sandbox**;
+> file replay, the interface, the graph and the exports work normally.
 
-## Ce qui reste manuel
+## What remains manual
 
-- **Signature** des paquets (GPG pour AppImage/RPM, Authenticode pour
-  l'installeur Windows) : à faire avec tes propres clés.
-- **Mises à jour automatiques** : aucune n'est implémentée ; un paquet
-  Flatpak/AppImage suit son propre canal, Windows doit être remplacé.
-- La release GitLab pointe vers les artefacts du job ; les fichiers Windows
-  sont attachés à la release GitHub, qui les construit.
+- **Signing** the packages (GPG for AppImage/RPM, Authenticode for the Windows
+  installer): to be done with your own keys.
+- **Automatic updates**: none is implemented; a Flatpak/AppImage package
+  follows its own channel, Windows must be replaced.
+- The GitLab release points to the job artifacts; the Windows files are attached
+  to the GitHub release, which builds them.

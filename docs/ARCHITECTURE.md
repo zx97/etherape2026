@@ -1,18 +1,18 @@
 # Architecture
 
-## Vue d'ensemble
+## Overview
 
 ```mermaid
 flowchart TB
-    subgraph GUI["Thread principal (GUI)"]
+    subgraph GUI["Main thread (GUI)"]
         MW[MainWindow]
-        GV[GraphView<br/>QPainter, timer 40 ms]
-        SP[StatsPanel<br/>QStandardItemModel, timer 700 ms]
-        GM[GraphModel<br/>nœuds + liens + compteurs]
-        HI[QHostInfo<br/>lookup inverse async]
+        GV[GraphView<br/>QPainter, 40 ms timer]
+        SP[StatsPanel<br/>QStandardItemModel, 700 ms timer]
+        GM[GraphModel<br/>nodes + links + counters]
+        HI[QHostInfo<br/>async reverse lookup]
     end
 
-    subgraph CAP["Thread de capture"]
+    subgraph CAP["Capture thread"]
         CW[CaptureWorker]
         DEC[Decoder]
         PC[(libpcap)]
@@ -28,22 +28,22 @@ flowchart TB
     MW -.requestStop / invokeMethod.-> CW
 ```
 
-Deux threads seulement :
+Only two threads:
 
-1. **GUI** : tout l'état affiché vit ici (`GraphModel`, widgets Qt). Aucun
-   verrou, aucune structure partagée mutable.
-2. **Capture** : `CaptureWorker` possède le handle pcap et le `Decoder`.
-   Il communique uniquement par signaux Qt en connexion *queued*, par lots de
-   512 paquets. Le coût par paquet côté GUI reste très inférieur au coût de
-   décodage, donc le producteur ne peut pas saturer la boucle d'événements
-   (throttling à 1 ms par 32 lots en mode « vitesse maximale »).
+1. **GUI**: all displayed state lives here (`GraphModel`, Qt widgets). No lock,
+   no shared mutable structure.
+2. **Capture**: `CaptureWorker` owns the pcap handle and the `Decoder`. It
+   communicates only through Qt signals with *queued* connections, in batches
+   of 512 packets. The per-packet cost on the GUI side stays well below the
+   decoding cost, so the producer cannot saturate the event loop (throttling to
+   1 ms per 32 batches in "maximum speed" mode).
 
-## Décodage
+## Decoding
 
 ```mermaid
 flowchart LR
     F[frame] --> E{ethertype}
-    E -->|0x8100 / 0x88a8| V[VLAN, boucle]
+    E -->|0x8100 / 0x88a8| V[VLAN, loop]
     V --> E
     E -->|0x0800| V4[IPv4<br/>IHL, proto]
     E -->|0x86dd| V6[IPv6<br/>next-header + ext.]
@@ -59,61 +59,63 @@ flowchart LR
     M -->|TCP| PORT[src IP:port → dst IP:port]
 ```
 
-`Decoder::decode()` retourne un `PacketInfo` autonome (aucun pointeur vers le
-buffer libpcap), ce qui rend le passage inter-thread sûr sans copie
-supplémentaire.
+`Decoder::decode()` returns a self-contained `PacketInfo` (no pointer into the
+libpcap buffer), which makes the cross-thread hand-off safe without an extra
+copy.
 
-## Modèle de graphe
+## Graph model
 
-* `Node` : `id` stable, `label` résolu, position normalisée `[0,1]²`,
-  compteurs `packets`/`bytes`.
-* `Link` : paire de nœuds **non orientée** (le trafic des deux sens est
-  fusionné, comme dans EtherApe), protocole dominant, `intensity` ∈ [0,1]
-  utilisée pour l'épaisseur et l'opacité.
+* `Node`: stable `id`, resolved `label`, normalised position `[0,1]²`,
+  `packets`/`bytes` counters.
+* `Link`: **undirected** node pair (traffic in both directions is merged, as in
+  EtherApe), dominant protocol, `intensity` ∈ [0,1] used for width and opacity.
 
-Décroissance : `intensity *= exp(-0.025 / tau)` à chaque tick, avec `tau` le
-délai configurable (4 s par défaut). Un lien disparaît quand son intensité
-tombe sous 0.02 et qu'il est inactif depuis `4·tau`.
+Decay: `intensity *= exp(-0.025 / tau)` on every tick, with `tau` the
+configurable delay (4 s by default). A link disappears when its intensity falls
+below 0.02 and it has been idle for `4·tau`.
 
-Le layout est un petit système physique exécuté à 25 Hz :
+The layout is a small physical system running at 25 Hz:
 
 ```mermaid
 flowchart LR
-    A[nœuds] -->|répulsion 1/r| A
-    A -->|ressort vers 0.20| A
-    A -->|attraction centre 0.0015| A
-    A -->|intégration amortie 0.86| A
+    A[nodes] -->|repulsion 1/r| A
+    A -->|spring towards 0.20| A
+    A -->|centre attraction 0.0015| A
+    A -->|damped integration 0.86| A
 ```
 
-Coût : O(n²), borné par `nodeLimit` (300 par défaut, réglable).
+Cost: O(n²), bounded by `nodeLimit` (300 by default, configurable).
 
-## Rendu
+## Rendering
 
-`GraphView` est un `QWidget` qui peint directement :
+`GraphView` is a `QWidget` that paints directly:
 
-1. dégradé de fond issu de la `QPalette` (fonctionne en thème clair et sombre) ;
-2. liens (largeur `0.6 + 7·intensity`, couleur par protocole, alpha animé) ;
-3. nœuds (rayon `∝ √bytes`, couleur par type) et libellés éllipsés ;
-4. légende + compteurs.
+1. background gradient taken from the `QPalette` (works in light and dark
+   themes);
+2. links (width `0.6 + 7·intensity`, colour per protocol, animated alpha);
+3. nodes (radius `∝ √bytes`, colour per kind) and elided labels;
+4. legend + counters.
 
-Pas de `QGraphicsScene` : avec quelques centaines d'objets, le repaint direct
-est plus simple, plus rapide, et évite toute une couche d'abstraction à
-maintenir.
+No `QGraphicsScene`: with a few hundred objects, direct repaint is simpler,
+faster, and avoids a whole abstraction layer to maintain.
 
-## Choix de portage
+## Porting choices
 
-| Ancien | Nouveau | Raison |
+| Before | After | Reason |
 |---|---|---|
-| GTK 3 + libglade XML (3 200 lignes) | Qt 6 Widgets construits en C++ | libglade est mort ; le XML généré n'est pas maintenable |
-| GObject / signaux C | `QObject` / signaux typés | sécurité de compilation |
-| autotools | CMake + Ninja | standard actuel, builds reproductibles |
-| `GdkInput` / `select()` dans le thread UI | thread dédié + `pcap_dispatch` | l'UI ne gèle plus |
-| processus privilégié séparé + protocole maison | `setcap` sur le binaire | inutile de maintenir un protocole IPC pour un seul cas d'usage |
-| `GHashTable` de nœuds | `QVector<Node>` + `QHash<QString,int>` | localité mémoire et index O(1) |
-| libart / gnome-canvas | `QPainter` | déjà là, accéléré, antialiasé |
+| GTK 3 + libglade XML (3,200 lines) | Qt 6 Widgets built in C++ | libglade is dead; generated XML is not maintainable |
+| GObject / C signals | `QObject` / typed signals | compile-time safety |
+| autotools | CMake + Ninja | current standard, reproducible builds |
+| `GdkInput` / `select()` in the UI thread | dedicated thread + `pcap_dispatch` | the UI no longer freezes |
+| separate privileged process + custom IPC protocol | one-shot `pkexec` helper streaming pcap on stdout | no long-lived IPC to maintain; one password per capture |
+| `GHashTable` of nodes | `QVector<Node>` + `QHash<QString,int>` | memory locality and O(1) index |
+| libart / gnome-canvas | `QPainter` | already there, accelerated, antialiased |
 
-## Ce qui n'est pas porté (volontairement)
+## Not ported
 
-L'export XML, les conversations détaillées, NetBIOS et le positionnement manuel
-de nœuds représentaient ~40 % du code historique pour un usage marginal. Ils
-peuvent revenir sous forme de modules indépendants sans toucher au cœur.
+Two minor things from the original are absent: `--signal-export` (SIGUSR1) and
+the old demo/documentation. They are replaced by the menu export and by
+`README.md` + `docs/`. Everything else in the feature table of
+[`PORTING.md`](PORTING.md) is implemented, and some behaviour is new: zone
+clouds, IPv4/IPv6 fragment reassembly, VLAN display, JSON export and the
+display filter.

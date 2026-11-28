@@ -1,104 +1,110 @@
 # EtherApe 2026
 
-Portage **Qt 6 / C++20** d'[EtherApe](https://gitlab.com/rghetta/etherape),
-le moniteur graphique de trafic réseau de Juan Toledo et Riccardo Ghetta.
+**Qt 6 / C++20** port of [EtherApe](https://gitlab.com/rghetta/etherape), the
+graphical network traffic monitor by Juan Toledo and Riccardo Ghetta.
 
-> Base : EtherApe **0.9.22** (tag `rel-0.9.22`, commit `8753ed7`), comparé à
-> `main` (0.9.23, commit `1edfbb8`). Licence **GPL-2.0-or-later**, identique à
-> l'original. Détail des décisions : [`docs/PORTING.md`](docs/PORTING.md) ;
-> traçabilité et licence : [`NOTICE.md`](NOTICE.md).
-Le code historique (GTK 3 + libglade + autotools, ~18 000 lignes de C) est
-remplacé par une base moderne, compacte et maintenable : **CMake + Qt 6
-Widgets + libpcap**.
+> Base: EtherApe **0.9.22** (tag `rel-0.9.22`, commit `8753ed7`), compared with
+> `main` (0.9.23, commit `1edfbb8`). Licence **GPL-2.0-or-later**, identical to
+> the original. Decisions: [`docs/PORTING.md`](docs/PORTING.md); provenance and
+> licence: [`NOTICE.md`](NOTICE.md).
 
-L'objectif est de survivre à l'abandon des dépendances. À noter, pour être
-précis : **GTK 3 n'est pas mort** (3.24 est encore maintenu et packagé) ; ce
-qui l'était, c'est **libglade**, abandonné depuis 2011, dont EtherApe dépendait
-pour charger ses 3 238 lignes de XML d'interface — remplacé dans GTK par
-`GtkBuilder`. S'y ajoutaient autotools, gnome-canvas/libart et un modèle
-GObject en C. Voir [`docs/PORTING.md`](docs/PORTING.md) pour l'analyse
-complète et le tableau des remplacements.
+The historical code (GTK 3 + libglade + autotools, ~18,000 lines of C) is
+replaced by a modern, compact and maintainable base: **CMake + Qt 6 Widgets +
+libpcap**.
 
-## État
+The goal is to survive the abandonment of the dependencies. To be precise:
+**GTK 3 is not dead** (3.24 is still maintained and packaged); what is dead is
+**libglade**, unmaintained since 2011, which EtherApe used to load its 3,238
+lines of XML UI — GTK itself replaced it with `GtkBuilder`. Add to that
+autotools, gnome-canvas/libart and a C GObject model. See
+[`docs/PORTING.md`](docs/PORTING.md) for the full analysis and the replacement
+table.
 
-| Fonction | État |
+## Status
+
+| Feature | State |
 |---|---|
-| Capture live (libpcap, BPF) | ✅ |
-| Replay de fichier `.pcap` (vitesse réglable) | ✅ |
-| Modes **Link** (MAC), **IP**, **TCP** (adresse:port) | ✅ |
-| Décodage Ethernet, **VLAN 802.1Q / QinQ 802.1ad**, IPv4, IPv6 (+ ext. headers), ARP, TCP, UDP, ICMP | ✅ |
-| Graphe animé, layout force-directed, zoom/pan, sélection | ✅ |
-| Panneau statistiques (nœuds / liens / protocoles) | ✅ |
-| Résolution DNS inverse asynchrone (optionnelle) | ✅ |
-| NetBIOS passif (réponses NBNS UDP/137) | ✅ |
-| Légende dynamique des protocoles | ✅ |
-| Export XML **et JSON** (menu, `--final-export`) | ✅ |
-| Conversations détaillées par lien | ✅ |
-| Positionnement manuel (drag/pin, JSON, `--position`) | ✅ |
-| Dissection applicative (HTTP, TLS, DNS, SSH…) | ✅ |
-| VLAN affichés (panneau, tooltip, conversations, XML/JSON) | ✅ |
-| Nuages de zones LAN / DMZ / VPN / Internet | ✅ |
-| Tests unitaires (`ctest`) + CI GitHub et GitLab | ✅ |
-| 10 langues (fr, es, pt_BR, ru, zh_CN, ar, hi, bn, ur + en) | ✅ |
-| Filtre d'affichage (`--show`, barre « Show », autocomplétion + aide) | ✅ |
-| Recherche de nœud (`Ctrl+F`) | ✅ |
-| Courbe de débit (5 min) | ✅ |
-| Export CSV des conversations | ✅ |
-| `/etc/ethers` (MAC → nom) | ✅ |
-| Préférences persistantes (QSettings) | ✅ |
+| Live capture (libpcap, BPF) | ✅ |
+| `.pcap` replay (adjustable speed) | ✅ |
+| **Link** (MAC), **IP**, **TCP** (address:port) modes | ✅ |
+| Ethernet, **VLAN 802.1Q / QinQ 802.1ad**, IPv4, IPv6 (+ extension headers), ARP, TCP, UDP, ICMP decoding | ✅ |
+| Animated graph, force-directed layout, zoom/pan, selection | ✅ |
+| Statistics panel (nodes / links / protocols) | ✅ |
+| Asynchronous reverse DNS (optional) | ✅ |
+| Passive NetBIOS (NBNS responses, UDP/137) | ✅ |
+| Dynamic protocol legend | ✅ |
+| XML **and JSON** export (menu, `--final-export`) | ✅ |
+| Per-link conversations | ✅ |
+| Manual node placement (drag/pin, JSON, `--position`) | ✅ |
+| Application dissection (HTTP, TLS, DNS, SSH…) | ✅ |
+| VLANs displayed (panel, tooltip, conversations, XML/JSON) | ✅ |
+| LAN / DMZ / VPN / Internet zone clouds | ✅ |
+| Unit tests (`ctest`) + GitHub and GitLab CI | ✅ |
+| 10 languages (fr, es, pt_BR, ru, zh_CN, ar, hi, bn, ur + en) | ✅ |
+| Display filter (`--show`, "Show" toolbar, completion and help) | ✅ |
+| Node search (`Ctrl+F`) | ✅ |
+| Throughput chart (5 minutes) | ✅ |
+| CSV export of conversations | ✅ |
+| `/etc/ethers` (MAC → name) | ✅ |
+| Persistent preferences (QSettings) | ✅ |
 
-## Installation rapide
+## Quick install
 
-Les releases fournissent des binaires prêts à l'emploi (construits par la CI à
-chaque tag) :
+Releases provide ready-to-run binaries, built by CI on every tag:
 
-| Fichier | Plateforme | Prérequis |
+| File | Platform | Requirements |
 |---|---|---|
-| `etherape2026-1.0.0-x86_64.AppImage` | Linux | **rien** (Qt 6 embarqué) ; `libfuse2`, ou `--appimage-extract-and-run` |
-| `etherape2026-1.0.0-linux-x86_64.tar.gz` | Linux | Qt 6 + libpcap de la distribution ; `./install.sh` |
-| `EtherApe2026-Setup-1.0.0.exe` | Windows | **Npcap** (https://npcap.com) pour la capture live |
-| `SHA256SUMS` | — | vérifier les fichiers téléchargés |
+| `etherape2026-<version>-x86_64.AppImage` | Linux | **nothing** (Qt 6 is bundled, Wayland and X11 both included); `libfuse2`, or run with `--appimage-extract-and-run` |
+| `etherape2026-<version>-linux-x86_64.tar.gz` | Linux | distribution Qt 6 and libpcap; `./install.sh` |
+| `EtherApe2026-Setup-<version>.exe` | Windows | **Npcap** (https://npcap.com) for live capture |
+| `SHA256SUMS` | — | verify the downloaded files |
 
 ```bash
 chmod +x etherape2026-*-x86_64.AppImage
-./etherape2026-*-x86_64.AppImage            # capture live : mot de passe polkit
-./etherape2026-*-x86_64.AppImage -r capture.pcap   # replay sans privilège
+./etherape2026-*-x86_64.AppImage                    # live capture: polkit password
+./etherape2026-*-x86_64.AppImage -r capture.pcap   # replay, no privilege needed
 ```
 
-## Compilation
+## Build
 
-Dépendances : Qt 6 (Core, Gui, Widgets, Network), libpcap, CMake ≥ 3.21, Ninja.
+Dependencies: Qt 6 (Core, Gui, Widgets, Network), libpcap, CMake ≥ 3.21, Ninja.
+Qt 6.4 is enough (the version shipped by Ubuntu 24.04 LTS).
 
 ```bash
 cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo
 cmake --build build -j"$(nproc)"
-cmake --install build              # ou --prefix ~/.local
+cmake --install build              # or --prefix ~/.local
 ```
 
-Si libpcap n'est pas dans le chemin de pkg-config :
+If libpcap is not on the pkg-config path:
 
 ```bash
-export PKG_CONFIG_PATH=/chemin/vers/libpcap/lib64/pkgconfig
+export PKG_CONFIG_PATH=/path/to/libpcap/lib64/pkgconfig
 cmake -S . -B build -G Ninja
-# ou, sans variable d'environnement :
-cmake -S . -B build -G Ninja -DPCAP_PREFIX=/chemin/vers/libpcap
+# or, without an environment variable:
+cmake -S . -B build -G Ninja -DPCAP_PREFIX=/path/to/libpcap
 ```
 
-## Capture sans root
+## Capture without root
 
-libpcap ouvre les sockets AF_PACKET, ce qui exige `CAP_NET_RAW`. Une seule
-commande, une seule fois :
+libpcap opens AF_PACKET sockets, which requires `CAP_NET_RAW`. Two options:
+
+- do nothing: when the capture is denied, the application offers to elevate
+  through **polkit**. The privileged helper is one-shot — it streams the pcap
+  data on stdout, and exits with the capture. The password is asked for each
+  capture, and the GUI itself stays unprivileged.
+- grant the capability once, if you prefer not to use polkit:
 
 ```bash
 sudo setcap cap_net_raw,cap_net_admin+eip "$(command -v etherape2026)"
 ```
 
-Sinon, lancer l'application en root.
+Running the application as root also works, but is not recommended.
 
-## Utilisation
+## Usage
 
 ```bash
-etherape2026                        # interface par défaut, mode IP
+etherape2026                        # default interface, IP mode
 etherape2026 -i any -f "tcp port 443"
 etherape2026 -r capture.pcap --speed 200
 etherape2026 -i eth0 -m tcp -n --node-limit 500
@@ -108,50 +114,50 @@ etherape2026 -i eth0 --position layout.json
 
 | Option | Description |
 |---|---|
-| `-i, --interface <dev>` | interface de capture |
-| `-r, --replay <file>` | rejoue un fichier pcap |
-| `-f, --filter <bpf>` | filtre BPF |
-| `-m, --mode link\|ip\|tcp` | granularité des nœuds |
-| `-n, --numeric` | pas de résolution DNS |
-| `--node-limit <n>` | nombre max de nœuds affichés |
-| `--speed <pct>` | vitesse de replay (0 = maximum) |
-| `--final-export <file>` | exporte le graphe en XML à la fin du replay |
-| `--position <file>` | charge une disposition de nœuds (JSON) |
-| `--show <expr>` | filtre d'affichage : `proto:http hostname=laptop -vlan:100` |
+| `-i, --interface <dev>` | capture interface |
+| `-r, --replay <file>` | replay a pcap file |
+| `-f, --filter <bpf>` | BPF filter |
+| `-m, --mode link\|ip\|tcp` | node granularity |
+| `-n, --numeric` | no DNS resolution |
+| `--node-limit <n>` | maximum number of displayed nodes |
+| `--speed <pct>` | replay speed (0 = maximum) |
+| `--final-export <file>` | export the graph as XML at the end of the replay |
+| `--position <file>` | load a node layout (JSON) |
+| `--show <expr>` | display filter: `proto:http hostname=laptop -vlan:100` |
 
 ## Architecture
 
 ```mermaid
 flowchart LR
-    subgraph Thread capture
+    subgraph Capture thread
         P[libpcap<br/>live / offline] --> D[Decoder<br/>Ethernet · VLAN · IPv4 · IPv6 · ARP]
-        D --> B[Batch 512 paquets]
+        D --> B[Batch of 512 packets]
     end
-    B -->|signal Qt queued| GM[GraphModel<br/>nœuds · liens · compteurs]
+    B -->|Qt queued signal| GM[GraphModel<br/>nodes · links · counters]
     GM --> GV[GraphView<br/>QPainter · 25 fps]
-    GM --> SP[StatsPanel<br/>nœuds · liens · protocoles]
-    DNS[QHostInfo<br/>résolution inverse] -.labels.-> GM
+    GM --> SP[StatsPanel<br/>nodes · links · protocols]
+    DNS[QHostInfo<br/>reverse lookup] -.labels.-> GM
 ```
 
-* **Decoder** : sans état, testable, ne connaît que les octets et le mode.
-* **CaptureWorker** : thread dédié, `pcap_dispatch` non bloquant + `poll()`,
-  `requestStop()` thread-safe via `pcap_breakloop`.
-* **GraphModel** : compteurs bruts, décroissance exponentielle des liens,
-  layout force-directed (ressorts + répulsion) dans un espace normalisé.
-* **GraphView** : peinture directe au `QPainter` — pas de scène graphique,
-  donc pas de coût par item et un rendu trivialement maîtrisé.
+* **Decoder**: stateless, testable, knows only the bytes and the mode.
+* **CaptureWorker**: dedicated thread, non-blocking `pcap_dispatch` + `poll()`,
+  thread-safe `requestStop()` through `pcap_breakloop`.
+* **GraphModel**: raw counters, exponential link decay, force-directed layout
+  (springs + repulsion) in a normalised space.
+* **GraphView**: direct `QPainter` painting — no graphics scene, so no per-item
+  cost and a rendering that is easy to reason about.
 
-Voir [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) pour le détail.
+See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the details.
 
-## Langues
+## Languages
 
-Interface disponible en **anglais** (source) plus français, espagnol,
-portugais (Brésil), russe, chinois simplifié, arabe (RTL), hindi, bengali et
-ourdou. Les termes techniques (VLAN, MAC, BPF, DNS, TCP/IP, pcap…) restent en
-anglais dans toutes les langues. Sélection dans
-**Settings → Preferences → Language**, ou `ui/language` dans les réglages.
+The interface is available in **English** (source) plus French, Spanish,
+Portuguese (Brazil), Russian, Simplified Chinese, Arabic (RTL), Hindi, Bengali
+and Urdu. Technical terms (VLAN, MAC, BPF, DNS, TCP/IP, pcap…) stay in English
+in every language. Select one in **Settings → Preferences → Language**, or with
+`ui/language` in the settings.
 
-Détail, état par langue et procédure de mise à jour :
+Per-language status and the update procedure:
 [`docs/TRANSLATIONS.md`](docs/TRANSLATIONS.md).
 
 ## Tests
@@ -162,18 +168,18 @@ cmake --build build
 ctest --test-dir build --output-on-failure
 ```
 
-Le cœur (décodage, NetBIOS, zones, exports) est dans une bibliothèque sans GUI
-(`etherape_core`), donc les tests tournent sans serveur graphique. La CI
-GitLab (`.gitlab-ci.yml`) couvre Linux et Windows.
+The core (decoding, NetBIOS, zones, exports) lives in a GUI-free library
+(`etherape_core`), so the tests run without a display server. CI covers Linux
+and Windows on both GitHub Actions and GitLab CI.
 
 ## Windows
 
-La capture passe par **Npcap** (successeur de WinPcap). Prérequis :
+Capture goes through **Npcap** (the successor of WinPcap). Requirements:
 
-1. [Npcap](https://npcap.com/) installé sur la machine (avec l'option
-   « WinPcap API-compatible Mode » si tu veux aussi d'anciens outils).
-2. **Npcap SDK** décompressé, par exemple `C:\dev\npcap`.
-3. MSYS2 **UCRT64** avec GCC, Qt 6, CMake et Ninja :
+1. [Npcap](https://npcap.com/) installed on the machine (with "WinPcap
+   API-compatible Mode" if you also want older tools).
+2. The **Npcap SDK** extracted, for example to `C:\dev\npcap`.
+3. MSYS2 **UCRT64** with GCC, Qt 6, CMake and Ninja:
 
 ```bash
 pacman -S --needed mingw-w64-ucrt-x86_64-gcc \
@@ -181,7 +187,7 @@ pacman -S --needed mingw-w64-ucrt-x86_64-gcc \
     mingw-w64-ucrt-x86_64-ninja mingw-w64-ucrt-x86_64-pkgconf
 ```
 
-Build :
+Build:
 
 ```bash
 export MSYSTEM=UCRT64
@@ -189,37 +195,36 @@ export PATH=/ucrt64/bin:$PATH
 cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release \
       -DNPCAP_SDK_DIR=C:/dev/npcap
 cmake --build build -j8
-cmake --build build --target deploy   # windeployqt : DLLs Qt à côté de l'exe
+cmake --build build --target deploy   # windeployqt: Qt DLLs next to the exe
 ```
 
-Sous Windows, la capture exige les droits administrateur : l'application
-propose de se relancer via l'invite **UAC** (`ShellExecuteEx` + `runas`).
-Il n'y a pas d'équivalent `pkexec` ni de helper séparé ; le binaire reste
-mono-processus.
+On Windows the capture requires administrator rights: the application offers to
+restart itself through the **UAC** prompt (`ShellExecuteEx` + `runas`). There is
+no `pkexec` equivalent and no separate helper; the binary stays single-process.
 
-`-DETH_WINDOWS_GUI=ON` produit un exécutable fenêtré (sans console) ; par
-défaut la console reste visible pour diagnostiquer les erreurs de démarrage.
+`-DETH_WINDOWS_GUI=ON` produces a windowed executable (no console); by default
+the console stays visible to diagnose start-up errors.
 
-## Origine et licence
+## Origin and licence
 
-Ce projet est un **portage**, pas un fork : il ne reprend pas les correctifs du
-code C historique et n'a pas vocation à le remplacer en amont.
+This project is a **port**, not a fork: it does not take patches from the
+historical C code and is not meant to replace it upstream.
 
 | | |
 |---|---|
-| Projet d'origine | EtherApe, © 2001 Juan Toledo, Riccardo Ghetta et contributeurs |
-| Dépôt amont | <https://gitlab.com/rghetta/etherape> |
-| Ancien hébergement | <https://sourceforge.net/projects/etherape/> |
-| Base du portage | tag `rel-0.9.22` (commit `8753ed7`) |
+| Original project | EtherApe, © 2001 Juan Toledo, Riccardo Ghetta and contributors |
+| Upstream repository | <https://gitlab.com/rghetta/etherape> |
+| Former hosting | <https://sourceforge.net/projects/etherape/> |
+| Port base | tag `rel-0.9.22` (commit `8753ed7`) |
 | Licence | GPL-2.0-or-later ([`COPYING`](COPYING)) |
-| Qt 6 | LGPL v3 — compatible avec `GPL-2.0-or-later`, liaison dynamique |
+| Qt 6 | LGPL v3 — compatible with `GPL-2.0-or-later`, dynamically linked |
 
-Voir [`NOTICE.md`](NOTICE.md) pour la traçabilité (ce qui a été relu dans les
-sources C avant réécriture) et [`docs/PORTING.md`](docs/PORTING.md) pour les
-raisons du portage et les fonctionnalités non reprises.
+See [`NOTICE.md`](NOTICE.md) for provenance (what was read in the C sources
+before rewriting) and [`docs/PORTING.md`](docs/PORTING.md) for the reasons
+behind the port and the features that were not carried over.
 
 ## Contact
 
-Questions et rapports de bogues : **issues GitHub ou GitLab** du dépôt. Aucune
-adresse électronique personnelle n'est publiée ; l'auteur reste joignable via
-son profil sur les deux forges.
+Questions and bug reports: the **GitHub or GitLab issues** of the repository.
+No personal e-mail address is published; the author remains reachable through
+his profile on both forges.
